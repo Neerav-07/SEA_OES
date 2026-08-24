@@ -12,9 +12,12 @@ import GlobalLoader from '../components/loaders/GlobalLoader.jsx';
 import LandingPage from '../pages/landing/LandingPage.jsx';
 import LoginPage from '../pages/auth/LoginPage.jsx';
 import RegisterPage from '../pages/auth/RegisterPage.jsx';
-import DashboardHomePage from '../pages/dashboard/DashboardHomePage.jsx';
-// TODO: Import and add your domain-specific page routes below
-// import DashboardResourcesPage from '../pages/dashboard/DashboardResourcesPage.jsx';
+import DashboardHomePage from '../pages/dashboard/overview/DashboardHomePage.jsx';
+import CompetenciesPage from '../pages/dashboard/competencies/CompetenciesPage.jsx';
+import SkillGapsPage from '../pages/dashboard/skill-gaps/SkillGapsPage.jsx';
+import LearningPathsPage from '../pages/dashboard/learning-paths/LearningPathsPage.jsx';
+import AssessmentsPage from '../pages/dashboard/assessments/AssessmentsPage.jsx';
+import AnalyticsPage from '../pages/dashboard/analytics/AnalyticsPage.jsx';
 
 import useAuthStore from '../store/auth.store.js';
 
@@ -56,8 +59,11 @@ export default function AppRoutes() {
         <Route element={<PrivateRoute />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardHomePage />} />
-            {/* TODO: Add your domain routes here */}
-            {/* <Route path="/dashboard/resources" element={<DashboardResourcesPage />} /> */}
+            <Route path="/dashboard/competencies" element={<CompetenciesPage />} />
+            <Route path="/dashboard/skill-gaps" element={<SkillGapsPage />} />
+            <Route path="/dashboard/learning-paths" element={<LearningPathsPage />} />
+            <Route path="/dashboard/assessments" element={<AssessmentsPage />} />
+            <Route path="/dashboard/analytics" element={<AnalyticsPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
