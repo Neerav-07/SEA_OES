@@ -19,11 +19,10 @@ import useAuthStore from '../../store/auth.store.js';
 
 const initialForm = { name: '', email: '', password: '', confirmPassword: '' };
 
-// TODO: Replace with your app's real onboarding steps
 const ONBOARDING_STEPS = [
-  'Create your account and set up your profile.',
-  'Access your personalized dashboard.',
-  'Start using the core features of the app.',
+  'Set up official profile, department, and designation.',
+  'Complete initial competency diagnostic assessment.',
+  'Receive personalized iGOT & NSSTA recommended training pathways.',
 ];
 
 export default function RegisterPage() {
@@ -71,35 +70,32 @@ export default function RegisterPage() {
             <div className="noise-overlay pointer-events-none opacity-20" />
             <div className="relative z-10 flex flex-col items-center">
               <div className="flex flex-col items-center gap-6">
-                {/* TODO: Replace /logo.png */}
-                <img src="/logo.png" alt="App Logo" className="h-36 w-36 object-contain drop-shadow-2xl" />
+                <img src="/logo.png" alt="App Logo" className="h-32 w-32 object-contain drop-shadow-2xl" />
                 <div className="h-[3px] w-16 rounded-full bg-emerald-400" />
               </div>
               <div className="mt-8">
-                {/* TODO: Replace heading and description */}
-                <h1 className="text-4xl font-black uppercase tracking-tighter italic lg:text-5xl">
-                  Get Started <br />
-                  <span className="text-teal-400">Today.</span>
+                <h1 className="text-3xl font-black uppercase tracking-tighter italic lg:text-4xl">
+                  Official Learner <br />
+                  <span className="text-teal-400">Onboarding.</span>
                 </h1>
-                <p className="mx-auto mt-4 max-w-sm text-lg font-bold leading-tight text-white/70">
-                  Your signup value proposition goes here.
+                <p className="mx-auto mt-4 max-w-sm text-sm font-bold leading-relaxed text-white/80">
+                  Register to establish your statistical competency baseline and personalized learning path.
                 </p>
               </div>
-              <div className="mt-10 space-y-4 px-4 text-left">
+              <div className="mt-8 space-y-4 px-4 text-left">
                 {ONBOARDING_STEPS.map((step, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/30 text-emerald-400 text-xs font-black">
                       {i + 1}
                     </div>
-                    <p className="text-sm text-white/80">{step}</p>
+                    <p className="text-xs font-medium text-white/85">{step}</p>
                   </div>
                 ))}
               </div>
             </div>
             <div className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-between px-10 text-[9px] font-black uppercase tracking-[0.3em] text-white/25">
-              {/* TODO: Replace app name */}
-              <p>© 2026 Your App Name</p>
-              <p>Subtitle here</p>
+              <p>© 2026 MoSPI DIID / NSSTA</p>
+              <p>PS 26101 Portal</p>
             </div>
           </section>
 
@@ -110,14 +106,12 @@ export default function RegisterPage() {
           >
             <div className="mx-auto w-full max-w-sm">
               <div className="mb-6 text-center lg:text-left">
-                {/* TODO: Replace headings */}
-                <h2 className="text-2xl font-bold tracking-tight text-(--app-color-text)">Create Account</h2>
-                <p className="mt-0.5 text-xs text-(--app-color-text-muted)">Register to get started</p>
+                <h2 className="text-2xl font-bold tracking-tight text-(--app-color-text)">Register Official Account</h2>
+                <p className="mt-0.5 text-xs text-(--app-color-text-muted)">Enter your details for competency tracking</p>
               </div>
               <form className="space-y-3" onSubmit={handleSubmit}>
-                {/* TODO: Rename label to match your entity (e.g. "Organization Name", "Full Name") */}
-                <Input label="Your Name" name="name" value={formData.name} onChange={handleChange} required placeholder="e.g. Acme Corp" className="h-10 rounded-xl text-sm" />
-                <Input label="Email" type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="you@example.com" className="h-10 rounded-xl text-sm" />
+                <Input label="Official Full Name" name="name" value={formData.name} onChange={handleChange} required placeholder="e.g. Dr. Rajesh Kumar" className="h-10 rounded-xl text-sm" />
+                <Input label="Official Work Email" type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="rajesh.kumar@gov.in" className="h-10 rounded-xl text-sm" />
                 <div className="grid grid-cols-2 gap-3">
                   <Input label="Password" type="password" name="password" value={formData.password} onChange={handleChange} required placeholder="••••••••" className="h-10 rounded-xl text-sm" />
                   <Input label="Confirm" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required placeholder="••••••••" className="h-10 rounded-xl text-sm" />

@@ -1,20 +1,36 @@
-/**
- * LandingPage — TEMPLATE
- *
- * TODO: Replace every piece of text marked with a TODO comment.
- * The structure (hero, features, CTA) is intentionally generic —
- * keep what's useful for your PS, trim the rest.
- */
 import { Link } from 'react-router-dom';
 
-// TODO: Replace these with your real feature cards
 const FEATURES = [
-  { icon: '⚡', title: 'Feature Title One', desc: 'Short description of what this feature does for the user.' },
-  { icon: '🔒', title: 'Feature Title Two', desc: 'Short description of what this feature does for the user.' },
-  { icon: '📊', title: 'Feature Title Three', desc: 'Short description of what this feature does for the user.' },
-  { icon: '🌐', title: 'Feature Title Four',  desc: 'Short description of what this feature does for the user.' },
-  { icon: '🤝', title: 'Feature Title Five',  desc: 'Short description of what this feature does for the user.' },
-  { icon: '🚀', title: 'Feature Title Six',   desc: 'Short description of what this feature does for the user.' },
+  {
+    icon: '🎯',
+    title: 'Role Competency Frameworks',
+    desc: 'Maps statistical, technical, digital governance, and managerial competencies across official roles in MoSPI and state statistical departments.',
+  },
+  {
+    icon: '📊',
+    title: 'Evidence-Driven Skill Gaps',
+    desc: 'Evaluates existing capabilities against required role profiles using diagnostic evidence, confidence scores, and auditable provenance.',
+  },
+  {
+    icon: '🎓',
+    title: 'iGOT & NSSTA Integration',
+    desc: 'Recommends personalized learning pathways directly integrated with iGOT Karmayogi modules and NSSTA TPAC training programmes.',
+  },
+  {
+    icon: '📝',
+    title: 'Intelligent Assessment Engine',
+    desc: 'Generates grounded MCQs and quizzes directly from uploaded documents, presentations, and training materials with instant feedback.',
+  },
+  {
+    icon: '📈',
+    title: 'Learner & Admin Dashboards',
+    desc: 'Empowers officials with personal progress tracking and gives administrators organization-wide workforce analytics and predictive insights.',
+  },
+  {
+    icon: '🔒',
+    title: 'Cloud-Ready & Cyber Compliant',
+    desc: 'Built with role-based access control (RBAC), SSO integration, and strict alignment with government cybersecurity guidelines.',
+  },
 ];
 
 export default function LandingPage() {
@@ -27,11 +43,9 @@ export default function LandingPage() {
       {/* ── Navbar ── */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-4 lg:px-16">
         <Link to="/" className="flex items-center gap-3">
-          {/* TODO: Replace logo.png */}
           <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
-          {/* TODO: Replace app name */}
           <span className="text-lg font-black uppercase tracking-widest text-(--app-color-text)">
-            App Name
+            Karmayogi <span className="text-(--app-color-primary)">AI</span>
           </span>
         </Link>
         <div className="flex items-center gap-3">
@@ -45,45 +59,38 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Hero ── */}
-      <section className="relative z-10 mx-auto max-w-5xl px-6 py-20 text-center lg:py-32">
-        {/* TODO: Replace badge text */}
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-(--app-color-border) bg-white/60 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-(--app-color-primary) backdrop-blur">
+      <section className="relative z-10 mx-auto max-w-5xl px-6 py-20 text-center lg:py-28">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-(--app-color-border) bg-white/70 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-(--app-color-primary) backdrop-blur">
           <span className="h-1.5 w-1.5 rounded-full bg-(--app-color-primary)" />
-          Badge / Category Label Here
+          MoSPI DIID & NSSTA Capacity Building Platform
         </div>
 
-        {/* TODO: Replace hero headline — make it punchy and problem-focused */}
-        <h1 className="mb-6 text-5xl font-black leading-[1.1] tracking-tighter text-(--app-color-text) lg:text-7xl">
-          Your Big Bold<br />
-          <span className="text-(--app-color-primary)">Headline Here</span>
+        <h1 className="mb-6 text-4xl font-black leading-[1.15] tracking-tighter text-(--app-color-text) lg:text-6xl">
+          Evidence-Driven Competency Intelligence for <br />
+          <span className="text-(--app-color-primary)">India's Official Statistical System</span>
         </h1>
 
-        {/* TODO: Replace sub-headline — one or two sentences on the core problem you solve */}
-        <p className="mx-auto mb-10 max-w-2xl text-lg text-(--app-color-text-muted) leading-relaxed">
-          This is your hero sub-headline. Describe who this app is for and what problem it solves
-          in one or two clear sentences.
+        <p className="mx-auto mb-10 max-w-3xl text-lg text-(--app-color-text-muted) leading-relaxed">
+          AI-enabled skill-gap identification, personalized training pathways with iGOT Karmayogi & NSSTA TPAC integration, and grounded assessment generation for continuous capacity building.
         </p>
 
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <Link to="/register" className="rounded-2xl bg-(--app-color-primary) px-8 py-4 text-base font-bold text-white shadow-xl hover:bg-(--app-color-primary-hover) transition-all hover:scale-105">
-            {/* TODO: Replace CTA label */}
-            Get Started Free →
+            Explore Competency Portal →
           </Link>
           <Link to="/login" className="rounded-2xl border border-(--app-color-border) bg-white/70 px-8 py-4 text-base font-semibold text-(--app-color-text) backdrop-blur hover:bg-white transition-colors">
-            Sign In
+            Official Login
           </Link>
         </div>
       </section>
 
       {/* ── Features grid ── */}
       <section className="relative z-10 mx-auto max-w-6xl px-6 pb-24">
-        {/* TODO: Replace section heading */}
         <h2 className="mb-4 text-center text-3xl font-black tracking-tight text-(--app-color-text)">
-          Why Choose This App?
+          Core Platform Capabilities
         </h2>
-        <p className="mx-auto mb-12 max-w-xl text-center text-(--app-color-text-muted)">
-          {/* TODO: Replace section description */}
-          Short supporting paragraph explaining the value your app delivers.
+        <p className="mx-auto mb-12 max-w-2xl text-center text-(--app-color-text-muted)">
+          Transforming government workforce development through evidence, personalized learning, and grounded assessment intelligence.
         </p>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((feat) => (
@@ -101,11 +108,10 @@ export default function LandingPage() {
 
       {/* ── Bottom CTA ── */}
       <section className="relative z-10 py-16 text-center">
-        {/* TODO: Replace CTA text */}
-        <h2 className="mb-4 text-3xl font-black text-(--app-color-text)">Ready to get started?</h2>
-        <p className="mb-8 text-(--app-color-text-muted)">One-line closing pitch for your app.</p>
+        <h2 className="mb-4 text-3xl font-black text-(--app-color-text)">Strengthen Official Statistical Capacity Today</h2>
+        <p className="mb-8 text-(--app-color-text-muted)">Empowering officials with target training, evidence, and actionable competency insights.</p>
         <Link to="/register" className="rounded-2xl bg-(--app-color-primary) px-10 py-4 text-base font-bold text-white shadow-xl hover:bg-(--app-color-primary-hover) transition-all hover:scale-105">
-          Start Now →
+          Access Portal Now →
         </Link>
       </section>
     </div>

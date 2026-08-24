@@ -18,12 +18,11 @@ import useAuthStore from '../../store/auth.store.js';
 
 const initialForm = { email: '', password: '' };
 
-// TODO: Replace these with your app's real feature highlights
 const FEATURE_BULLETS = [
-  'Feature one — describe your core value',
-  'Feature two — describe a key capability',
-  'Feature three — describe a differentiator',
-  'Feature four — describe another benefit',
+  'Role Competency Profiling',
+  'Evidence-Based Skill Gaps',
+  'iGOT & NSSTA Integration',
+  'Intelligent MCQ Generator',
 ];
 
 export default function LoginPage() {
@@ -67,22 +66,19 @@ export default function LoginPage() {
             <div className="noise-overlay pointer-events-none opacity-20" />
             <div className="relative z-10 flex flex-col items-center">
               <div className="flex flex-col items-center gap-6">
-                {/* TODO: Replace /logo.png with your logo */}
-                <img src="/logo.png" alt="App Logo" className="h-36 w-36 object-contain drop-shadow-2xl" />
+                <img src="/logo.png" alt="App Logo" className="h-32 w-32 object-contain drop-shadow-2xl" />
                 <div className="h-[3px] w-16 rounded-full bg-emerald-400" />
               </div>
               <div className="mt-8">
-                {/* TODO: Replace with your app tagline */}
-                <h1 className="text-4xl font-black uppercase tracking-tighter italic lg:text-5xl">
-                  Your Tagline <br />
-                  <span className="text-teal-400">Goes Right Here.</span>
+                <h1 className="text-3xl font-black uppercase tracking-tighter italic lg:text-4xl">
+                  Capacity Building <br />
+                  <span className="text-teal-400">Intelligence.</span>
                 </h1>
-                {/* TODO: Replace with your app's one-liner */}
-                <p className="mx-auto mt-4 max-w-sm text-lg font-bold leading-tight text-white/70">
-                  Your app's value proposition goes here — one punchy sentence.
+                <p className="mx-auto mt-4 max-w-sm text-sm font-bold leading-relaxed text-white/80">
+                  Personalized iGOT Karmayogi & NSSTA learning pathways for India's Official Statistical System.
                 </p>
               </div>
-              <div className="mt-10 grid grid-cols-2 gap-x-8 gap-y-4 px-4 text-left">
+              <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-3 px-2 text-left">
                 {FEATURE_BULLETS.map((f) => (
                   <div key={f} className="flex items-center gap-2.5">
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
@@ -90,15 +86,14 @@ export default function LoginPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <span className="whitespace-nowrap text-xs font-black uppercase tracking-wider text-white/90">{f}</span>
+                    <span className="whitespace-nowrap text-xs font-bold tracking-wider text-white/90">{f}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-between px-10 text-[9px] font-black uppercase tracking-[0.3em] text-white/25">
-              {/* TODO: Replace with your app name and year */}
-              <p>© 2026 Your App Name</p>
-              <p>Subtitle here</p>
+              <p>© 2026 MoSPI DIID / NSSTA</p>
+              <p>PS 26101 Portal</p>
             </div>
           </section>
 
