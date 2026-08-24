@@ -4,7 +4,9 @@ import {
   competencies,
   competencyEstimates,
   competencyRequirements,
+  evidence,
   officials,
+  roleCompetencies,
   skillGaps,
   learningObjectives,
   subCompetencies,
@@ -14,6 +16,11 @@ import {
   calculateSkillGap,
   calculateSkillGaps,
 } from "../utils/skillGapCalculator.js";
+import {
+  calculateConfidenceScore,
+  calculateRecencyFactor,
+  calculateWeightedEstimate,
+} from "../utils/evidenceFusion.js";
 
 export { calculateSkillGap, calculateSkillGaps };
 
@@ -160,24 +167,25 @@ export async function getSkillGapById({ userId, gapId }) {
 }
 
 export async function recalculateSkillGaps({ userId, officialId, roleId }) {
-  if (!officialId || !roleId) {
-    throw badRequest("officialId and roleId are required.");
-  }
+  if (!officialId) throw badRequest("officialId is required.");
 
   const db = getDb();
   const [official] = await db
-    .select({ id: officials.id })
+    .select({ id: officials.id, roleId: officials.roleId })
     .from(officials)
     .where(and(eq(officials.id, officialId), eq(officials.userId, userId)));
   if (!official) throw notFound();
+  const resolvedRoleId = roleId || official.roleId;
+  if (!resolvedRoleId)
+    throw badRequest("A role is required for recalculation.");
 
   const now = new Date();
-  const requirements = await db
+  let requirements = await db
     .select()
     .from(competencyRequirements)
     .where(
       and(
-        eq(competencyRequirements.roleId, roleId),
+        eq(competencyRequirements.roleId, resolvedRoleId),
         lte(competencyRequirements.effectiveFrom, now),
         or(
           isNull(competencyRequirements.effectiveTo),
@@ -186,13 +194,120 @@ export async function recalculateSkillGaps({ userId, officialId, roleId }) {
       ),
     );
   if (requirements.length === 0) {
-    throw badRequest("No active competency requirements found for this role.");
+    const roleRequirements = await db
+      .select()
+      .from(roleCompetencies)
+      .where(eq(roleCompetencies.roleId, resolvedRoleId));
+    requirements = await Promise.all(
+      roleRequirements.map(async (roleRequirement) => {
+        const priority =
+          { HIGH: 5, MEDIUM: 3, LOW: 1 }[roleRequirement.priority] || 3;
+        const [created] = await db
+          .insert(competencyRequirements)
+          .values({
+            roleId: resolvedRoleId,
+            competencyId: roleRequirement.competencyId,
+            requiredLevel: roleRequirement.requiredLevel,
+            priority,
+            urgency: priority,
+            mandatory: roleRequirement.isMandatory,
+            frameworkVersion: "role-competencies-v1",
+            sourceReference: "Module 1 role_competencies",
+          })
+          .returning();
+        return created;
+      }),
+    );
+  }
+  if (requirements.length === 0) {
+    throw badRequest("No competency requirements found for this role.");
   }
 
-  const estimates = await db
+  const evidenceItems = await db
+    .select()
+    .from(evidence)
+    .where(eq(evidence.officialId, officialId));
+  const existingEstimates = await db
     .select()
     .from(competencyEstimates)
     .where(eq(competencyEstimates.officialId, officialId));
+  const evidenceByCompetency = new Map();
+  for (const item of evidenceItems) {
+    const items = evidenceByCompetency.get(item.competencyId) || [];
+    items.push(item);
+    evidenceByCompetency.set(item.competencyId, items);
+  }
+
+  const estimates = [];
+  for (const requirement of requirements) {
+    const items = evidenceByCompetency.get(requirement.competencyId) || [];
+    const existingEstimate = existingEstimates.find(
+      (item) => item.competencyId === requirement.competencyId,
+    );
+    if (items.length === 0 && existingEstimate) {
+      estimates.push(existingEstimate);
+      continue;
+    }
+    const fusedEstimate = calculateWeightedEstimate(items);
+    const confidence = calculateConfidenceScore(items) / 100;
+    const coverage = Math.min(1, items.length / 4);
+    const diversity = Math.min(
+      1,
+      new Set(items.map((item) => item.evidenceType)).size / 3,
+    );
+    const recency = items.length
+      ? items.reduce(
+          (sum, item) => sum + calculateRecencyFactor(item.recordedAt),
+          0,
+        ) / items.length
+      : 0;
+    const evidenceSufficiency = Number(
+      Math.pow(
+        Math.max(coverage, 0.01) *
+          Math.max(diversity, 0.01) *
+          Math.max(recency, 0.01) *
+          Math.max(confidence, 0.01),
+        0.25,
+      ).toFixed(4),
+    );
+    const estimateValues = {
+      officialId,
+      competencyId: requirement.competencyId,
+      masteryScore: fusedEstimate / 5,
+      proficiencyLevel: Math.round(fusedEstimate),
+      proficiencyLabel:
+        fusedEstimate >= 4
+          ? "ADVANCED"
+          : fusedEstimate >= 3
+            ? "WORKING"
+            : "BASIC",
+      evidenceSufficiency,
+      sufficiencyBreakdown: {
+        coverage,
+        volume: coverage,
+        diversity,
+        recency,
+        consistency: confidence,
+        assessmentQuality: confidence,
+      },
+      evidenceSnapshot: { evidenceIds: items.map((item) => item.id) },
+      calculatedAt: now,
+      updatedAt: now,
+    };
+    const [estimate] = await db
+      .insert(competencyEstimates)
+      .values(estimateValues)
+      .onConflictDoUpdate({
+        target: [
+          competencyEstimates.officialId,
+          competencyEstimates.competencyId,
+        ],
+        set: estimateValues,
+      })
+      .returning();
+    estimates.push(estimate);
+  }
+
   const calculatedGaps = calculateSkillGaps({ requirements, estimates });
 
   const persistedGaps = [];
