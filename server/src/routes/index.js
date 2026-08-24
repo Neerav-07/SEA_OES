@@ -5,6 +5,8 @@ import resourceRouter from './resource.route.js';
 import competencyRouter from './competency.route.js';
 import roleRouter from './role.route.js';
 import officialRouter from './official.route.js';
+import evidenceRouter from './evidence.route.js';
+import diagnosticRouter from './diagnostic.route.js';
 
 const router = Router();
 
@@ -14,5 +16,7 @@ router.use('/resources', resourceRouter);
 router.use('/competencies', competencyRouter);
 router.use('/roles', roleRouter);
 router.use('/officials', officialRouter);
+router.use('/evidence', evidenceRouter);
+router.use('/diagnostics', diagnosticRouter);
 
 export default router;

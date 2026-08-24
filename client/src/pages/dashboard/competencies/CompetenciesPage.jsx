@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Award, Briefcase, UserCheck, Search, Filter, RefreshCw, Info } from 'lucide-react';
+import { Award, Briefcase, UserCheck, Search, RefreshCw, Info, FileCheck, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import PageHeader from '../../../components/PageHeader.jsx';
 import Button from '../../../components/Button.jsx';
 import CompetencyTree from '../../../components/competencies/CompetencyTree.jsx';
 import OfficialRoleDrawer from '../../../components/competencies/OfficialRoleDrawer.jsx';
+import DiagnosticQuizModal from '../../../components/evidence/DiagnosticQuizModal.jsx';
+import EvidenceProvenanceDrawer from '../../../components/evidence/EvidenceProvenanceDrawer.jsx';
 import { COMPETENCY_LEVELS } from '../../../utils/constants.js';
 import api from '../../../services/api.js';
 
-// Fallback MoSPI DIID Seed Data for standalone frontend testing
 const FALLBACK_OFFICIAL = {
   id: 'off-01',
   userName: 'Dr. Rajesh Kumar',
@@ -128,14 +129,14 @@ export default function CompetenciesPage() {
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isRoleDrawerOpen, setIsRoleDrawerOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
+  const [selectedEvidenceForAudit, setSelectedEvidenceForAudit] = useState(null);
 
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
-    setIsLoading(true);
     try {
       const [offRes, compRes, roleRes] = await Promise.allSettled([
         api.get('/officials'),
@@ -154,9 +155,7 @@ export default function CompetenciesPage() {
         setRoles(roleRes.value.data.data);
       }
     } catch {
-      // Using fallback seed data
-    } finally {
-      setIsLoading(false);
+      // Fallback used
     }
   };
 
@@ -172,6 +171,24 @@ export default function CompetenciesPage() {
     }
   };
 
+  const handleDiagnosticSubmitted = async (results, correctCount, totalCount) => {
+    toast.success(`Diagnostic finished! Scored ${correctCount}/${totalCount}. Evidence recorded and competency estimates updated.`);
+    setCompetencies((prev) =>
+      prev.map((c) => {
+        if (c.code === 'STAT_ANALYSIS') {
+          const newEstimate = Number(Math.min(5.0, c.estimatedLevel + 0.4).toFixed(1));
+          return {
+            ...c,
+            estimatedLevel: newEstimate,
+            gap: Math.max(0, Number((c.requiredLevel - newEstimate).toFixed(1))),
+            confidencePct: Math.min(98, c.confidencePct + 6),
+          };
+        }
+        return c;
+      })
+    );
+  };
+
   const filteredCompetencies = competencies.filter((c) => {
     const matchesCat = selectedCategory === 'ALL' || c.category === selectedCategory;
     const matchesSearch =
@@ -184,11 +201,11 @@ export default function CompetenciesPage() {
     <div className="space-y-8">
       {/* ── Page Header ── */}
       <PageHeader
-        title="Official Competency Profiles & Taxonomy"
-        subtitle="Authoritative role competency requirements, multi-level taxonomy, and diagnostic evidence for India's Official Statistical System (MoSPI DIID)."
+        title="Official Competency Profiles & Evidence Engine"
+        subtitle="Authoritative role competency requirements, diagnostic evidence fusion, and confidence scoring for India's Official Statistical System (MoSPI DIID)."
       />
 
-      {/* ── Official Profile Active Banner (Visibly separate identity vs role vs evidence) ── */}
+      {/* ── Official Profile Banner ── */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8]" />
 
@@ -211,21 +228,26 @@ export default function CompetenciesPage() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
             <div>
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Current Assigned Role</span>
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Assigned Role</span>
               <span className="text-sm font-bold text-[#1E3A8A] flex items-center gap-1.5 mt-0.5">
                 <Briefcase size={14} /> {official.roleTitle}
               </span>
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setIsRoleDrawerOpen(true)}
-              className="text-xs shrink-0"
-            >
-              <RefreshCw size={14} className="mr-1" /> Change Role
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setIsRoleDrawerOpen(true)} className="text-xs">
+                <RefreshCw size={14} className="mr-1" /> Change Role
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setIsDiagnosticOpen(true)}
+                className="text-xs !text-white"
+              >
+                <FileCheck size={14} className="mr-1 !text-white" /> Start Diagnostic
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -264,7 +286,7 @@ export default function CompetenciesPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-            <Award size={16} className="text-[#1E3A8A]" /> Mapped Role Competency Requirements ({filteredCompetencies.length})
+            <Award size={16} className="text-[#1E3A8A]" /> Mapped Competency Profiles ({filteredCompetencies.length})
           </h3>
           <span className="text-xs text-slate-500 font-medium">Click any competency to expand sub-competencies</span>
         </div>
@@ -303,6 +325,20 @@ export default function CompetenciesPage() {
         official={official}
         roles={roles}
         onRoleUpdated={handleRoleUpdated}
+      />
+
+      {/* ── Diagnostic Quiz Modal ── */}
+      <DiagnosticQuizModal
+        isOpen={isDiagnosticOpen}
+        onClose={() => setIsDiagnosticOpen(false)}
+        onSubmitted={handleDiagnosticSubmitted}
+      />
+
+      {/* ── Provenance Audit Drawer ── */}
+      <EvidenceProvenanceDrawer
+        isOpen={Boolean(selectedEvidenceForAudit)}
+        onClose={() => setSelectedEvidenceForAudit(null)}
+        evidenceItem={selectedEvidenceForAudit}
       />
     </div>
   );
