@@ -22,12 +22,16 @@ export default function KshamataLogo({
 
   return (
     <div className={`inline-flex flex-col items-start select-none ${className}`}>
-      <div className={`font-black tracking-tight ${currentSize} flex items-center leading-none`}>
-        <span className="text-[#020617]">Ksham</span>
-        <span className="bg-gradient-to-r from-[#1E3A8A] via-[#1D4ED8] to-[#2563EB] bg-clip-text text-transparent">
+      <div className={`tracking-tight ${currentSize} flex items-center leading-none`}>
+        <span className={`${light ? "text-white" : "text-[#020617]"} font-medium tracking-tight`}>Ksham</span>
+        <span className="font-black italic tracking-tighter bg-gradient-to-r from-[#1E3A8A] via-[#1D4ED8] to-[#2563EB] bg-clip-text text-transparent">
           ata
         </span>
-        <span className="ml-2 rounded-md bg-slate-100/90 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#1E3A8A] border border-slate-200 shadow-2xs">
+        <span className={`ml-1.5 rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider shadow-2xs border ${
+          light 
+            ? 'bg-white/15 text-white border-white/10' 
+            : 'bg-blue-50/80 text-[#1D4ED8] border-blue-100'
+        }`}>
           AI
         </span>
       </div>
