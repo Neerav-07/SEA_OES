@@ -55,7 +55,12 @@ export default function RegisterPage() {
       toast.success('Account created successfully.');
       navigate('/dashboard');
     } catch (error) {
-      const msg = error.response?.data?.errors?.[0] || error.response?.data?.message || 'Registration failed.';
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.errors?.[0] ||
+        (error.request
+          ? 'Unable to reach authentication server. Please check your network connection.'
+          : 'Registration failed. Please try again.');
       toast.error(msg);
       setIsSubmitting(false);
     }

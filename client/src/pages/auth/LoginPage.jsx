@@ -56,7 +56,12 @@ export default function LoginPage() {
       toast.success('Logged in successfully.');
       navigate('/dashboard');
     } catch (error) {
-      const msg = error.response?.data?.errors?.[0] || error.response?.data?.message || 'Login failed.';
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.errors?.[0] ||
+        (error.request
+          ? 'Unable to reach authentication server. Please check your network connection.'
+          : 'Authentication failed. Please try again.');
       toast.error(msg);
       setIsSubmitting(false);
     }
