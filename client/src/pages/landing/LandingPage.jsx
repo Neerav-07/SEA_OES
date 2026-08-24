@@ -72,7 +72,9 @@ export default function LandingPage() {
           <div className="lg:col-span-6 text-left space-y-6">
             <h1 className="text-3xl font-black leading-[1.2] tracking-tight text-[#020617] sm:text-4xl lg:text-[46px] xl:text-[54px]">
               <span className="block whitespace-nowrap">Empowering India's</span>
-              <span className="block text-[#1D4ED8] mt-1 whitespace-nowrap">statistical workforce!</span>
+              <span className="block mt-1 whitespace-nowrap bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8] bg-clip-text text-transparent pb-1">
+                statistical workforce!
+              </span>
             </h1>
 
             <p className="text-lg lg:text-xl font-semibold text-slate-500 tracking-wide mt-1">
