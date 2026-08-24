@@ -35,6 +35,19 @@ a {
 	text-decoration: none;
 }
 
+/* Enforce pure white font on all dark background buttons & text-white elements */
+.text-white,
+[class*="text-white"],
+[class*="bg-[#1E3A8A]"],
+[class*="bg-[#172554]"],
+[class*="bg-[#1D4ED8]"],
+[class*="bg-[#2563EB]"],
+[class*="bg-slate-900"],
+[class*="bg-blue-900"],
+[class*="bg-blue-800"] {
+	color: #ffffff !important;
+}
+
 button,
 input,
 textarea,

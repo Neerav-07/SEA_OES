@@ -54,10 +54,10 @@ export default function LandingPage() {
           <KshamataLogo size="lg" />
         </Link>
         <div className="flex items-center gap-3">
-          <Link to="/login" className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors">
+          <Link to="/login" className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100 transition-colors">
             Sign In
           </Link>
-          <Link to="/register" className="rounded-xl bg-[#1E3A8A] px-5 py-2 text-sm font-bold text-white shadow-sm hover:bg-[#172554] transition-colors">
+          <Link to="/register" className="rounded-xl bg-[#1E3A8A] px-5 py-2 text-sm font-bold !text-white shadow-sm hover:bg-[#172554] transition-colors">
             Get Started
           </Link>
         </div>
@@ -82,8 +82,8 @@ export default function LandingPage() {
         </p>
 
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <Link to="/register" className="flex items-center gap-2 rounded-2xl bg-[#1E3A8A] px-8 py-4 text-base font-bold text-white shadow-lg hover:bg-[#172554] transition-all hover:scale-105">
-            Explore Competency Portal <ArrowRight size={18} />
+          <Link to="/register" className="flex items-center gap-2 rounded-2xl bg-[#1E3A8A] px-8 py-4 text-base font-bold !text-white shadow-lg hover:bg-[#172554] transition-all hover:scale-105">
+            Explore Competency Portal <ArrowRight size={18} className="!text-white" />
           </Link>
           <Link to="/login" className="rounded-2xl border border-slate-300 bg-white/90 px-8 py-4 text-base font-semibold text-slate-900 backdrop-blur hover:bg-white transition-colors">
             Official Login
@@ -148,8 +148,8 @@ export default function LandingPage() {
       <section className="relative z-10 py-20 text-center border-t border-slate-200 bg-white/70 backdrop-blur-md">
         <h2 className="mb-4 text-3xl lg:text-4xl font-black text-[#020617]">Strengthen Official Statistical Capacity Today</h2>
         <p className="mb-8 text-slate-600 font-medium max-w-xl mx-auto">Empowering officials with targeted training, evidence, and actionable competency insights.</p>
-        <Link to="/register" className="inline-flex items-center gap-2 rounded-2xl bg-[#1E3A8A] px-10 py-4 text-base font-bold text-white shadow-xl hover:bg-[#172554] transition-all hover:scale-105">
-          Access Portal Now <ArrowRight size={18} />
+        <Link to="/register" className="inline-flex items-center gap-2 rounded-2xl bg-[#1E3A8A] px-10 py-4 text-base font-bold !text-white shadow-xl hover:bg-[#172554] transition-all hover:scale-105">
+          Access Portal Now <ArrowRight size={18} className="!text-white" />
         </Link>
       </section>
     </div>
