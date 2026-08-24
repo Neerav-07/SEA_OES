@@ -69,8 +69,8 @@ export default function LandingPage() {
       <section className="relative z-10 mx-auto max-w-7xl px-6 pt-4 pb-12 lg:pt-8 lg:pb-16">
         <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
           {/* Left Text Column */}
-          <div className="lg:col-span-5 text-left space-y-8">
-            <h1 className="text-4xl font-black leading-[1.2] tracking-tight text-[#020617] lg:text-[56px] xl:text-[64px]">
+          <div className="lg:col-span-7 text-left space-y-8">
+            <h1 className="text-4xl font-black leading-[1.25] tracking-tight text-[#020617] lg:text-[44px] xl:text-[52px]">
               Empowering India's <br />
               <span className="relative inline-block mt-2 pb-3 bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8] bg-clip-text text-transparent">
                 statistical workforce!
@@ -91,7 +91,7 @@ export default function LandingPage() {
           </div>
 
           {/* Right Product Story Demo Animation Column */}
-          <div className="lg:col-span-7 flex justify-end w-full">
+          <div className="lg:col-span-5 flex justify-end w-full">
             <div className="w-full max-w-lg lg:mr-0 lg:ml-auto">
               <HeroProductStoryDemo />
             </div>
