@@ -2,8 +2,8 @@
 	--app-font-sans: "Inter", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 	--app-font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
 	--app-rgb-primary: 15, 23, 42;       /* #0F172A Deep Navy */
-	--app-rgb-accent: 79, 70, 229;      /* #4F46E5 Indigo */
-	--app-rgb-violet: 124, 58, 237;     /* #7C3AED Violet */
+	--app-rgb-accent: 37, 99, 235;      /* #2563EB Royal Blue */
+	--app-rgb-blue: 29, 78, 216;        /* #1D4ED8 Deep Blue */
 	--app-color-bg: #F8FAFC;             /* Slate 50 Off-White */
 	--app-color-surface: #FFFFFF;        /* White */
 	--app-color-surface-elevated: #F1F5F9; /* Slate 100 */
@@ -12,19 +12,19 @@
 	--app-color-text: #0F172A;           /* Deep Slate 900 */
 	--app-color-text-muted: #475569;     /* Slate 600 */
 	--app-color-border: #E2E8F0;         /* Slate 200 */
-	--app-color-primary: #4F46E5;        /* Primary Accent (Indigo) */
-	--app-color-primary-navy: #0F172A;   /* Deep Navy */
-	--app-color-primary-violet: #7C3AED; /* Violet AI Highlight */
-	--app-color-primary-hover: #4338CA;  /* Darker Indigo */
-	--app-color-primary-soft: #EEF2FF;   /* Light Indigo Soft */
-	--app-color-accent: #7C3AED;
-	--app-color-canvas-glow: #E0E7FF;
+	--app-color-primary: #1D4ED8;        /* Primary Accent (Deep Royal Blue) */
+	--app-color-primary-navy: #0F172A;   /* Deep Midnight Navy */
+	--app-color-primary-violet: #2563EB; /* Royal Blue Accent */
+	--app-color-primary-hover: #1E40AF;  /* Darker Blue */
+	--app-color-primary-soft: #EFF6FF;   /* Soft Blue */
+	--app-color-accent: #2563EB;
+	--app-color-canvas-glow: #DBEAFE;
 	--app-color-success: #15803D;        /* Deep Emerald 700 */
 	--app-color-warning: #B45309;        /* Deep Amber 700 */
 	--app-color-danger: #B91C1C;         /* Deep Red 700 */
-	--app-gradient-shell: radial-gradient(circle at 10% 10%, rgba(79, 70, 229, 0.05), transparent 40%), radial-gradient(circle at 90% 90%, rgba(15, 23, 42, 0.04), transparent 40%), linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
-	--app-gradient-auth-login: linear-gradient(140deg, #0F172A 0%, #1E1B4B 40%, #312E81 85%, #4C1D95 100%);
-	--app-gradient-auth-register: linear-gradient(140deg, #0F172A 0%, #1E1B4B 50%, #3730A3 100%);
+	--app-gradient-shell: radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.05), transparent 40%), radial-gradient(circle at 90% 90%, rgba(15, 23, 42, 0.04), transparent 40%), linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+	--app-gradient-auth-login: linear-gradient(140deg, #0F172A 0%, #1E3A8A 45%, #1D4ED8 85%, #2563EB 100%);
+	--app-gradient-auth-register: linear-gradient(140deg, #0F172A 0%, #1E3A8A 50%, #1D4ED8 100%);
 	--app-shadow-elevated: 0 20px 45px -12px rgba(15, 23, 42, 0.12);
 }
 

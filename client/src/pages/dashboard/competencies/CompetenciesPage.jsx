@@ -34,10 +34,10 @@ export default function CompetenciesPage() {
                   <td className="py-3 px-4 font-mono font-bold text-slate-700">{c.id}</td>
                   <td className="py-3 px-4 text-slate-500">{c.domain}</td>
                   <td className="py-3 px-4 font-semibold text-slate-900">{c.name}</td>
-                  <td className="py-3 px-4 font-bold text-[#4F46E5]">{c.level}</td>
+                  <td className="py-3 px-4 font-bold text-[#1D4ED8]">{c.level}</td>
                   <td className="py-3 px-4 text-slate-600">{c.req}</td>
                   <td className="py-3 px-4">
-                    <span className="inline-block rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-[#4F46E5]">
+                    <span className="inline-block rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-[#1D4ED8] border border-blue-100">
                       {c.status}
                     </span>
                   </td>

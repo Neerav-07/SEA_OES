@@ -71,8 +71,8 @@ export default function RegisterPage() {
             <div className="noise-overlay pointer-events-none opacity-20" />
             <div className="relative z-10 flex flex-col items-center">
               <div className="flex flex-col items-center gap-6">
-                <KshamataLogo size="xl" variant="full" className="bg-white/90 p-4 rounded-2xl shadow-xl backdrop-blur" />
-                <div className="h-[3px] w-16 rounded-full bg-[#7C3AED]" />
+                <KshamataLogo size="xl" className="bg-white/95 p-4 rounded-2xl shadow-xl backdrop-blur" />
+                <div className="h-[3px] w-16 rounded-full bg-[#2563EB]" />
               </div>
               <div className="mt-6">
                 <p className="mx-auto max-w-sm text-sm font-medium leading-relaxed text-slate-200/90">
@@ -82,7 +82,7 @@ export default function RegisterPage() {
               <div className="mt-8 space-y-4 px-4 text-left">
                 {ONBOARDING_STEPS.map((step, i) => (
                   <div key={i} className="flex items-start gap-3">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-500/30 text-[#A78BFA] text-xs font-black">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/25 text-blue-300 text-xs font-black">
                       {i + 1}
                     </div>
                     <p className="text-xs font-medium text-slate-100">{step}</p>

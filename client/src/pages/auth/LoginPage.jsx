@@ -67,8 +67,8 @@ export default function LoginPage() {
             <div className="noise-overlay pointer-events-none opacity-20" />
             <div className="relative z-10 flex flex-col items-center">
               <div className="flex flex-col items-center gap-6">
-                <KshamataLogo size="xl" variant="full" className="bg-white/90 p-4 rounded-2xl shadow-xl backdrop-blur" />
-                <div className="h-[3px] w-16 rounded-full bg-[#7C3AED]" />
+                <KshamataLogo size="xl" className="bg-white/95 p-4 rounded-2xl shadow-xl backdrop-blur" />
+                <div className="h-[3px] w-16 rounded-full bg-[#2563EB]" />
               </div>
               <div className="mt-6">
                 <p className="mx-auto max-w-sm text-sm font-medium leading-relaxed text-slate-200/90">
@@ -78,7 +78,7 @@ export default function LoginPage() {
               <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-3 px-2 text-left">
                 {FEATURE_BULLETS.map((f) => (
                   <div key={f} className="flex items-center gap-2.5">
-                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[#A78BFA]">
+                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500/25 text-blue-300">
                       <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
