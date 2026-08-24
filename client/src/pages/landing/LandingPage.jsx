@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Award, BarChart3, GraduationCap, FileCheck, TrendingUp, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
 import KshamataLogo from '../../components/KshamataLogo';
+import Footer from '../../components/Footer';
 
 const FEATURES = [
   {
@@ -147,6 +148,9 @@ export default function LandingPage() {
           Access Portal Now <ArrowRight size={18} className="!text-white" />
         </Link>
       </section>
+
+      {/* ── Official Enterprise Footer ── */}
+      <Footer />
     </div>
   );
 }
