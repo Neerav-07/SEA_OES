@@ -70,7 +70,7 @@ export default function LandingPage() {
         <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
           {/* Left Text Column */}
           <div className="lg:col-span-7 text-left space-y-8">
-            <h1 className="text-4xl font-black leading-[1.25] tracking-tight text-[#020617] lg:text-[44px] xl:text-[52px]">
+            <h1 className="text-4xl font-black leading-[1.2] tracking-tight text-[#020617] lg:text-[50px] xl:text-[58px]">
               Empowering India's <br />
               <span className="relative inline-block mt-2 pb-3 bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8] bg-clip-text text-transparent">
                 statistical workforce!
