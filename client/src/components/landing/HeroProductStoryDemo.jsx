@@ -7,7 +7,7 @@ import {
   Activity, Layers, Star, Hash
 } from 'lucide-react';
 
-const STEP_DURATION = 5200;
+const STEP_DURATION = 4200;
 
 const SCENES = [
   { id: 'profile', label: 'Officer Profile' },
@@ -30,11 +30,11 @@ export default function HeroProductStoryDemo() {
   const [auditRun, setAuditRun] = useState(false);
 
   const clickTargets = useRef([
-    { x: 80, y: 18 },
-    { x: 48, y: 50 },
-    { x: 65, y: 65 },
-    { x: 84, y: 26 },
-    { x: 52, y: 64 },
+    { x: 82, y: 16 },  // View Competencies button
+    { x: 50, y: 58 },  // Option B in Diagnostic Quiz
+    { x: 50, y: 84 },  // View Detailed Breakdown button
+    { x: 82, y: 28 },  // Enroll button
+    { x: 50, y: 90 },  // Run Recalibration Audit button
   ]);
 
   const doClick = useCallback(() => {
