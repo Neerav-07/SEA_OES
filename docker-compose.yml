@@ -1,22 +1,23 @@
-# ─── Local Docker Compose ────────────────────────────────────────────────────
-# Spins up PostgreSQL locally for development.
-# Production → point DATABASE_URL at Neon cloud.
+# ─── Kshamata Multi-Service Docker Compose ────────────────────────────────────
+# Spins up PostgreSQL database, Express Server, and React Client locally.
 #
 # Usage:
-#   docker compose up -d       # start postgres in background
-#   docker compose down        # stop
-#   docker compose down -v     # stop + delete volume (wipes data)
+#   docker compose up -d           # start postgres, server, client in background
+#   docker compose up --build      # rebuild and start
+#   docker compose down            # stop all services
+#   docker compose down -v         # stop + wipe postgres database volume
 
 version: '3.9'
 
 services:
   postgres:
     image: postgres:16-alpine
+    container_name: kshamata_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: app_db   # TODO: rename to match your app
+      POSTGRES_DB: kshamata_db
     ports:
       - '5432:5432'
     volumes:
@@ -26,6 +27,35 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: kshamata_server
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/kshamata_db
+      JWT_SECRET: super_secret_kshamata_jwt_token_key_2026
+      CLIENT_URL: http://localhost:80
+    ports:
+      - '5000:5000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: kshamata_client
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    depends_on:
+      - server
 
 volumes:
   pg_data:
