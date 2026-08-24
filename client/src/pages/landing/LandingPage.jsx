@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import KshamataLogo from '../../components/KshamataLogo';
+import GovHeaderBanner from '../../components/GovHeaderBanner';
 
 const FEATURES = [
   {
@@ -36,18 +38,17 @@ const FEATURES = [
 export default function LandingPage() {
   return (
     <div className="relative min-h-screen overflow-hidden" style={{ background: 'var(--app-gradient-shell)' }}>
+      {/* ── Top Government Header Banner ── */}
+      <GovHeaderBanner />
+
       {/* Aurora background blobs */}
       <div className="aurora aurora-one" />
       <div className="aurora aurora-two" />
 
       {/* ── Navbar ── */}
-      <nav className="relative z-10 flex items-center justify-between px-6 py-4 lg:px-16">
+      <nav className="relative z-10 flex items-center justify-between px-6 py-5 lg:px-16 border-b border-slate-200/60 bg-white/80 backdrop-blur-md">
         <Link to="/" className="flex items-center gap-3">
-          <img src="/logo.png" alt="Kshamata Logo" className="h-10 w-10 object-contain" />
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-black tracking-tight text-[#172554]">Ksham<span className="text-[#4F46E5]">ata</span></span>
-            <span className="rounded-md bg-violet-100 px-2 py-0.5 text-xs font-black uppercase tracking-wider text-[#7C3AED] border border-violet-200">AI</span>
-          </div>
+          <KshamataLogo size="lg" variant="full" />
         </Link>
         <div className="flex items-center gap-3">
           <Link to="/login" className="rounded-xl px-4 py-2 text-sm font-semibold text-(--app-color-text) hover:bg-slate-200/60 transition-colors">

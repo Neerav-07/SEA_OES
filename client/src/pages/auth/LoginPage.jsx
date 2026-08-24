@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import Button from '../../components/Button';
 import Container from '../../components/Container';
 import Input from '../../components/Input';
+import KshamataLogo from '../../components/KshamataLogo';
 import api from '../../services/api.js';
 import useAuthStore from '../../store/auth.store.js';
 
@@ -66,18 +67,12 @@ export default function LoginPage() {
             <div className="noise-overlay pointer-events-none opacity-20" />
             <div className="relative z-10 flex flex-col items-center">
               <div className="flex flex-col items-center gap-6">
-                <img src="/logo.png" alt="App Logo" className="h-32 w-32 object-contain drop-shadow-2xl" />
+                <KshamataLogo size="xl" variant="full" className="bg-white/90 p-4 rounded-2xl shadow-xl backdrop-blur" />
                 <div className="h-[3px] w-16 rounded-full bg-[#7C3AED]" />
               </div>
-              <div className="mt-8">
-                <h1 className="text-3xl font-black uppercase tracking-tight lg:text-4xl text-white">
-                  Ksham<span className="text-[#818CF8]">ata</span>
-                </h1>
-                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-[#A78BFA]">
-                  AI-enabled Competency Intelligence
-                </p>
-                <p className="mx-auto mt-4 max-w-sm text-sm font-medium leading-relaxed text-slate-200/90">
-                  Personalized iGOT Karmayogi & NSSTA learning pathways for India's Official Statistical System.
+              <div className="mt-6">
+                <p className="mx-auto max-w-sm text-sm font-medium leading-relaxed text-slate-200/90">
+                  Personalized iGOT Karmayogi & NSSTA learning pathways for India's Official Statistical System (MoSPI DIID).
                 </p>
               </div>
               <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-3 px-2 text-left">
