@@ -97,7 +97,7 @@ export default function HeroProductStoryDemo() {
   ];
 
   return (
-    <div className="relative w-full max-w-lg mx-auto" style={{ fontFamily: 'var(--app-font-sans, "Plus Jakarta Sans", "Inter", sans-serif)' }}>
+    <div className="relative w-full max-w-lg mx-auto lg:mr-0 lg:ml-auto" style={{ fontFamily: 'var(--app-font-sans, "Plus Jakarta Sans", "Inter", sans-serif)' }}>
       {/* Tablet device frame */}
       <div className="relative rounded-[28px] border-[6px] border-slate-800 bg-slate-800 shadow-[0_30px_80px_rgba(2,6,23,0.25),0_0_0_1px_rgba(255,255,255,0.05)_inset] overflow-hidden">
         {/* Tablet camera notch */}

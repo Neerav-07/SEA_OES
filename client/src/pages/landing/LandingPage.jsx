@@ -66,37 +66,19 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Split Hero (Left Text Copy + Right Interactive Product Story Demo) ── */}
-      <section className="relative z-10 mx-auto max-w-7xl px-6 py-12 lg:py-20">
+      <section className="relative z-10 mx-auto max-w-7xl px-6 pt-4 pb-12 lg:pt-8 lg:pb-16">
         <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
           {/* Left Text Column */}
-          <div className="lg:col-span-6 text-left space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/90 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[#1E3A8A] backdrop-blur shadow-2xs">
-              <span className="h-2 w-2 rounded-full bg-[#1E3A8A] animate-pulse" />
-              Kshamata | MoSPI DIID & NSSTA Capacity Building
-            </div>
-
-            <h1 className="text-4xl font-black leading-[1.12] tracking-tight text-[#020617] lg:text-5xl">
-              AI-Enabled Competency Intelligence for <br />
-              <span className="bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8] bg-clip-text text-transparent">
-                India's Official Statistical System
+          <div className="lg:col-span-5 text-left space-y-8">
+            <h1 className="text-4xl font-black leading-[1.2] tracking-tight text-[#020617] lg:text-[56px] xl:text-[64px]">
+              Empowering India's <br />
+              <span className="relative inline-block mt-2 pb-3 bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8] bg-clip-text text-transparent">
+                statistical workforce!
+                <svg className="absolute bottom-0 left-0 w-full h-[10px] text-[#1D4ED8]" viewBox="0 0 100 10" preserveAspectRatio="none">
+                  <path d="M2,5 Q50,9 98,4" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
+                </svg>
               </span>
             </h1>
-
-            <p className="text-base lg:text-lg text-slate-700 leading-relaxed font-medium max-w-xl">
-              Bridging skill gaps, personalizing iGOT Karmayogi & NSSTA TPAC pathways, and generating grounded assessments for continuous workforce capacity building.
-            </p>
-
-            <div className="space-y-2 pt-1 text-xs font-bold text-slate-700">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-[#1E3A8A]" /> Baseline Evidence Fusion & Confidence Scoring
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-[#1E3A8A]" /> Prerequisite-Aware iGOT Learning Pathways
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-[#1E3A8A]" /> Grounded AI MCQ Generation & Closed-Loop Analytics
-              </div>
-            </div>
 
             <div className="flex flex-col items-start gap-4 sm:flex-row pt-4">
               <Link to="/register" className="flex items-center gap-2 rounded-2xl bg-[#1E3A8A] px-8 py-4 text-base font-bold !text-white shadow-lg hover:bg-[#172554] transition-all hover:scale-105">
@@ -109,8 +91,10 @@ export default function LandingPage() {
           </div>
 
           {/* Right Product Story Demo Animation Column */}
-          <div className="lg:col-span-6">
-            <HeroProductStoryDemo />
+          <div className="lg:col-span-7 flex justify-end w-full">
+            <div className="w-full max-w-lg lg:mr-0 lg:ml-auto">
+              <HeroProductStoryDemo />
+            </div>
           </div>
         </div>
       </section>
