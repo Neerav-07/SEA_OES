@@ -1,0 +1,21 @@
+{
+  "domains": [
+    {
+      "name": "Statistical Competencies",
+      "competencies": [
+        { "code": "SURVEY_DESIGN", "name": "Survey Design & Sampling Methods" },
+        { "code": "NATIONAL_ACCOUNTS", "name": "National Accounts Statistics" },
+        { "code": "PRICE_STATS", "name": "Price Statistics & Index Numbers" },
+        { "code": "DATA_QUALITY", "name": "Metadata Standards & Data Quality Frameworks" }
+      ]
+    },
+    {
+      "name": "Technical Competencies",
+      "competencies": [
+        { "code": "PYTHON_R", "name": "Python & R Data Analytics" },
+        { "code": "SQL_DATA", "name": "SQL & Data Management" },
+        { "code": "GIS_MAPPING", "name": "Spatial Analytics & GIS Mapping" }
+      ]
+    }
+  ]
+}
