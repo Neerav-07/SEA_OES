@@ -4,6 +4,7 @@ import { drizzle as drizzleNode } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 
 import * as schema from '../db/schema/index.js';
+import { ensureDatabaseTablesCreated } from '../db/autoInit.js';
 
 const { Pool } = pg;
 
@@ -35,6 +36,9 @@ export async function connectDatabase() {
     db = drizzleNode(pool, { schema });
     console.log('[DB] Connected via pg Pool (local)');
   }
+
+  // Ensure tables and baseline seeds exist in database
+  await ensureDatabaseTablesCreated(url);
 
   return db;
 }
