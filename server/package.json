@@ -1,5 +1,5 @@
 {
-  "name": "pern-template-server",
+  "name": "kshamata-server",
   "version": "1.0.0",
   "description": "PERN stack server — Express + PostgreSQL + Drizzle ORM",
   "license": "MIT",
