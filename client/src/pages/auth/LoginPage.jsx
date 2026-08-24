@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import Button from '../../components/Button';
@@ -38,7 +39,6 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Client-side validation before firing API call or transition loader
     const validation = validateLoginForm(formData);
     if (!validation.isValid) {
       setErrors(validation.errors);
@@ -65,7 +65,17 @@ export default function LoginPage() {
   };
 
   return (
-    <Container className="flex min-h-screen items-center justify-center py-4 lg:py-6">
+    <Container className="flex flex-col min-h-screen items-center justify-center py-6">
+      {/* ── Top Back Button ── */}
+      <div className="w-full max-w-6xl mb-4">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 rounded-xl bg-white/80 border border-slate-200 px-4 py-2 text-xs font-bold text-slate-800 shadow-xs hover:bg-white hover:border-slate-300 transition-all"
+        >
+          <ArrowLeft size={16} className="text-[#1E3A8A]" /> Back to Home
+        </Link>
+      </div>
+
       {!isSubmitting && (
         <div
           className="grid w-full max-w-6xl overflow-hidden rounded-[2.5rem] border border-(--app-color-border)/40 backdrop-blur-md lg:grid-cols-[1.1fr_0.9fr]"
@@ -130,7 +140,7 @@ export default function LoginPage() {
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-semibold text-(--app-color-text)">Password</label>
-                    <a href="#" className="text-xs font-medium text-(--app-color-primary) hover:underline">Forgot password?</a>
+                    <a href="#" className="text-xs font-medium text-[#1E3A8A] hover:underline">Forgot password?</a>
                   </div>
                   <Input
                     type="password"
@@ -143,13 +153,13 @@ export default function LoginPage() {
                   />
                 </div>
                 <div className="pt-1">
-                  <Button type="submit" className="h-11 w-full rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99]" loading={isSubmitting} disabled={isSubmitting}>
+                  <Button type="submit" variant="primary" className="h-11 w-full rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99] bg-[#1E3A8A] text-white hover:bg-[#172554]" loading={isSubmitting} disabled={isSubmitting}>
                     Sign In
                   </Button>
                 </div>
                 <p className="mt-8 text-center text-xs text-(--app-color-text-muted)">
                   Don't have an official account?{' '}
-                  <Link to="/register" className="font-black text-(--app-color-primary) hover:text-(--app-color-primary-hover)">
+                  <Link to="/register" className="font-black text-[#1E3A8A] hover:underline">
                     Create one
                   </Link>
                 </p>

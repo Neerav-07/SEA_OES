@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import Button from '../../components/Button';
@@ -37,7 +38,6 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Robust client-side validation before firing API request
     const validation = validateRegisterForm(formData);
     if (!validation.isValid) {
       setErrors(validation.errors);
@@ -64,7 +64,17 @@ export default function RegisterPage() {
   };
 
   return (
-    <Container className="flex min-h-screen items-center justify-center py-4 lg:py-6">
+    <Container className="flex flex-col min-h-screen items-center justify-center py-6">
+      {/* ── Top Back Button ── */}
+      <div className="w-full max-w-6xl mb-4">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 rounded-xl bg-white/80 border border-slate-200 px-4 py-2 text-xs font-bold text-slate-800 shadow-xs hover:bg-white hover:border-slate-300 transition-all"
+        >
+          <ArrowLeft size={16} className="text-[#1E3A8A]" /> Back to Home
+        </Link>
+      </div>
+
       {!isSubmitting && (
         <div
           className="grid w-full max-w-6xl overflow-hidden rounded-[2.5rem] border border-(--app-color-border)/40 backdrop-blur-md lg:grid-cols-[1.1fr_0.9fr]"
@@ -156,13 +166,13 @@ export default function RegisterPage() {
                   />
                 </div>
                 <div className="pt-1">
-                  <Button type="submit" className="h-10 w-full rounded-xl text-xs font-bold shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99]" loading={isSubmitting} disabled={isSubmitting}>
+                  <Button type="submit" variant="primary" className="h-10 w-full rounded-xl text-xs font-bold shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99] bg-[#1E3A8A] text-white hover:bg-[#172554]" loading={isSubmitting} disabled={isSubmitting}>
                     Create Account
                   </Button>
                 </div>
                 <p className="mt-6 text-center text-[11px] text-(--app-color-text-muted)">
                   Already have an account?{' '}
-                  <Link to="/login" className="font-black text-(--app-color-primary) hover:text-(--app-color-primary-hover)">Sign in</Link>
+                  <Link to="/login" className="font-black text-[#1E3A8A] hover:underline">Sign in</Link>
                 </p>
               </form>
             </div>
