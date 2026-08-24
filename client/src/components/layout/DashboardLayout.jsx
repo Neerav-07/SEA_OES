@@ -10,19 +10,19 @@
  */
 import { useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Settings } from 'lucide-react';
+import { LayoutDashboard, Award, TrendingDown, GraduationCap, FileCheck, BarChart3, LogOut, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import api from '../../services/api.js';
 import useAuthStore from '../../store/auth.store.js';
 
-// TODO: Replace with your app's real navigation items
-// icon: any lucide-react icon component
 const navigationItems = [
   { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
-  // { label: 'Resources', path: '/dashboard/resources', icon: Layers },
-  // { label: 'Analytics', path: '/dashboard/analytics', icon: BarChart3 },
-  // Add more items here ↑
+  { label: 'Competency Profiles', path: '/dashboard/competencies', icon: Award },
+  { label: 'Skill Gap Analysis', path: '/dashboard/skill-gaps', icon: TrendingDown },
+  { label: 'iGOT & NSSTA Pathways', path: '/dashboard/learning-paths', icon: GraduationCap },
+  { label: 'Assessment Engine', path: '/dashboard/assessments', icon: FileCheck },
+  { label: 'Workforce Analytics', path: '/dashboard/analytics', icon: BarChart3 },
 ];
 
 export default function DashboardLayout() {
@@ -46,10 +46,8 @@ export default function DashboardLayout() {
       <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-(--app-color-border) bg-white/90 backdrop-blur">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 px-6 py-5 hover:opacity-80">
-          {/* TODO: Replace logo.png */}
           <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
-          {/* TODO: Replace app name */}
-          <span className="text-sm font-black uppercase tracking-widest text-(--app-color-text)">App Name</span>
+          <span className="text-sm font-black uppercase tracking-widest text-(--app-color-text)">Karmayogi <span className="text-(--app-color-primary)">AI</span></span>
         </Link>
 
         {/* Nav items */}

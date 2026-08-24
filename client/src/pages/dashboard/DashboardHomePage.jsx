@@ -17,25 +17,24 @@ import StatCard from '../../components/StatCard.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 // import api from '../../services/api.js'; // uncomment when ready to fetch real data
 
-// TODO: Replace with real stats from your API
 const MOCK_STATS = [
-  { label: 'Stat Label One',   value: '—', change: '+0%',  trend: 'up' },
-  { label: 'Stat Label Two',   value: '—', change: '+0%',  trend: 'up' },
-  { label: 'Stat Label Three', value: '—', change: '0%',   trend: 'neutral' },
-  { label: 'Stat Label Four',  value: '—', change: '-0%',  trend: 'down' },
+  { label: 'Assessed Competencies', value: '14 / 18', change: '84% Conf', trend: 'up' },
+  { label: 'Average Competency Level', value: '3.2 / 5', change: '+0.4 Lvl', trend: 'up' },
+  { label: 'Identified Skill Gaps', value: '4 Priority', change: '-2 Closed', trend: 'down' },
+  { label: 'iGOT Courses Enrolled', value: '3 Active', change: '2 Completed', trend: 'neutral' },
 ];
 
-// TODO: Replace with real recent-activity data from your API
 const MOCK_ACTIVITY = [
-  { id: 1, label: 'Activity item one',   time: 'Just now',   status: 'active' },
-  { id: 2, label: 'Activity item two',   time: '5 mins ago', status: 'pending' },
-  { id: 3, label: 'Activity item three', time: '1 hr ago',   status: 'done' },
+  { id: 1, label: 'Diagnostic Assessment completed: Survey Sampling & Bias Evaluation', time: '10 mins ago', status: 'done' },
+  { id: 2, label: 'iGOT Pathway recommended: National Accounts & Price Statistics (TPAC Approved)', time: '1 hr ago', status: 'active' },
+  { id: 3, label: 'Assessment Generated: Python for Statistical Analysis (15 Grounded MCQs)', time: '3 hrs ago', status: 'pending' },
+  { id: 4, label: 'Competency Level Updated: Data Quality & Metadata Standards (L2.8 → L3.4)', time: 'Yesterday', status: 'done' },
 ];
 
 const STATUS_STYLES = {
-  active:  'bg-green-100 text-green-700',
-  pending: 'bg-yellow-100 text-yellow-700',
-  done:    'bg-gray-100 text-gray-600',
+  active:  'bg-emerald-100 text-emerald-800 font-bold',
+  pending: 'bg-amber-100 text-amber-800 font-bold',
+  done:    'bg-blue-100 text-blue-800 font-bold',
 };
 
 export default function DashboardHomePage() {
@@ -43,21 +42,11 @@ export default function DashboardHomePage() {
   const [stats] = useState(MOCK_STATS);
   const [activity] = useState(MOCK_ACTIVITY);
 
-  // TODO: Replace mock data with real API calls
-  // useEffect(() => {
-  //   async function load() {
-  //     const res = await api.get('/dashboard/stats');
-  //     setStats(res.data.stats);
-  //   }
-  //   load();
-  // }, []);
-
   return (
     <div className="space-y-8">
-      {/* TODO: Replace title/subtitle */}
       <PageHeader
-        title={`Welcome back, ${user?.name ?? 'User'}`}
-        subtitle="Here's a summary of what's happening."
+        title={`Welcome back, ${user?.name ?? 'Official'}`}
+        subtitle="Official Capacity Building & Competency Intelligence Overview (MoSPI DIID & NSSTA)."
       />
 
       {/* Stats row */}
@@ -69,25 +58,21 @@ export default function DashboardHomePage() {
 
       {/* Recent activity */}
       <div className="rounded-2xl border border-(--app-color-border) bg-white p-6 shadow-sm">
-        {/* TODO: Replace heading */}
-        <h3 className="mb-4 text-base font-bold text-(--app-color-text)">Recent Activity</h3>
+        <h3 className="mb-4 text-base font-bold text-(--app-color-text)">Recent Competency & Learning Activity</h3>
         <ul className="divide-y divide-(--app-color-border)">
           {activity.map((item) => (
-            <li key={item.id} className="flex items-center justify-between py-3">
+            <li key={item.id} className="flex items-center justify-between py-3.5">
               <div>
-                {/* TODO: Replace with real activity description */}
                 <p className="text-sm font-medium text-(--app-color-text)">{item.label}</p>
                 <p className="text-xs text-(--app-color-text-muted)">{item.time}</p>
               </div>
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[item.status] || STATUS_STYLES.done}`}>
+              <span className={`rounded-full px-3 py-1 text-xs uppercase tracking-wider ${STATUS_STYLES[item.status] || STATUS_STYLES.done}`}>
                 {item.status}
               </span>
             </li>
           ))}
         </ul>
       </div>
-
-      {/* TODO: Add more widgets/charts/tables relevant to your PS here */}
     </div>
   );
 }
