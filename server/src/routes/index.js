@@ -7,6 +7,8 @@ import roleRouter from './role.route.js';
 import officialRouter from './official.route.js';
 import evidenceRouter from './evidence.route.js';
 import diagnosticRouter from './diagnostic.route.js';
+import analyticsRouter from './analytics.route.js';
+import recalibrationRouter from './recalibration.route.js';
 
 const router = Router();
 
@@ -18,5 +20,7 @@ router.use('/roles', roleRouter);
 router.use('/officials', officialRouter);
 router.use('/evidence', evidenceRouter);
 router.use('/diagnostics', diagnosticRouter);
+router.use('/analytics', analyticsRouter);
+router.use('/recalibration', recalibrationRouter);
 
 export default router;
