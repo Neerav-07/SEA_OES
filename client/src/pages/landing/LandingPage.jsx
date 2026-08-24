@@ -118,8 +118,8 @@ export default function LandingPage() {
 
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <div className="inline-flex items-center justify-center rounded-xl bg-blue-50/90 p-3 text-[#1E3A8A] ring-1 ring-blue-100 group-hover:bg-[#1E3A8A] group-hover:text-white group-hover:scale-105 transition-all duration-300">
-                      <Icon size={20} />
+                    <div className="inline-flex items-center justify-center rounded-xl bg-blue-50/90 p-3 ring-1 ring-blue-100/80 group-hover:bg-[#1E3A8A] group-hover:scale-105 transition-all duration-300">
+                      <Icon size={20} className="text-[#1E3A8A] group-hover:text-white transition-colors duration-300" />
                     </div>
                     <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-700 group-hover:bg-blue-50 group-hover:text-[#1E3A8A] transition-colors">
                       {feat.badge}
