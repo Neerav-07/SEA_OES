@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { officials, users, roles, evidence, competencies, roleCompetencies } from '../db/schema/index.js';
 import { sendSuccess, sendError } from '../utils/response.js';
@@ -31,17 +32,17 @@ export const getOfficials = asyncHandler(async (req, res) => {
  */
 export const getOfficialProfile = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const [off] = await db.select().from(officials).where(officials.id.equals(id));
+  const [off] = await db.select().from(officials).where(eq(officials.id, id));
 
   if (!off) {
     return sendError(res, 'Official profile not found', 404);
   }
 
-  const [user] = await db.select().from(users).where(users.id.equals(off.userId));
-  const [role] = off.roleId ? await db.select().from(roles).where(roles.id.equals(off.roleId)) : [];
-  const offEvidence = await db.select().from(evidence).where(evidence.officialId.equals(off.id));
+  const [user] = await db.select().from(users).where(eq(users.id, off.userId));
+  const [role] = off.roleId ? await db.select().from(roles).where(eq(roles.id, off.roleId)) : [];
+  const offEvidence = await db.select().from(evidence).where(eq(evidence.officialId, off.id));
   const allComps = await db.select().from(competencies);
-  const reqs = role ? await db.select().from(roleCompetencies).where(roleCompetencies.roleId.equals(role.id)) : [];
+  const reqs = role ? await db.select().from(roleCompetencies).where(eq(roleCompetencies.roleId, role.id)) : [];
 
   // Calculate Competency Estimates & Gaps
   const competencyProfile = allComps.map((comp) => {
@@ -105,12 +106,12 @@ export const updateOfficialRole = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { roleId } = req.body;
 
-  const [off] = await db.select().from(officials).where(officials.id.equals(id));
+  const [off] = await db.select().from(officials).where(eq(officials.id, id));
   if (!off) {
     return sendError(res, 'Official not found', 404);
   }
 
-  const [role] = await db.select().from(roles).where(roles.id.equals(roleId));
+  const [role] = await db.select().from(roles).where(eq(roles.id, roleId));
   if (!role) {
     return sendError(res, 'Role not found', 404);
   }
@@ -118,7 +119,7 @@ export const updateOfficialRole = asyncHandler(async (req, res) => {
   await db
     .update(officials)
     .set({ roleId, updatedAt: new Date() })
-    .where(officials.id.equals(id));
+    .where(eq(officials.id, id));
 
   return sendSuccess(res, { officialId: id, newRoleId: roleId, newRoleTitle: role.title }, 'Role updated and gaps recalculated');
 });

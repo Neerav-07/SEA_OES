@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { roles, roleCompetencies, competencies } from '../db/schema/index.js';
 import { sendSuccess, sendError } from '../utils/response.js';
@@ -42,13 +43,13 @@ export const getRoles = asyncHandler(async (req, res) => {
  */
 export const getRoleRequirements = asyncHandler(async (req, res) => {
   const { roleId } = req.params;
-  const [role] = await db.select().from(roles).where(roles.id.equals(roleId));
+  const [role] = await db.select().from(roles).where(eq(roles.id, roleId));
 
   if (!role) {
     return sendError(res, 'Role not found', 404);
   }
 
-  const reqs = await db.select().from(roleCompetencies).where(roleCompetencies.roleId.equals(roleId));
+  const reqs = await db.select().from(roleCompetencies).where(eq(roleCompetencies.roleId, roleId));
   const allComps = await db.select().from(competencies);
 
   const mappedReqs = reqs.map((rc) => {

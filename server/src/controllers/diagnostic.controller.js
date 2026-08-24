@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { officials, roles, roleCompetencies, competencies, evidence } from '../db/schema/index.js';
 import { sendSuccess, sendError } from '../utils/response.js';
@@ -13,13 +14,13 @@ export const generateDiagnosticBlueprint = asyncHandler(async (req, res) => {
     return sendError(res, 'Official ID is required', 400);
   }
 
-  const [official] = await db.select().from(officials).where(officials.id.equals(officialId));
+  const [official] = await db.select().from(officials).where(eq(officials.id, officialId));
   if (!official) {
     return sendError(res, 'Official profile not found', 404);
   }
 
-  const [role] = official.roleId ? await db.select().from(roles).where(roles.id.equals(official.roleId)) : [];
-  const reqs = role ? await db.select().from(roleCompetencies).where(roleCompetencies.roleId.equals(role.id)) : [];
+  const [role] = official.roleId ? await db.select().from(roles).where(eq(roles.id, official.roleId)) : [];
+  const reqs = role ? await db.select().from(roleCompetencies).where(eq(roleCompetencies.roleId, role.id)) : [];
   const allComps = await db.select().from(competencies);
 
   // Build Diagnostic Blueprint sampling competencies by priority
@@ -65,7 +66,7 @@ export const submitDiagnosticAttempt = asyncHandler(async (req, res) => {
     return sendError(res, 'Official ID and answers are required', 400);
   }
 
-  const [official] = await db.select().from(officials).where(officials.id.equals(officialId));
+  const [official] = await db.select().from(officials).where(eq(officials.id, officialId));
   if (!official) {
     return sendError(res, 'Official profile not found', 404);
   }

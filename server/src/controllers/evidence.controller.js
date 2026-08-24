@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { evidence, officials, competencies } from '../db/schema/index.js';
 import { sendSuccess, sendError } from '../utils/response.js';
@@ -9,7 +10,7 @@ import { calculateWeightedEstimate, calculateConfidenceScore, DEFAULT_TYPE_WEIGH
  */
 export const getOfficialEvidence = asyncHandler(async (req, res) => {
   const { officialId } = req.params;
-  const offEvidence = await db.select().from(evidence).where(evidence.officialId.equals(officialId));
+  const offEvidence = await db.select().from(evidence).where(eq(evidence.officialId, officialId));
   const allComps = await db.select().from(competencies);
 
   // Group evidence by competency
@@ -51,12 +52,12 @@ export const recordEvidence = asyncHandler(async (req, res) => {
     return sendError(res, 'Official ID, Competency ID, Evidence Type, and Score are required', 400);
   }
 
-  const [official] = await db.select().from(officials).where(officials.id.equals(officialId));
+  const [official] = await db.select().from(officials).where(eq(officials.id, officialId));
   if (!official) {
     return sendError(res, 'Official profile not found', 404);
   }
 
-  const [comp] = await db.select().from(competencies).where(competencies.id.equals(competencyId));
+  const [comp] = await db.select().from(competencies).where(eq(competencies.id, competencyId));
   if (!comp) {
     return sendError(res, 'Competency definition not found', 404);
   }
@@ -85,13 +86,13 @@ export const recordEvidence = asyncHandler(async (req, res) => {
  */
 export const getEvidenceProvenance = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const [record] = await db.select().from(evidence).where(evidence.id.equals(id));
+  const [record] = await db.select().from(evidence).where(eq(evidence.id, id));
 
   if (!record) {
     return sendError(res, 'Evidence record not found', 404);
   }
 
-  const [comp] = await db.select().from(competencies).where(competencies.id.equals(record.competencyId));
+  const [comp] = await db.select().from(competencies).where(eq(competencies.id, record.competencyId));
 
   const provenanceChain = {
     evidenceId: record.id,

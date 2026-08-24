@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { officials, competencies, evidence, competencyHistory } from '../db/schema/index.js';
 import { sendSuccess } from '../utils/response.js';
@@ -54,7 +55,7 @@ export const getWorkforceAnalytics = asyncHandler(async (req, res) => {
  */
 export const getCompetencyHistory = asyncHandler(async (req, res) => {
   const { officialId } = req.params;
-  const history = await db.select().from(competencyHistory).where(competencyHistory.officialId.equals(officialId));
+  const history = await db.select().from(competencyHistory).where(eq(competencyHistory.officialId, officialId));
   const allComps = await db.select().from(competencies);
 
   const mappedHistory = history.map((h) => {

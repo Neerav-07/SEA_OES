@@ -66,36 +66,38 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Split Hero (Left Text Copy + Right Interactive Product Story Demo) ── */}
-      <section className="relative z-10 mx-auto max-w-7xl px-6 py-12 lg:py-20">
+      <section className="relative z-10 mx-auto max-w-7xl px-6 pt-4 pb-12 lg:pt-8 lg:pb-16">
         <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
           {/* Left Text Column */}
           <div className="lg:col-span-6 text-left space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/90 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[#1E3A8A] backdrop-blur shadow-2xs">
-              <span className="h-2 w-2 rounded-full bg-[#1E3A8A] animate-pulse" />
-              Kshamata | MoSPI DIID & NSSTA Capacity Building
-            </div>
-
-            <h1 className="text-4xl font-black leading-[1.12] tracking-tight text-[#020617] lg:text-5xl">
-              AI-Enabled Competency Intelligence for <br />
-              <span className="bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8] bg-clip-text text-transparent">
-                India's Official Statistical System
+            <h1 className="text-3xl font-black leading-[1.2] tracking-tight text-[#020617] sm:text-4xl lg:text-[46px] xl:text-[54px]">
+              <span className="block whitespace-nowrap">Empowering India's</span>
+              <span className="block mt-1 whitespace-nowrap bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8] bg-clip-text text-transparent pb-1">
+                statistical workforce!
               </span>
             </h1>
 
-            <p className="text-base lg:text-lg text-slate-700 leading-relaxed font-medium max-w-xl">
-              Bridging skill gaps, personalizing iGOT Karmayogi & NSSTA TPAC pathways, and generating grounded assessments for continuous workforce capacity building.
+            <p className="text-lg lg:text-xl font-semibold text-slate-500 tracking-wide mt-1">
+              For India's Official Statistical System
             </p>
 
-            <div className="space-y-2 pt-1 text-xs font-bold text-slate-700">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-[#1E3A8A]" /> Baseline Evidence Fusion & Confidence Scoring
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-[#1E3A8A]" /> Prerequisite-Aware iGOT Learning Pathways
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-[#1E3A8A]" /> Grounded AI MCQ Generation & Closed-Loop Analytics
-              </div>
+            <div className="text-xs lg:text-sm font-medium tracking-wide text-slate-500 flex flex-wrap items-center gap-x-5 gap-y-2.5 pt-1">
+              <span className="flex items-center gap-1.5">
+                <span className="text-emerald-600 font-black text-sm">✓</span>
+                <span>Competency Intelligence</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-emerald-600 font-black text-sm">✓</span>
+                <span>Personalized Pathways</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-emerald-600 font-black text-sm">✓</span>
+                <span>Continuous Assessment</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-emerald-600 font-black text-sm">✓</span>
+                <span>Readiness Analytics</span>
+              </span>
             </div>
 
             <div className="flex flex-col items-start gap-4 sm:flex-row pt-4">
@@ -109,8 +111,10 @@ export default function LandingPage() {
           </div>
 
           {/* Right Product Story Demo Animation Column */}
-          <div className="lg:col-span-6">
-            <HeroProductStoryDemo />
+          <div className="lg:col-span-6 flex justify-end w-full">
+            <div className="w-full max-w-lg lg:mr-0 lg:ml-auto">
+              <HeroProductStoryDemo />
+            </div>
           </div>
         </div>
       </section>
@@ -137,8 +141,8 @@ export default function LandingPage() {
                 key={feat.title}
                 className="group relative rounded-2xl border border-slate-200/90 bg-white/90 p-5 lg:p-6 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-900/5 flex flex-col justify-between overflow-hidden text-left"
               >
-                {/* Top subtle highlight glow */}
-                <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-blue-600/0 to-transparent group-hover:via-blue-600 transition-all duration-500" />
+                {/* Bottom subtle highlight glow */}
+                <div className="absolute bottom-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#1E3A8A] to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
 
                 <div>
                   <div className="flex items-center justify-between mb-4">
