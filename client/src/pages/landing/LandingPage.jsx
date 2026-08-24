@@ -51,7 +51,7 @@ export default function LandingPage() {
           <Link to="/login" className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors">
             Sign In
           </Link>
-          <Link to="/register" className="rounded-xl bg-[#1D4ED8] px-5 py-2 text-sm font-bold text-white shadow-sm hover:bg-[#1E40AF] transition-colors">
+          <Link to="/register" className="rounded-xl bg-[#1E3A8A] px-5 py-2 text-sm font-bold text-white shadow-sm hover:bg-[#172554] transition-colors">
             Get Started
           </Link>
         </div>
@@ -59,27 +59,27 @@ export default function LandingPage() {
 
       {/* ── Hero ── */}
       <section className="relative z-10 mx-auto max-w-5xl px-6 py-20 text-center lg:py-28">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/90 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[#1D4ED8] backdrop-blur shadow-2xs">
-          <span className="h-2 w-2 rounded-full bg-[#1D4ED8] animate-pulse" />
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/90 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[#1E3A8A] backdrop-blur shadow-2xs">
+          <span className="h-2 w-2 rounded-full bg-[#1E3A8A] animate-pulse" />
           Kshamata | MoSPI DIID & NSSTA Capacity Building
         </div>
 
-        <h1 className="mb-6 text-4xl font-black leading-[1.15] tracking-tight text-[#0F172A] lg:text-6xl">
+        <h1 className="mb-6 text-4xl font-black leading-[1.15] tracking-tight text-[#020617] lg:text-6xl">
           AI-Enabled Competency Intelligence for <br />
-          <span className="bg-gradient-to-r from-[#1E40AF] via-[#1D4ED8] to-[#2563EB] bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8] bg-clip-text text-transparent">
             India's Official Statistical System
           </span>
         </h1>
 
-        <p className="mx-auto mb-10 max-w-3xl text-lg text-slate-600 leading-relaxed font-medium">
+        <p className="mx-auto mb-10 max-w-3xl text-lg text-slate-700 leading-relaxed font-medium">
           Bridging skill gaps, personalizing iGOT Karmayogi & NSSTA TPAC pathways, and generating grounded assessments for continuous workforce capacity building.
         </p>
 
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <Link to="/register" className="flex items-center gap-2 rounded-2xl bg-[#1D4ED8] px-8 py-4 text-base font-bold text-white shadow-lg hover:bg-[#1E40AF] transition-all hover:scale-105">
+          <Link to="/register" className="flex items-center gap-2 rounded-2xl bg-[#1E3A8A] px-8 py-4 text-base font-bold text-white shadow-lg hover:bg-[#172554] transition-all hover:scale-105">
             Explore Competency Portal <ArrowRight size={18} />
           </Link>
-          <Link to="/login" className="rounded-2xl border border-slate-300 bg-white/90 px-8 py-4 text-base font-semibold text-slate-800 backdrop-blur hover:bg-white transition-colors">
+          <Link to="/login" className="rounded-2xl border border-slate-300 bg-white/90 px-8 py-4 text-base font-semibold text-slate-900 backdrop-blur hover:bg-white transition-colors">
             Official Login
           </Link>
         </div>
