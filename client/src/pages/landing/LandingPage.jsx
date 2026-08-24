@@ -81,7 +81,7 @@ export default function LandingPage() {
               For India's Official Statistical System
             </p>
 
-            <div className="text-xs lg:text-sm font-medium tracking-wide text-slate-500 flex flex-wrap items-center gap-x-5 gap-y-2 pt-1">
+            <div className="text-xs lg:text-sm font-medium tracking-wide text-slate-500 flex flex-wrap items-center gap-x-5 gap-y-2.5 pt-1">
               <span className="flex items-center gap-1.5">
                 <span className="text-emerald-600 font-black text-sm">✓</span>
                 <span>Competency Intelligence</span>
@@ -93,6 +93,10 @@ export default function LandingPage() {
               <span className="flex items-center gap-1.5">
                 <span className="text-emerald-600 font-black text-sm">✓</span>
                 <span>Continuous Assessment</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-emerald-600 font-black text-sm">✓</span>
+                <span>Readiness Analytics</span>
               </span>
             </div>
 
