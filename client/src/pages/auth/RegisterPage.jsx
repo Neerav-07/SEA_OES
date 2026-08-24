@@ -71,30 +71,32 @@ export default function RegisterPage() {
             <div className="relative z-10 flex flex-col items-center">
               <div className="flex flex-col items-center gap-6">
                 <img src="/logo.png" alt="App Logo" className="h-32 w-32 object-contain drop-shadow-2xl" />
-                <div className="h-[3px] w-16 rounded-full bg-emerald-400" />
+                <div className="h-[3px] w-16 rounded-full bg-[#7C3AED]" />
               </div>
               <div className="mt-8">
-                <h1 className="text-3xl font-black uppercase tracking-tighter italic lg:text-4xl">
-                  Official Learner <br />
-                  <span className="text-teal-400">Onboarding.</span>
+                <h1 className="text-3xl font-black uppercase tracking-tight lg:text-4xl text-white">
+                  Ksham<span className="text-[#818CF8]">ata</span>
                 </h1>
-                <p className="mx-auto mt-4 max-w-sm text-sm font-bold leading-relaxed text-white/80">
+                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-[#A78BFA]">
+                  Official Learner Onboarding
+                </p>
+                <p className="mx-auto mt-4 max-w-sm text-sm font-medium leading-relaxed text-slate-200/90">
                   Register to establish your statistical competency baseline and personalized learning path.
                 </p>
               </div>
               <div className="mt-8 space-y-4 px-4 text-left">
                 {ONBOARDING_STEPS.map((step, i) => (
                   <div key={i} className="flex items-start gap-3">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/30 text-emerald-400 text-xs font-black">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-500/30 text-[#A78BFA] text-xs font-black">
                       {i + 1}
                     </div>
-                    <p className="text-xs font-medium text-white/85">{step}</p>
+                    <p className="text-xs font-medium text-slate-100">{step}</p>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-between px-10 text-[9px] font-black uppercase tracking-[0.3em] text-white/25">
-              <p>© 2026 MoSPI DIID / NSSTA</p>
+            <div className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-between px-10 text-[9px] font-black uppercase tracking-[0.3em] text-slate-300/40">
+              <p>© 2026 Kshamata (MoSPI DIID & NSSTA)</p>
               <p>PS 26101 Portal</p>
             </div>
           </section>

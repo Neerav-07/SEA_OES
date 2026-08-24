@@ -9,10 +9,10 @@ export default function Footer() {
 				<div className='grid gap-12 lg:grid-cols-[1.5fr_1fr_1fr_1fr] pb-16'>
 					<div className='space-y-6'>
 						<Link to='/' className='flex items-center gap-3 logo-brand group'>
-							<img src='/navlogo.png' alt='Karmayogi AI' className='h-10 w-10 object-contain transition-transform duration-500 group-hover:rotate-12' />
-							<div className="flex items-baseline gap-1">
-								<span className="text-(--app-color-text) text-xl! font-black uppercase tracking-wider">Karmayogi</span>
-								<span className="logo-shield text-xl! font-black uppercase tracking-wider text-(--app-color-primary)">AI</span>
+							<img src='/navlogo.png' alt='Kshamata' className='h-9 w-9 object-contain transition-transform duration-500 group-hover:rotate-12' />
+							<div className="flex items-baseline gap-1.5">
+								<span className="text-[22px] font-black tracking-tight text-[#172554]">Ksham<span className="text-[#4F46E5]">ata</span></span>
+								<span className="rounded-md bg-violet-100 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#7C3AED] border border-violet-200">AI</span>
 							</div>
 						</Link>
 						<p className='max-w-xs text-sm leading-7 text-(--app-color-text-muted)'>
@@ -76,7 +76,7 @@ export default function Footer() {
 
 				<div className='pt-10 border-t border-(--app-color-border) flex flex-col md:flex-row items-center justify-between gap-6'>
 					<p className='text-xs text-(--app-color-text-muted) font-medium'>
-						© {new Date().getFullYear()} Karmayogi AI (MoSPI DIID & NSSTA). All rights reserved.
+						© {new Date().getFullYear()} Kshamata (MoSPI DIID & NSSTA). All rights reserved.
 					</p>
 					<p className='text-xs text-(--app-color-text-muted)'>
 						Built for <span className='font-bold text-(--app-color-text)'>India's Official Statistical System</span>

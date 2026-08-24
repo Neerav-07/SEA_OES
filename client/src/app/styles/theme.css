@@ -1,28 +1,31 @@
 :root {
 	--app-font-sans: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 	--app-font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-	--app-rgb-primary: 15, 95, 115;
-	--app-rgb-accent: 23, 92, 211;
-	--app-color-bg: #f2f5f9;
-	--app-color-surface: #ffffff;
-	--app-color-surface-elevated: #e8eef4;
-	--app-color-surface-glass: rgba(255, 255, 255, 0.82);
-	--app-color-surface-panel: rgba(255, 255, 255, 0.94);
-	--app-color-text: #0b1422;
-	--app-color-text-muted: #516075;
-	--app-color-border: #c3d0de;
-	--app-color-primary: #0f5f73;
-	--app-color-primary-hover: #0b4a5a;
-	--app-color-primary-soft: #d8ecf2;
-	--app-color-accent: #175cd3;
-	--app-color-canvas-glow: #d8e2ee;
-	--app-color-success: #15803d;
-	--app-color-warning: #b45309;
-	--app-color-danger: #b42318;
-	--app-gradient-shell: radial-gradient(circle at top left, rgba(var(--app-rgb-accent), 0.14), transparent 30%), radial-gradient(circle at bottom right, rgba(var(--app-rgb-primary), 0.12), transparent 24%), linear-gradient(180deg, #f2f5f9 0%, #e8eef4 100%);
-	--app-gradient-auth-login: linear-gradient(160deg, #0c1624 0%, #112638 58%, #11485c 100%);
-	--app-gradient-auth-register: linear-gradient(150deg, #093735 0%, #0f5f73 55%, #175cd3 100%);
-	--app-shadow-elevated: 0 24px 40px rgba(11, 20, 34, 0.12);
+	--app-rgb-primary: 23, 37, 84;      /* #172554 Deep Navy */
+	--app-rgb-accent: 79, 70, 229;     /* #4F46E5 Indigo */
+	--app-rgb-violet: 124, 58, 237;    /* #7C3AED Violet */
+	--app-color-bg: #F8FAFC;            /* Off White */
+	--app-color-surface: #FFFFFF;       /* White */
+	--app-color-surface-elevated: #F1F5F9; /* Slate 100 */
+	--app-color-surface-glass: rgba(255, 255, 255, 0.88);
+	--app-color-surface-panel: rgba(255, 255, 255, 0.96);
+	--app-color-text: #0F172A;          /* Slate 900 */
+	--app-color-text-muted: #64748B;    /* Slate Gray 500 */
+	--app-color-border: #E2E8F0;        /* Slate 200 */
+	--app-color-primary: #4F46E5;       /* Primary Accent (Indigo) */
+	--app-color-primary-navy: #172554;  /* Deep Navy */
+	--app-color-primary-violet: #7C3AED;/* Violet AI Highlight */
+	--app-color-primary-hover: #4338CA; /* Darker Indigo */
+	--app-color-primary-soft: #EEF2FF;  /* Light Indigo Soft */
+	--app-color-accent: #7C3AED;
+	--app-color-canvas-glow: #E0E7FF;
+	--app-color-success: #16A34A;       /* Green */
+	--app-color-warning: #D97706;       /* Amber */
+	--app-color-danger: #DC2626;        /* Red */
+	--app-gradient-shell: radial-gradient(circle at top left, rgba(79, 70, 229, 0.07), transparent 35%), radial-gradient(circle at bottom right, rgba(23, 37, 84, 0.05), transparent 30%), linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+	--app-gradient-auth-login: linear-gradient(155deg, #0F172A 0%, #172554 45%, #3730A3 80%, #7C3AED 100%);
+	--app-gradient-auth-register: linear-gradient(150deg, #172554 0%, #312E81 50%, #4F46E5 100%);
+	--app-shadow-elevated: 0 20px 40px -12px rgba(15, 23, 42, 0.08);
 }
 
 @theme{
@@ -35,6 +38,7 @@
 	--color-text-muted: var(--app-color-text-muted);
 	--color-border: var(--app-color-border);
 	--color-primary: var(--app-color-primary);
+	--color-primary-navy: var(--app-color-primary-navy);
 	--color-primary-hover: var(--app-color-primary-hover);
 	--color-primary-soft: var(--app-color-primary-soft);
 	--color-accent: var(--app-color-accent);

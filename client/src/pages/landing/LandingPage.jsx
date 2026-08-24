@@ -43,16 +43,17 @@ export default function LandingPage() {
       {/* ── Navbar ── */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-4 lg:px-16">
         <Link to="/" className="flex items-center gap-3">
-          <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
-          <span className="text-lg font-black uppercase tracking-widest text-(--app-color-text)">
-            Karmayogi <span className="text-(--app-color-primary)">AI</span>
-          </span>
+          <img src="/logo.png" alt="Kshamata Logo" className="h-10 w-10 object-contain" />
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-black tracking-tight text-[#172554]">Ksham<span className="text-[#4F46E5]">ata</span></span>
+            <span className="rounded-md bg-violet-100 px-2 py-0.5 text-xs font-black uppercase tracking-wider text-[#7C3AED] border border-violet-200">AI</span>
+          </div>
         </Link>
         <div className="flex items-center gap-3">
-          <Link to="/login" className="rounded-xl px-4 py-2 text-sm font-semibold text-(--app-color-text) hover:bg-white/60 transition-colors">
+          <Link to="/login" className="rounded-xl px-4 py-2 text-sm font-semibold text-(--app-color-text) hover:bg-slate-200/60 transition-colors">
             Sign In
           </Link>
-          <Link to="/register" className="rounded-xl bg-(--app-color-primary) px-5 py-2 text-sm font-bold text-white shadow-md hover:bg-(--app-color-primary-hover) transition-colors">
+          <Link to="/register" className="rounded-xl bg-[#4F46E5] px-5 py-2 text-sm font-bold text-white shadow-md hover:bg-[#4338CA] transition-colors">
             Get Started
           </Link>
         </div>
@@ -60,18 +61,18 @@ export default function LandingPage() {
 
       {/* ── Hero ── */}
       <section className="relative z-10 mx-auto max-w-5xl px-6 py-20 text-center lg:py-28">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-(--app-color-border) bg-white/70 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-(--app-color-primary) backdrop-blur">
-          <span className="h-1.5 w-1.5 rounded-full bg-(--app-color-primary)" />
-          MoSPI DIID & NSSTA Capacity Building Platform
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white/90 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[#4F46E5] backdrop-blur shadow-sm">
+          <span className="h-2 w-2 rounded-full bg-[#7C3AED] animate-pulse" />
+          Kshamata | MoSPI DIID & NSSTA Capacity Building
         </div>
 
-        <h1 className="mb-6 text-4xl font-black leading-[1.15] tracking-tighter text-(--app-color-text) lg:text-6xl">
-          Evidence-Driven Competency Intelligence for <br />
-          <span className="text-(--app-color-primary)">India's Official Statistical System</span>
+        <h1 className="mb-6 text-4xl font-black leading-[1.15] tracking-tight text-[#172554] lg:text-6xl">
+          AI-Enabled Competency Intelligence for <br />
+          <span className="text-[#4F46E5]">India's Official Statistical System</span>
         </h1>
 
-        <p className="mx-auto mb-10 max-w-3xl text-lg text-(--app-color-text-muted) leading-relaxed">
-          AI-enabled skill-gap identification, personalized training pathways with iGOT Karmayogi & NSSTA TPAC integration, and grounded assessment generation for continuous capacity building.
+        <p className="mx-auto mb-10 max-w-3xl text-lg text-[#64748B] leading-relaxed">
+          Bridging skill gaps, personalizing iGOT Karmayogi & NSSTA TPAC pathways, and generating grounded assessments for continuous workforce capacity building.
         </p>
 
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">

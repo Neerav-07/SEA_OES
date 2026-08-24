@@ -67,32 +67,34 @@ export default function LoginPage() {
             <div className="relative z-10 flex flex-col items-center">
               <div className="flex flex-col items-center gap-6">
                 <img src="/logo.png" alt="App Logo" className="h-32 w-32 object-contain drop-shadow-2xl" />
-                <div className="h-[3px] w-16 rounded-full bg-emerald-400" />
+                <div className="h-[3px] w-16 rounded-full bg-[#7C3AED]" />
               </div>
               <div className="mt-8">
-                <h1 className="text-3xl font-black uppercase tracking-tighter italic lg:text-4xl">
-                  Capacity Building <br />
-                  <span className="text-teal-400">Intelligence.</span>
+                <h1 className="text-3xl font-black uppercase tracking-tight lg:text-4xl text-white">
+                  Ksham<span className="text-[#818CF8]">ata</span>
                 </h1>
-                <p className="mx-auto mt-4 max-w-sm text-sm font-bold leading-relaxed text-white/80">
+                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-[#A78BFA]">
+                  AI-enabled Competency Intelligence
+                </p>
+                <p className="mx-auto mt-4 max-w-sm text-sm font-medium leading-relaxed text-slate-200/90">
                   Personalized iGOT Karmayogi & NSSTA learning pathways for India's Official Statistical System.
                 </p>
               </div>
               <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-3 px-2 text-left">
                 {FEATURE_BULLETS.map((f) => (
                   <div key={f} className="flex items-center gap-2.5">
-                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[#A78BFA]">
                       <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <span className="whitespace-nowrap text-xs font-bold tracking-wider text-white/90">{f}</span>
+                    <span className="whitespace-nowrap text-xs font-bold tracking-wider text-slate-100">{f}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-between px-10 text-[9px] font-black uppercase tracking-[0.3em] text-white/25">
-              <p>© 2026 MoSPI DIID / NSSTA</p>
+            <div className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-between px-10 text-[9px] font-black uppercase tracking-[0.3em] text-slate-300/40">
+              <p>© 2026 Kshamata (MoSPI DIID & NSSTA)</p>
               <p>PS 26101 Portal</p>
             </div>
           </section>

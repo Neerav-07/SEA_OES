@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
  */
 
 const Header = ({
-	logo = 'Karmayogi AI',
+	logo = 'Kshamata',
 	logoHref = '/',
 	navItems = [],
 	userMenu = null,
@@ -23,18 +23,18 @@ const Header = ({
 			className='flex items-center gap-3 logo-brand group'
 			onClick={onLogoClick}
 		>
-			<img src='/navlogo.png' alt='Karmayogi AI' className='h-10 w-10 object-contain transition-transform duration-500 group-hover:scale-110' />
-			<div className="flex items-baseline gap-1">
-				<span className="text-(--app-color-text) text-xl! font-black uppercase tracking-wider">Karmayogi</span>
-				<span className="logo-shield text-xl! font-black uppercase tracking-wider text-(--app-color-primary)">AI</span>
+			<img src='/navlogo.png' alt='Kshamata' className='h-9 w-9 object-contain transition-transform duration-500 group-hover:scale-110' />
+			<div className="flex items-baseline gap-1.5">
+				<span className="text-[22px] font-black tracking-tight text-[#172554]">Ksham<span className="text-[#4F46E5]">ata</span></span>
+				<span className="rounded-md bg-violet-100 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#7C3AED] border border-violet-200">AI</span>
 			</div>
 		</button>
 	) : (
 		<Link to={logoHref} className='flex items-center gap-3 logo-brand group'>
-			<img src='/navlogo.png' alt='Karmayogi AI' className='h-10 w-10 object-contain transition-transform duration-500 group-hover:scale-110' />
-			<div className="flex items-baseline gap-1">
-				<span className="text-(--app-color-text) text-xl! font-black uppercase tracking-wider">Karmayogi</span>
-				<span className="logo-shield text-xl! font-black uppercase tracking-wider text-(--app-color-primary)">AI</span>
+			<img src='/navlogo.png' alt='Kshamata' className='h-9 w-9 object-contain transition-transform duration-500 group-hover:scale-110' />
+			<div className="flex items-baseline gap-1.5">
+				<span className="text-[22px] font-black tracking-tight text-[#172554]">Ksham<span className="text-[#4F46E5]">ata</span></span>
+				<span className="rounded-md bg-violet-100 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#7C3AED] border border-violet-200">AI</span>
 			</div>
 		</Link>
 	);

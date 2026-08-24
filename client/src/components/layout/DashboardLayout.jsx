@@ -47,7 +47,10 @@ export default function DashboardLayout() {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 px-6 py-5 hover:opacity-80">
           <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
-          <span className="text-sm font-black uppercase tracking-widest text-(--app-color-text)">Karmayogi <span className="text-(--app-color-primary)">AI</span></span>
+          <div className="flex items-baseline gap-1">
+            <span className="text-base font-black tracking-tight text-[#172554]">Ksham<span className="text-[#4F46E5]">ata</span></span>
+            <span className="rounded bg-violet-100 px-1 py-0.2 text-[9px] font-black uppercase text-[#7C3AED]">AI</span>
+          </div>
         </Link>
 
         {/* Nav items */}

@@ -46,7 +46,7 @@ export default function DashboardHomePage() {
     <div className="space-y-8">
       <PageHeader
         title={`Welcome back, ${user?.name ?? 'Official'}`}
-        subtitle="Official Capacity Building & Competency Intelligence Overview (MoSPI DIID & NSSTA)."
+        subtitle="Kshamata — AI-Enabled Competency Intelligence & Capacity Overview (MoSPI DIID & NSSTA)."
       />
 
       {/* Stats row */}

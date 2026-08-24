@@ -23,11 +23,12 @@ const Sidebar = ({
 		>
 			{/* Logo Section */}
 			<Link to='/' className={`flex items-center gap-3 p-6 hover:opacity-80 transition-opacity ${isCollapsed ? 'justify-center p-4' : ''}`}>
-				<img src='/logo.png' alt='Logo' className='h-9 w-9 object-contain' />
+				<img src='/logo.png' alt='Logo' className='h-8 w-8 object-contain' />
 				{!isCollapsed && (
-					<span className='text-sm font-black uppercase tracking-[0.15em] text-[var(--app-color-text)]'>
-						Karmayogi <span className='text-[var(--app-color-primary)]'>AI</span>
-					</span>
+					<div className="flex items-baseline gap-1">
+						<span className="text-base font-black tracking-tight text-[#172554]">Ksham<span className="text-[#4F46E5]">ata</span></span>
+						<span className="rounded bg-violet-100 px-1 py-0.2 text-[9px] font-black uppercase text-[#7C3AED]">AI</span>
+					</div>
 				)}
 			</Link>
 
