@@ -1,6 +1,6 @@
 import { loginUser, logoutUser, refreshUserSession, registerUser, getUserById } from '../services/auth.service.js';
 
-const REFRESH_COOKIE = 'app_refresh_token'; // TODO: rename to match your app
+const REFRESH_COOKIE = 'kshamata_refresh_token';
 const cookieOptions = { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/' };
 
 function sendAuthResponse(res, statusCode, authPayload) {

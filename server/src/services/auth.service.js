@@ -95,7 +95,6 @@ function buildAuthPayload(user) {
 
 /**
  * Register a new user.
- * TODO: Rename "name" field to match your entity (e.g. orgName, teamName).
  */
 export async function registerUser(payload = {}) {
   const db = getDb();

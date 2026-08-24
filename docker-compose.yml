@@ -1,12 +1,3 @@
-# ─── Kshamata Multi-Service Docker Compose ────────────────────────────────────
-# Spins up PostgreSQL database, Express Server, and React Client locally.
-#
-# Usage:
-#   docker compose up -d           # start postgres, server, client in background
-#   docker compose up --build      # rebuild and start
-#   docker compose down            # stop all services
-#   docker compose down -v         # stop + wipe postgres database volume
-
 version: '3.9'
 
 services:

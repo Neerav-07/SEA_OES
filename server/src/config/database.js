@@ -1,16 +1,3 @@
-/**
- * Database Configuration
- *
- * Single DATABASE_URL drives everything:
- *   - Local Docker  → postgresql://postgres:postgres@localhost:5432/app_db
- *   - Neon cloud    → postgresql://<user>:<pw>@<host>.neon.tech/neondb?sslmode=require
- *
- * Neon connections use their serverless driver (@neondatabase/serverless) for
- * HTTP-based pooling (great for serverless deploys).  Standard local pg uses
- * the regular `pg` Pool.  The correct driver is auto-selected by checking for
- * "neon.tech" in the connection string.
- */
-
 import { neon } from '@neondatabase/serverless';
 import { drizzle as drizzleNeon } from 'drizzle-orm/neon-http';
 import { drizzle as drizzleNode } from 'drizzle-orm/node-postgres';
@@ -24,7 +11,7 @@ let db;
 
 export function getDb() {
   if (!db) {
-    throw new Error('Database not initialised. Call connectDatabase() first.');
+    throw new Error('Database not initialised.');
   }
   return db;
 }
@@ -33,21 +20,19 @@ export async function connectDatabase() {
   const url = process.env.DATABASE_URL;
 
   if (!url) {
-    throw new Error('DATABASE_URL is not set. Check server/.env');
+    throw new Error('DATABASE_URL is not set.');
   }
 
   const isNeon = url.includes('neon.tech');
 
   if (isNeon) {
-    // ── Neon serverless (HTTP pooling) ─────────────────────────────────────
     const sql = neon(url);
     db = drizzleNeon(sql, { schema });
-    console.log('[DB] Connected via Neon serverless driver');
   } else {
-    // ── Local / standard PostgreSQL (TCP Pool) ──────────────────────────────
     const pool = new Pool({ connectionString: url });
-    await pool.query('SELECT 1'); // verify connection on startup
+    await pool.query('SELECT 1');
     db = drizzleNode(pool, { schema });
+  }
     console.log('[DB] Connected via pg Pool (local)');
   }
 

@@ -1,21 +1,22 @@
-/**
- * ReportGenerationModal — TEMPLATE STUB
- *
- * TODO: Replace this with a modal relevant to your PS.
- * You can use the Modal component from ./Modal.jsx as the wrapper.
- *
- * Example:
- *   <Modal isOpen={open} onClose={close} title="Generate Report">
- *     ...your form fields...
- *   </Modal>
- */
+import Modal from './Modal.jsx';
+import Button from './Button.jsx';
 
-export default function ReportGenerationModal({ isOpen, onClose }) {
-  if (!isOpen) return null;
+export default function ReportGenerationModal({ isOpen, onClose, onGenerate }) {
   return (
-    <div>
-      {/* TODO: Implement your own modal content here */}
-      <button onClick={onClose}>Close</button>
-    </div>
+    <Modal isOpen={isOpen} onClose={onClose} title="Generate Official Competency Report">
+      <div className="space-y-4">
+        <p className="text-sm text-slate-600">
+          Select format to export official competency estimates, evidence provenance, and iGOT learning gap analysis:
+        </p>
+        <div className="flex gap-3 pt-2">
+          <Button variant="primary" onClick={() => { onGenerate?.('PDF'); onClose(); }}>
+            Export PDF Report
+          </Button>
+          <Button variant="outline" onClick={() => { onGenerate?.('CSV'); onClose(); }}>
+            Export CSV Dataset
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }

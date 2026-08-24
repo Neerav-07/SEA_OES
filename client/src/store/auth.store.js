@@ -1,7 +1,3 @@
-/**
- * Auth store — persisted to localStorage.
- * TODO: rename "app-auth-store" to match your app.
- */
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 

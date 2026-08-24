@@ -14,7 +14,6 @@ export function validateRegisterPayload(payload = {}) {
   const password = typeof payload.password === 'string' ? payload.password : '';
   const confirmPassword = typeof payload.confirmPassword === 'string' ? payload.confirmPassword : '';
 
-  // TODO: rename "name" validation label to match your entity (e.g. "Organization name")
   if (!name) errors.push('Name is required.');
   if (!email || !email.includes('@')) errors.push('A valid email address is required.');
   if (password.length < 8) errors.push('Password must be at least 8 characters.');
