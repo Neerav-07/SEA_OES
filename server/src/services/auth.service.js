@@ -139,14 +139,14 @@ export async function loginUser(payload = {}) {
   const [user] = await db.select().from(users).where(eq(users.email, email));
 
   if (!user) {
-    const error = new Error('Invalid email or password.');
+    const error = new Error(`No official account found with email address "${email}". Please register an account first.`);
     error.statusCode = 401;
     throw error;
   }
 
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
-    const error = new Error('Invalid email or password.');
+    const error = new Error('Incorrect password. Please double-check your password.');
     error.statusCode = 401;
     throw error;
   }

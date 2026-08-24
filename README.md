@@ -1,4 +1,4 @@
-# 🏛️ Kshamata (क्षमता)
+# Kshamata (क्षमता)
 
 > **AI-Enabled Competency Intelligence & Assessment Platform for Official Statistics**  
 > **Smart India Hackathon (SIH) 2026 — Problem Statement ID: 26101**  
@@ -7,13 +7,13 @@
 
 ---
 
-## 🎯 Executive Summary
+## Executive Summary
 
 **Kshamata** is an enterprise-grade AI-enabled competency intelligence and capacity-building layer engineered for India's Official Statistical System. The platform assesses officials' existing capabilities, identifies explainable skill gaps against required statistical role profiles, recommends personalized learning pathways integrated with the **iGOT Karmayogi** ecosystem & **NSSTA TPAC** recommended training programmes, and automatically generates grounded multiple-choice questions (MCQs) and quizzes from official learning materials.
 
 ---
 
-## 🌟 Core Differentiators & Product Philosophy
+## Core Differentiators & Product Philosophy
 
 - **`Course Completion ≠ Competency`**: Learning activities generate evidence; auditable evidence supports competency estimates with explicit confidence scores and provenance tracing.
 - **Evidence-Driven Skill Gap Analysis**: Multi-layered evidence fusion across Knowledge, Application (Scenario-based), Performance (Virtual Lab), and External Training records.
@@ -22,7 +22,7 @@
 
 ---
 
-## 🏗️ Technical Architecture & Stack
+## Technical Architecture & Stack
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -49,7 +49,7 @@
 
 ---
 
-## 💻 System Modules Overview
+## System Modules Overview
 
 1. **Official & Role Competency Intelligence**: Profile management, designation mapping, and department-specific competency requirements across:
    - *Statistical Competencies* (Survey Design, Sampling, National Accounts, Price Statistics, Labour Statistics, Data Quality Frameworks).
@@ -63,7 +63,7 @@
 
 ---
 
-## ⚡ Quick Start & Development Setup
+## Quick Start & Development Setup
 
 ### Prerequisites
 - Node.js (v20+)
@@ -113,7 +113,7 @@ npm run dev
 
 ---
 
-## 📋 API Specification Summary
+## API Specification Summary
 
 | Method | Endpoint | Auth Required | Description |
 | :--- | :--- | :--- | :--- |
@@ -126,7 +126,7 @@ npm run dev
 
 ---
 
-## 🛡️ License & Organization
+## License & Organization
 
 Built for **Smart India Hackathon (SIH) 2026** — **MoSPI DIID & NSSTA**.  
 Developed by **Team Esc(Reality);**

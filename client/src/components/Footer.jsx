@@ -1,89 +1,116 @@
 import { Link } from 'react-router-dom';
-import { Mail, Terminal, Globe, Users, ExternalLink } from 'lucide-react';
+import { Globe, Shield, BookOpen, Award, ExternalLink, CheckCircle2, ArrowUpRight } from 'lucide-react';
 import Container from './Container';
+import KshamataLogo from './KshamataLogo';
 
 export default function Footer() {
 	return (
-		<footer className='border-t border-(--app-color-border) bg-(--app-color-surface) pt-20 pb-10'>
+		<footer className='border-t border-slate-200 bg-slate-900 text-white pt-16 pb-12 relative overflow-hidden'>
+			{/* Subtle accent line */}
+			<div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8]" />
+
 			<Container>
-				<div className='grid gap-12 lg:grid-cols-[1.5fr_1fr_1fr_1fr] pb-16'>
-					<div className='space-y-6'>
-						<Link to='/' className='flex items-center gap-3 logo-brand group'>
-							<img src='/navlogo.png' alt='Kshamata' className='h-9 w-9 object-contain transition-transform duration-500 group-hover:rotate-12' />
-							<div className="flex items-baseline gap-1.5">
-								<span className="text-[22px] font-black tracking-tight text-[#172554]">Ksham<span className="text-[#4F46E5]">ata</span></span>
-								<span className="rounded-md bg-violet-100 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#7C3AED] border border-violet-200">AI</span>
-							</div>
+				<div className='grid gap-12 sm:grid-cols-2 lg:grid-cols-5 pb-16 border-b border-slate-800'>
+					{/* Brand Column */}
+					<div className='lg:col-span-2 space-y-6'>
+						<Link to='/' className='inline-block group'>
+							<KshamataLogo size="lg" className="bg-white/95 px-3 py-1.5 rounded-xl shadow-md" />
 						</Link>
-						<p className='max-w-xs text-sm leading-7 text-(--app-color-text-muted)'>
-							Evidence-driven competency intelligence and AI-enabled capacity building for India's Official Statistical System (MoSPI DIID & NSSTA).
+						<p className='max-w-md text-sm leading-relaxed text-slate-300 font-medium'>
+							AI-enabled Competency Intelligence & Assessment Engine for India's Official Statistical System.
+							Designed for MoSPI Data Informatics & Innovation Division (DIID) and National Statistical Systems Training Academy (NSSTA).
 						</p>
-						<div className='flex items-center gap-4'>
-							<a href='#' className='p-2 rounded-full border border-(--app-color-border) text-(--app-color-text-muted) hover:text-(--app-color-primary) hover:border-(--app-color-primary) transition-all'>
-								<Globe size={18} />
-							</a>
-							<a href='#' className='p-2 rounded-full border border-(--app-color-border) text-(--app-color-text-muted) hover:text-(--app-color-primary) hover:border-(--app-color-primary) transition-all'>
-								<Users size={18} />
-							</a>
-							<a href='#' className='p-2 rounded-full border border-(--app-color-border) text-(--app-color-text-muted) hover:text-(--app-color-primary) hover:border-(--app-color-primary) transition-all'>
-								<Terminal size={18} />
-							</a>
+						<div className="flex flex-wrap items-center gap-3 pt-2">
+							<span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-950/80 border border-blue-800/80 px-3 py-1 text-xs font-semibold text-blue-200">
+								<Shield size={14} className="text-blue-400" /> SIH 2026 PS 26101
+							</span>
+							<span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-950/80 border border-emerald-800/80 px-3 py-1 text-xs font-semibold text-emerald-200">
+								<CheckCircle2 size={14} className="text-emerald-400" /> GIGW Compliant
+							</span>
 						</div>
 					</div>
 
+					{/* Capabilities Column */}
 					<div>
-						<h4 className='text-xs font-black uppercase tracking-[0.2em] text-(--app-color-text) mb-6'>Platform</h4>
-						<ul className='space-y-4 text-sm text-(--app-color-text-muted)'>
-							<li><a href='#product' className='hover:text-(--app-color-primary) transition-colors'>Competency Frameworks</a></li>
-							<li><a href='#capabilities' className='hover:text-(--app-color-primary) transition-colors'>Skill Gap Intelligence</a></li>
-							<li><a href='#workflow' className='hover:text-(--app-color-primary) transition-colors'>iGOT Karmayogi API</a></li>
-							<li><Link to='/register' className='hover:text-(--app-color-primary) transition-colors'>Learner Onboarding</Link></li>
+						<h4 className='text-xs font-black uppercase tracking-[0.2em] text-blue-400 mb-6'>Core Modules</h4>
+						<ul className='space-y-3.5 text-sm text-slate-300 font-medium'>
+							<li>
+								<Link to="/dashboard/competencies" className='hover:text-white transition-colors flex items-center gap-1.5'>
+									Competency Profiles
+								</Link>
+							</li>
+							<li>
+								<Link to="/dashboard/skill-gaps" className='hover:text-white transition-colors flex items-center gap-1.5'>
+									Skill Gap Intelligence
+								</Link>
+							</li>
+							<li>
+								<Link to="/dashboard/learning-paths" className='hover:text-white transition-colors flex items-center gap-1.5'>
+									iGOT & NSSTA Pathways
+								</Link>
+							</li>
+							<li>
+								<Link to="/dashboard/assessments" className='hover:text-white transition-colors flex items-center gap-1.5'>
+									Assessment Engine
+								</Link>
+							</li>
+							<li>
+								<Link to="/dashboard/analytics" className='hover:text-white transition-colors flex items-center gap-1.5'>
+									Workforce Analytics
+								</Link>
+							</li>
 						</ul>
 					</div>
 
+					{/* Portals & Ecosystem */}
 					<div>
-						<h4 className='text-xs font-black uppercase tracking-[0.2em] text-(--app-color-text) mb-6'>Ecosystem</h4>
-						<ul className='space-y-4 text-sm text-(--app-color-text-muted)'>
-							<li className='flex items-center gap-2'>
-								<ExternalLink size={14} className='text-(--app-color-primary)' />
-								<a href='https://mospi.gov.in' target='_blank' rel='noreferrer' className='hover:text-(--app-color-primary) transition-colors'>MoSPI Official</a>
+						<h4 className='text-xs font-black uppercase tracking-[0.2em] text-blue-400 mb-6'>Official Portals</h4>
+						<ul className='space-y-3.5 text-sm text-slate-300 font-medium'>
+							<li>
+								<a href='https://mospi.gov.in' target='_blank' rel='noreferrer' className='hover:text-white transition-colors inline-flex items-center gap-1.5'>
+									MoSPI Official Portal <ArrowUpRight size={13} className="text-slate-400" />
+								</a>
 							</li>
-							<li className='flex items-center gap-2'>
-								<ExternalLink size={14} />
-								<a href='https://nssta.gov.in' target='_blank' rel='noreferrer' className='hover:text-(--app-color-primary) transition-colors'>NSSTA Training</a>
+							<li>
+								<a href='https://nssta.gov.in' target='_blank' rel='noreferrer' className='hover:text-white transition-colors inline-flex items-center gap-1.5'>
+									NSSTA Academy <ArrowUpRight size={13} className="text-slate-400" />
+								</a>
 							</li>
-							<li className='flex items-center gap-2'>
-								<ExternalLink size={14} />
-								<a href='https://igotkarmayogi.gov.in' target='_blank' rel='noreferrer' className='hover:text-(--app-color-primary) transition-colors'>iGOT Karmayogi</a>
+							<li>
+								<a href='https://igotkarmayogi.gov.in' target='_blank' rel='noreferrer' className='hover:text-white transition-colors inline-flex items-center gap-1.5'>
+									iGOT Karmayogi <ArrowUpRight size={13} className="text-slate-400" />
+								</a>
+							</li>
+							<li>
+								<a href='https://ndap.niti.gov.in' target='_blank' rel='noreferrer' className='hover:text-white transition-colors inline-flex items-center gap-1.5'>
+									NDAP Portal <ArrowUpRight size={13} className="text-slate-400" />
+								</a>
 							</li>
 						</ul>
 					</div>
 
+					{/* Legal & Governance */}
 					<div>
-						<h4 className='text-xs font-black uppercase tracking-[0.2em] text-(--app-color-text) mb-6'>Governance</h4>
-						<ul className='space-y-4 text-sm text-(--app-color-text-muted)'>
-							<li><a href='#' className='hover:text-(--app-color-primary) transition-colors'>DIID Division</a></li>
-							<li><a href='#' className='hover:text-(--app-color-primary) transition-colors'>Cyber Security Guidelines</a></li>
-							<li><a href='#' className='hover:text-(--app-color-primary) transition-colors'>Data Privacy Framework</a></li>
-							<li className='pt-2'>
-								<span className='inline-flex items-center rounded-lg bg-(--app-color-primary-soft) px-2.5 py-1 text-[10px] font-bold text-(--app-color-primary) uppercase tracking-wider'>
-									SIH 2026 PS 26101
-								</span>
-							</li>
+						<h4 className='text-xs font-black uppercase tracking-[0.2em] text-blue-400 mb-6'>Governance</h4>
+						<ul className='space-y-3.5 text-sm text-slate-300 font-medium'>
+							<li><a href='#' className='hover:text-white transition-colors'>DIID Frameworks</a></li>
+							<li><a href='#' className='hover:text-white transition-colors'>Cybersecurity Policy</a></li>
+							<li><a href='#' className='hover:text-white transition-colors'>Data Privacy Policy</a></li>
+							<li><a href='#' className='hover:text-white transition-colors'>Accessibility Statement</a></li>
+							<li><a href='#' className='hover:text-white transition-colors'>Terms of Service</a></li>
 						</ul>
 					</div>
 				</div>
 
-				<div className='pt-10 border-t border-(--app-color-border) flex flex-col md:flex-row items-center justify-between gap-6'>
-					<p className='text-xs text-(--app-color-text-muted) font-medium'>
-						© {new Date().getFullYear()} Kshamata (MoSPI DIID & NSSTA). All rights reserved.
-					</p>
-					<p className='text-xs text-(--app-color-text-muted)'>
-						Built for <span className='font-bold text-(--app-color-text)'>India's Official Statistical System</span>
-					</p>
-					<div className='flex items-center gap-6 text-xs font-semibold text-(--app-color-text-muted) uppercase tracking-widest'>
-						<a href='#' className='hover:text-(--app-color-text) transition-colors'>Cookie Policy</a>
-						<a href='#' className='hover:text-(--app-color-text) transition-colors'>GDPR</a>
+				{/* Bottom Bar */}
+				<div className='pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-medium'>
+					<p>© {new Date().getFullYear()} Ministry of Statistics and Programme Implementation (MoSPI). All rights reserved.</p>
+					<div className="flex items-center gap-6">
+						<span>Security Audit Certified</span>
+						<span>•</span>
+						<span>GIGW Compliant</span>
+						<span>•</span>
+						<span className="text-slate-300">Team Esc(Reality);</span>
 					</div>
 				</div>
 			</Container>

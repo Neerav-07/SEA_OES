@@ -16,6 +16,8 @@ import toast from 'react-hot-toast';
 import api from '../../services/api.js';
 import useAuthStore from '../../store/auth.store.js';
 
+import KshamataLogo from '../KshamataLogo';
+
 const navigationItems = [
   { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
   { label: 'Competency Profiles', path: '/dashboard/competencies', icon: Award },
@@ -46,11 +48,7 @@ export default function DashboardLayout() {
       <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-(--app-color-border) bg-white/90 backdrop-blur">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 px-6 py-5 hover:opacity-80">
-          <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
-          <div className="flex items-baseline gap-1">
-            <span className="text-base font-black tracking-tight text-[#172554]">Ksham<span className="text-[#4F46E5]">ata</span></span>
-            <span className="rounded bg-violet-100 px-1 py-0.2 text-[9px] font-black uppercase text-[#7C3AED]">AI</span>
-          </div>
+          <KshamataLogo size="md" variant="full" />
         </Link>
 
         {/* Nav items */}

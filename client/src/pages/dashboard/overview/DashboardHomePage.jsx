@@ -18,9 +18,9 @@ const MOCK_ACTIVITY = [
 ];
 
 const STATUS_STYLES = {
-  active:  'bg-emerald-100 text-emerald-800 font-bold',
-  pending: 'bg-amber-100 text-amber-800 font-bold',
-  done:    'bg-indigo-100 text-indigo-800 font-bold',
+  active:  'bg-emerald-50 text-emerald-800 font-bold border border-emerald-200',
+  pending: 'bg-amber-50 text-amber-800 font-bold border border-amber-200',
+  done:    'bg-blue-50 text-[#1D4ED8] font-bold border border-blue-200',
 };
 
 export default function DashboardHomePage() {

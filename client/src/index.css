@@ -35,6 +35,14 @@ a {
 	text-decoration: none;
 }
 
+/* Explicit white font for dark background buttons and white text elements */
+.text-white,
+a.text-white,
+button.text-white,
+.btn-primary-dark {
+	color: #ffffff !important;
+}
+
 button,
 input,
 textarea,
