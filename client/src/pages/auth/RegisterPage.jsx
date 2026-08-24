@@ -48,7 +48,6 @@ export default function RegisterPage() {
 
     setErrors({});
     setIsSubmitting(true);
-    setTransitioning(true, true);
     
     try {
       const res = await api.post('/auth/register', formData);
@@ -58,7 +57,6 @@ export default function RegisterPage() {
     } catch (error) {
       const msg = error.response?.data?.errors?.[0] || error.response?.data?.message || 'Registration failed.';
       toast.error(msg);
-      setTransitioning(false);
       setIsSubmitting(false);
     }
   };
@@ -75,11 +73,10 @@ export default function RegisterPage() {
         </Link>
       </div>
 
-      {!isSubmitting && (
-        <div
-          className="grid w-full max-w-6xl overflow-hidden rounded-[2.5rem] border border-(--app-color-border)/40 backdrop-blur-md lg:grid-cols-[1.1fr_0.9fr]"
-          style={{ backgroundColor: 'var(--app-color-surface-glass)', boxShadow: 'var(--app-shadow-elevated)' }}
-        >
+      <div
+        className="grid w-full max-w-6xl overflow-hidden rounded-[2.5rem] border border-(--app-color-border)/40 backdrop-blur-md lg:grid-cols-[1.1fr_0.9fr]"
+        style={{ backgroundColor: 'var(--app-color-surface-glass)', boxShadow: 'var(--app-shadow-elevated)' }}
+      >
           {/* ── Left branding panel ── */}
           <section
             className="relative flex flex-col items-center justify-center overflow-hidden p-8 text-center text-white lg:p-12"
@@ -178,7 +175,6 @@ export default function RegisterPage() {
             </div>
           </section>
         </div>
-      )}
     </Container>
   );
 }
