@@ -141,8 +141,8 @@ export default function LandingPage() {
                 key={feat.title}
                 className="group relative rounded-2xl border border-slate-200/90 bg-white/90 p-5 lg:p-6 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-900/5 flex flex-col justify-between overflow-hidden text-left"
               >
-                {/* Top subtle highlight glow */}
-                <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-blue-600/0 to-transparent group-hover:via-blue-600 transition-all duration-500" />
+                {/* Bottom subtle highlight glow */}
+                <div className="absolute bottom-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#1E3A8A] to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
 
                 <div>
                   <div className="flex items-center justify-between mb-4">
