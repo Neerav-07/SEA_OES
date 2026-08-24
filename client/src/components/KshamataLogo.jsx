@@ -9,7 +9,8 @@ import React from 'react';
 export default function KshamataLogo({ 
   size = 'md',      // 'sm' | 'md' | 'lg' | 'xl'
   className = '',
-  showTagline = false
+  showTagline = false,
+  light = false
 }) {
   const sizeClasses = {
     sm: 'text-lg',
