@@ -71,24 +71,24 @@ export default function LoginPage() {
                 <div className="h-[3px] w-16 rounded-full bg-[#2563EB]" />
               </div>
               <div className="mt-6">
-                <p className="mx-auto max-w-sm text-sm font-medium leading-relaxed text-slate-200/90">
+                <p className="mx-auto max-w-sm text-sm font-semibold leading-relaxed text-white">
                   Personalized iGOT Karmayogi & NSSTA learning pathways for India's Official Statistical System (MoSPI DIID).
                 </p>
               </div>
               <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-3 px-2 text-left">
                 {FEATURE_BULLETS.map((f) => (
                   <div key={f} className="flex items-center gap-2.5">
-                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500/25 text-blue-300">
+                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-white">
                       <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <span className="whitespace-nowrap text-xs font-bold tracking-wider text-slate-100">{f}</span>
+                    <span className="whitespace-nowrap text-xs font-bold tracking-wider text-white">{f}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-between px-10 text-[9px] font-black uppercase tracking-[0.3em] text-slate-300/40">
+            <div className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-between px-10 text-[9px] font-black uppercase tracking-[0.3em] text-white/70">
               <p>© 2026 Kshamata (MoSPI DIID & NSSTA)</p>
               <p>PS 26101 Portal</p>
             </div>

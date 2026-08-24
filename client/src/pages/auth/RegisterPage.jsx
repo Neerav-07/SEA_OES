@@ -75,22 +75,22 @@ export default function RegisterPage() {
                 <div className="h-[3px] w-16 rounded-full bg-[#2563EB]" />
               </div>
               <div className="mt-6">
-                <p className="mx-auto max-w-sm text-sm font-medium leading-relaxed text-slate-200/90">
+                <p className="mx-auto max-w-sm text-sm font-semibold leading-relaxed text-white">
                   Register to establish your statistical competency baseline and personalized learning path (MoSPI DIID & NSSTA).
                 </p>
               </div>
               <div className="mt-8 space-y-4 px-4 text-left">
                 {ONBOARDING_STEPS.map((step, i) => (
                   <div key={i} className="flex items-start gap-3">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/25 text-blue-300 text-xs font-black">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-white text-xs font-black">
                       {i + 1}
                     </div>
-                    <p className="text-xs font-medium text-slate-100">{step}</p>
+                    <p className="text-xs font-semibold text-white">{step}</p>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-between px-10 text-[9px] font-black uppercase tracking-[0.3em] text-slate-300/40">
+            <div className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-between px-10 text-[9px] font-black uppercase tracking-[0.3em] text-white/70">
               <p>© 2026 Kshamata (MoSPI DIID & NSSTA)</p>
               <p>PS 26101 Portal</p>
             </div>

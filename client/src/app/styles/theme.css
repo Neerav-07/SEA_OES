@@ -1,5 +1,5 @@
 :root {
-	--app-font-sans: "Inter", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	--app-font-sans: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 	--app-font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
 	--app-rgb-primary: 2, 6, 23;         /* #020617 Deepest Midnight Navy */
 	--app-rgb-accent: 30, 58, 138;      /* #1E3A8A Dark Navy Blue */
