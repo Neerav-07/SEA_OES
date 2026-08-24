@@ -1,6 +1,6 @@
-import { neon } from '@neondatabase/serverless';
-import pg from 'pg';
-import { seedDatabase } from './seed.js';
+import { neon } from "@neondatabase/serverless";
+import pg from "pg";
+import { seedDatabase } from "./seed.js";
 
 const { Pool } = pg;
 
@@ -70,6 +70,85 @@ const TABLE_QUERIES = [
     taxonomy_level integer DEFAULT 1 NOT NULL,
     created_at timestamp DEFAULT now() NOT NULL
   );`,
+
+  `ALTER TABLE sub_competencies ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now() NOT NULL;`,
+  `ALTER TABLE learning_objectives ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now() NOT NULL;`,
+
+  `CREATE TABLE IF NOT EXISTS competency_requirements (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    role_id uuid NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    competency_id uuid NOT NULL REFERENCES competencies(id) ON DELETE CASCADE,
+    required_level real NOT NULL,
+    priority integer DEFAULT 3 NOT NULL,
+    urgency integer DEFAULT 3 NOT NULL,
+    mandatory boolean DEFAULT false NOT NULL,
+    framework_version text DEFAULT 'v1' NOT NULL,
+    effective_from timestamp DEFAULT now() NOT NULL,
+    effective_to timestamp,
+    source_reference text,
+    created_at timestamp DEFAULT now() NOT NULL,
+    updated_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE UNIQUE INDEX IF NOT EXISTS competency_requirements_role_competency_idx
+    ON competency_requirements (role_id, competency_id, framework_version);`,
+
+  `CREATE TABLE IF NOT EXISTS competency_estimates (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    official_id uuid NOT NULL REFERENCES officials(id) ON DELETE CASCADE,
+    competency_id uuid NOT NULL REFERENCES competencies(id) ON DELETE CASCADE,
+    mastery_score real DEFAULT 0 NOT NULL,
+    proficiency_level integer DEFAULT 1 NOT NULL,
+    proficiency_label text DEFAULT 'AWARENESS' NOT NULL,
+    evidence_sufficiency real DEFAULT 0 NOT NULL,
+    sufficiency_breakdown jsonb,
+    estimator_version text DEFAULT 'mvp-v1' NOT NULL,
+    policy_version text DEFAULT 'v1' NOT NULL,
+    evidence_snapshot jsonb,
+    calculated_at timestamp DEFAULT now() NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL,
+    updated_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE UNIQUE INDEX IF NOT EXISTS competency_estimates_official_competency_idx
+    ON competency_estimates (official_id, competency_id);`,
+
+  `CREATE TABLE IF NOT EXISTS sub_competency_estimates (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    official_id uuid NOT NULL REFERENCES officials(id) ON DELETE CASCADE,
+    sub_competency_id uuid NOT NULL REFERENCES sub_competencies(id) ON DELETE CASCADE,
+    mastery_score real DEFAULT 0 NOT NULL,
+    proficiency_level integer DEFAULT 1 NOT NULL,
+    evidence_sufficiency real DEFAULT 0 NOT NULL,
+    evidence_snapshot jsonb,
+    calculated_at timestamp DEFAULT now() NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL,
+    updated_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE UNIQUE INDEX IF NOT EXISTS sub_competency_estimates_official_sub_idx
+    ON sub_competency_estimates (official_id, sub_competency_id);`,
+
+  `CREATE TABLE IF NOT EXISTS skill_gaps (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    official_id uuid NOT NULL REFERENCES officials(id) ON DELETE CASCADE,
+    competency_id uuid NOT NULL REFERENCES competencies(id) ON DELETE CASCADE,
+    requirement_id uuid NOT NULL REFERENCES competency_requirements(id) ON DELETE RESTRICT,
+    estimate_id uuid REFERENCES competency_estimates(id) ON DELETE RESTRICT,
+    required_level real NOT NULL,
+    estimated_level real NOT NULL,
+    gap_severity real DEFAULT 0 NOT NULL,
+    learning_priority real DEFAULT 0 NOT NULL,
+    assessment_priority real DEFAULT 0 NOT NULL,
+    category text NOT NULL,
+    reasons jsonb DEFAULT '[]'::jsonb NOT NULL,
+    calculated_at timestamp DEFAULT now() NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL,
+    updated_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE UNIQUE INDEX IF NOT EXISTS skill_gaps_official_requirement_idx
+    ON skill_gaps (official_id, requirement_id);`,
 
   `CREATE TABLE IF NOT EXISTS role_competencies (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -174,7 +253,7 @@ const TABLE_QUERIES = [
 
 export async function ensureDatabaseTablesCreated(url) {
   try {
-    const isNeon = url.includes('neon.tech');
+    const isNeon = url.includes("neon.tech");
     if (isNeon) {
       const sql = neon(url);
       for (const query of TABLE_QUERIES) {
@@ -187,9 +266,9 @@ export async function ensureDatabaseTablesCreated(url) {
       }
       await pool.end();
     }
-    console.log('✅ Database tables verified/created');
+    console.log("✅ Database tables verified/created");
     await seedDatabase();
   } catch (error) {
-    console.warn('⚠️ Auto DB initialization warning:', error.message);
+    console.warn("⚠️ Auto DB initialization warning:", error.message);
   }
 }
