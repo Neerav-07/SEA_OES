@@ -11,6 +11,7 @@ import diagnosticRouter from "./diagnostic.route.js";
 import analyticsRouter from "./analytics.route.js";
 import recalibrationRouter from "./recalibration.route.js";
 import pathwayRouter from "./pathway.route.js";
+import assessmentRouter from "./assessment.route.js";
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use("/diagnostics", diagnosticRouter);
 router.use("/analytics", analyticsRouter);
 router.use("/recalibration", recalibrationRouter);
 router.use("/pathways", pathwayRouter);
+router.use("/assessments", assessmentRouter);
 
 export default router;

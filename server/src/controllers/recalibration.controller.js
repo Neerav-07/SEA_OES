@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { officials, evidence, competencies, competencyHistory } from '../db/schema/index.js';
 import { sendSuccess, sendError } from '../utils/response.js';
@@ -14,12 +15,12 @@ export const recalibrateOfficialCompetencies = asyncHandler(async (req, res) => 
     return sendError(res, 'Official ID is required for recalibration', 400);
   }
 
-  const [official] = await db.select().from(officials).where(officials.id.equals(officialId));
+  const [official] = await db.select().from(officials).where(eq(officials.id, officialId));
   if (!official) {
     return sendError(res, 'Official profile not found', 404);
   }
 
-  const offEvidence = await db.select().from(evidence).where(evidence.officialId.equals(officialId));
+  const offEvidence = await db.select().from(evidence).where(eq(evidence.officialId, officialId));
   const allComps = await db.select().from(competencies);
 
   const recalibratedResults = [];

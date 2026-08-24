@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { officials, competencies, learningMaterials, recommendations } from '../db/schema/index.js';
 import { sendSuccess, sendError } from '../utils/response.js';
@@ -9,7 +10,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 export const getPersonalizedPathway = asyncHandler(async (req, res) => {
   const { officialId } = req.params;
 
-  const [official] = await db.select().from(officials).where(officials.id.equals(officialId));
+  const [official] = await db.select().from(officials).where(eq(officials.id, officialId));
   if (!official) {
     return sendError(res, 'Official profile not found', 404);
   }
