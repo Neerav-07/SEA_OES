@@ -1,12 +1,3 @@
-/**
- * RegisterPage
- *
- * TODO items:
- *  - Replace ALL text marked TODO
- *  - The "name" field maps to users.name in DB — rename label to match your entity
- *    (e.g. "Organization Name", "Team Name", "Full Name")
- *  - Update onboarding steps to describe your real flow
- */
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -17,6 +8,7 @@ import Input from '../../components/Input';
 import KshamataLogo from '../../components/KshamataLogo';
 import api from '../../services/api.js';
 import useAuthStore from '../../store/auth.store.js';
+import { validateRegisterForm } from '../../utils/validators.js';
 
 const initialForm = { name: '', email: '', password: '', confirmPassword: '' };
 
@@ -28,21 +20,36 @@ const ONBOARDING_STEPS = [
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState(initialForm);
+  const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
   const setTransitioning = useAuthStore((s) => s.setTransitioning);
 
-  const handleChange = (e) => setFormData((f) => ({ ...f, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((f) => ({ ...f, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match.');
+    
+    // Robust client-side validation before firing API request
+    const validation = validateRegisterForm(formData);
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      const firstError = Object.values(validation.errors)[0];
+      toast.error(firstError);
       return;
     }
+
+    setErrors({});
     setIsSubmitting(true);
     setTransitioning(true, true);
+    
     try {
       const res = await api.post('/auth/register', formData);
       setAuth({ user: res.data.user, accessToken: res.data.accessToken });
@@ -106,15 +113,49 @@ export default function RegisterPage() {
                 <h2 className="text-2xl font-bold tracking-tight text-(--app-color-text)">Register Official Account</h2>
                 <p className="mt-0.5 text-xs text-(--app-color-text-muted)">Enter your details for competency tracking</p>
               </div>
-              <form className="space-y-3" onSubmit={handleSubmit}>
-                <Input label="Official Full Name" name="name" value={formData.name} onChange={handleChange} required placeholder="e.g. Dr. Rajesh Kumar" className="h-10 rounded-xl text-sm" />
-                <Input label="Official Work Email" type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="rajesh.kumar@gov.in" className="h-10 rounded-xl text-sm" />
+              <form className="space-y-3" onSubmit={handleSubmit} noValidate>
+                <Input
+                  label="Official Full Name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  error={errors.name}
+                  placeholder="e.g. Dr. Rajesh Kumar"
+                  className="h-10 rounded-xl text-sm"
+                />
+                <Input
+                  label="Official Work Email"
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  error={errors.email}
+                  placeholder="official@gov.in"
+                  className="h-10 rounded-xl text-sm"
+                />
                 <div className="grid grid-cols-2 gap-3">
-                  <Input label="Password" type="password" name="password" value={formData.password} onChange={handleChange} required placeholder="••••••••" className="h-10 rounded-xl text-sm" />
-                  <Input label="Confirm" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required placeholder="••••••••" className="h-10 rounded-xl text-sm" />
+                  <Input
+                    label="Password"
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    error={errors.password}
+                    placeholder="••••••••"
+                    className="h-10 rounded-xl text-sm"
+                  />
+                  <Input
+                    label="Confirm"
+                    type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    error={errors.confirmPassword}
+                    placeholder="••••••••"
+                    className="h-10 rounded-xl text-sm"
+                  />
                 </div>
                 <div className="pt-1">
-                  {/* TODO: Replace button label */}
                   <Button type="submit" className="h-10 w-full rounded-xl text-xs font-bold shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99]" loading={isSubmitting} disabled={isSubmitting}>
                     Create Account
                   </Button>
