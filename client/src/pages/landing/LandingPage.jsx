@@ -91,52 +91,47 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Features Grid (Sleek & Professional Animation) ── */}
-      <section className="relative z-10 mx-auto max-w-6xl px-6 pb-28">
-        <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#1E3A8A] mb-3">
+      {/* ── Features Grid (Sleek & Professional Compact Cards) ── */}
+      <section className="relative z-10 mx-auto max-w-6xl px-6 pb-20">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#1E3A8A] mb-2.5">
             <CheckCircle2 size={14} className="text-[#1E3A8A]" /> Enterprise Capabilities
           </div>
           <h2 className="text-3xl lg:text-4xl font-black tracking-tight text-[#020617]">
             Core Platform Capabilities
           </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-slate-600 font-medium">
+          <p className="mx-auto mt-2 max-w-2xl text-slate-600 font-medium text-sm">
             Transforming government workforce development through evidence, personalized learning, and grounded assessment intelligence.
           </p>
         </div>
 
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((feat) => {
             const Icon = feat.icon;
             return (
               <div
                 key={feat.title}
-                className="group relative rounded-2xl border border-slate-200/90 bg-white/90 p-7 backdrop-blur-md transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-900/5 flex flex-col justify-between overflow-hidden"
+                className="group relative rounded-2xl border border-slate-200/90 bg-white/90 p-5 lg:p-6 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-900/5 flex flex-col justify-between overflow-hidden"
               >
                 {/* Top subtle highlight glow */}
                 <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-blue-600/0 to-transparent group-hover:via-blue-600 transition-all duration-500" />
 
                 <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="inline-flex items-center justify-center rounded-xl bg-blue-50/90 p-3.5 text-[#1E3A8A] ring-1 ring-blue-100 group-hover:bg-[#1E3A8A] group-hover:text-white group-hover:scale-110 transition-all duration-300">
-                      <Icon size={24} />
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="inline-flex items-center justify-center rounded-xl bg-blue-50/90 p-3 text-[#1E3A8A] ring-1 ring-blue-100 group-hover:bg-[#1E3A8A] group-hover:text-white group-hover:scale-105 transition-all duration-300">
+                      <Icon size={20} />
                     </div>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-700 group-hover:bg-blue-50 group-hover:text-[#1E3A8A] transition-colors">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-700 group-hover:bg-blue-50 group-hover:text-[#1E3A8A] transition-colors">
                       {feat.badge}
                     </span>
                   </div>
 
-                  <h3 className="mb-3 text-lg font-bold text-[#020617] group-hover:text-[#1E3A8A] transition-colors">
+                  <h3 className="mb-2 text-base font-bold text-[#020617] group-hover:text-[#1E3A8A] transition-colors">
                     {feat.title}
                   </h3>
-                  <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
                     {feat.desc}
                   </p>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#1E3A8A] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <span>Learn more</span>
-                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
             );
