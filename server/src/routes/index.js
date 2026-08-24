@@ -9,6 +9,7 @@ import evidenceRouter from './evidence.route.js';
 import diagnosticRouter from './diagnostic.route.js';
 import analyticsRouter from './analytics.route.js';
 import recalibrationRouter from './recalibration.route.js';
+import pathwayRouter from './pathway.route.js';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/evidence', evidenceRouter);
 router.use('/diagnostics', diagnosticRouter);
 router.use('/analytics', analyticsRouter);
 router.use('/recalibration', recalibrationRouter);
+router.use('/pathways', pathwayRouter);
 
 export default router;

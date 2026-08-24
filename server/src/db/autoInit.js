@@ -157,6 +157,19 @@ const TABLE_QUERIES = [
     reason text NOT NULL,
     created_at timestamp DEFAULT now() NOT NULL
   );`,
+
+  `CREATE TABLE IF NOT EXISTS learning_materials (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    competency_id uuid REFERENCES competencies(id) ON DELETE CASCADE,
+    material_code text NOT NULL UNIQUE,
+    title text NOT NULL,
+    provider text NOT NULL,
+    duration_hours integer DEFAULT 4 NOT NULL,
+    prerequisites jsonb,
+    mapped_objectives jsonb,
+    match_confidence real DEFAULT 0.88 NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
 ];
 
 export async function ensureDatabaseTablesCreated(url) {
