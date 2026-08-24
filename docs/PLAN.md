@@ -16,7 +16,9 @@
 
 ## 0.1 Recommended stack
 
-**Use PERN: PostgreSQL + Express/Node.js + React + Node.js services.**
+**Use a modular PERN core with TypeScript domain services and separate Python AI workers: PostgreSQL + Express/Node.js + React, Redis-backed jobs, and object storage.**
+
+The MVP starts as a modular monolith for authoritative domain operations. AI-heavy processing is asynchronous and isolated from request handling. Extract services only when scale, ownership, or security boundaries justify it.
 
 ### Why PostgreSQL over MongoDB
 
@@ -46,7 +48,22 @@ PostgreSQL gives us:
 - `pgvector` for embeddings if desired
 - easier enforcement of hard constraints
 
-**Do not make the system document-centric. Make it domain-centric.**
+**Do not make the system document-centric. Make it domain-centric.** Uploaded files belong in S3-compatible object storage (MinIO locally); PostgreSQL stores metadata, checksums, versions, provenance, and processing state. Redis/queues handle background work and backpressure.
+
+## 0.2 Updated technical architecture decisions
+
+The following decisions supersede simpler alternatives elsewhere in this plan:
+
+- Model the requirement chain as `Position → Role → Activity → Competency Requirement`, not only `Role → Competency`.
+- Keep behavioural, functional, and domain competency types with explicit proficiency indicators and versioned frameworks.
+- Separate internal latent mastery/ability from the reported semantic proficiency level. Do not present a raw continuous value such as `3.2/5` as the official's authoritative level.
+- Maintain `LearningPriority` and `AssessmentPriority` independently. Low ability with strong evidence suggests learning; weak evidence suggests targeted assessment first.
+- Replace unexplained confidence percentages with an Evidence Sufficiency Index based on coverage, volume, diversity, recency, consistency, and assessment quality. A weighted geometric mean prevents one strong dimension from hiding a critical weakness.
+- Treat competency state as a projection derived from append-only evidence. Persist estimator version, policy version, evidence snapshot, and calculation time.
+- Use a transactional outbox for asynchronous publication of evidence, audit, and learning events; full event sourcing is not required for the MVP.
+- Define provider-neutral interfaces for learning resources, LLM generation, embeddings, translation, and validation so cloud and controlled/local implementations can be exchanged.
+- Use PostgreSQL edge tables and recursive queries for prerequisites and competency relationships initially. A graph database remains optional.
+- Keep assessment item and result structures compatible with future QTI export, and record learning activity using an xAPI-inspired event shape.
 
 ---
 
@@ -117,8 +134,12 @@ All modules must use one shared conceptual model.
 ```text
 Official
   ↓
+Position
+        ↓
 Role
   ↓
+Activity
+        ↓
 Competency Requirement
   ↓
 Competency
@@ -652,13 +673,13 @@ Regression     2
 Bias           2
 
 Cognitive distribution:
-Remember       1
-Understand     2
-Apply          5
-Analyze        2
+Remember       5%
+Understand     15%
+Apply          50%
+Analyze       30%
 ```
 
-The assessment should deliberately sample the competency rather than randomly sample the document.
+The assessment should deliberately sample the competency rather than randomly sample the document. Blueprint fields must also include weighted claims, evidence-mode distribution, difficulty distribution, and minimum item count. These percentages are configurable policy, not universal constants.
 
 ---
 
@@ -681,54 +702,33 @@ Regression: 2.3
 
 ## 2.6 Evidence fusion
 
-Initial MVP method:
+The MVP may use configurable weighted evidence rules, but must enforce attainment gates before reporting a semantic level:
 
-```text
-Competency Score =
-Σ(Evidence Score × Evidence Weight)
-```
+- minimum coverage of required learning objectives;
+- minimum application or performance evidence where the target competency requires it;
+- minimum number of distinct evidence events; and
+- minimum Evidence Sufficiency Index.
 
-Weights must be configurable.
-
-Example:
-
-```text
-Diagnostic Knowledge      40%
-Scenario Application      35%
-Performance Task          25%
-```
-
-Do not hard-code weights into application logic.
+Do not allow many easy recall questions to compensate for zero application capability. Store the internal mastery/ability estimate separately from the reported framework level.
 
 ---
 
-## 2.7 Confidence estimation
+## 2.7 Evidence Sufficiency Index
 
-Confidence should consider:
-
-1. Number of evidence items.
-2. Evidence diversity.
-3. Recency.
-4. Consistency.
-5. Assessment quality.
-6. Coverage of sub-competencies.
-
-Example:
+Do not expose an arbitrary confidence percentage. Calculate and expose a sufficiency breakdown using normalized components:
 
 ```text
-Score:      3.2 / 5
-Confidence: 84%
+ESI = weighted_geometric_mean(
+        coverage,
+        volume,
+        diversity,
+        recency,
+        consistency,
+        assessment_quality
+)
 ```
 
-Low confidence:
-
-```text
-Score:      3.2 / 5
-Confidence: 42%
-
-Reason:
-Only one old diagnostic assessment.
-```
+The index describes how sufficient the evidence is for an inference; it is not the competency score. Low ESI should increase `AssessmentPriority`, not automatically create a learning recommendation. Stale evidence should generally reduce sufficiency before reducing reported competency.
 
 ---
 
@@ -1208,6 +1208,9 @@ Convert learning material into structured, competency-aligned knowledge that can
 Support:
 
 - PDF
+- DOCX
+- PPTX
+- video and timestamped transcripts
 - structured text
 - course descriptions
 - learning modules
@@ -1226,7 +1229,7 @@ Text extraction
  ↓
 OCR if required
  ↓
-Page/chunk segmentation
+Layout-aware page/slide/scene segmentation
  ↓
 Topic extraction
  ↓
@@ -1238,8 +1241,12 @@ Competency mapping
  ↓
 Human/automated validation
  ↓
+Embeddings and hybrid index
+ ↓
 Indexed knowledge
 ```
+
+Processing is asynchronous. Persist states such as `QUEUED`, `PROCESSING`, `EXTRACTING`, `STRUCTURING`, `EMBEDDING`, `MAPPING`, `VALIDATING`, `READY`, `REQUIRES_REVIEW`, and `FAILED`, together with retries, errors, parser/model versions, and pipeline version.
 
 ---
 
@@ -1248,9 +1255,11 @@ Indexed knowledge
 Every extracted claim should retain:
 
 - source document
-- page
-- chunk
-- extraction confidence
+- source version and checksum
+- page, slide, section, or video time range
+- hierarchical chunk and parent context
+- language and parser version
+- extraction confidence and approval status
 
 Example:
 
@@ -1273,7 +1282,9 @@ User/System Request
         ↓
 Relevant competency/LO
         ↓
-Vector retrieval
+Metadata and lexical retrieval
+ ↓
+Vector retrieval and reranking
         ↓
 Source chunks
         ↓
@@ -1282,7 +1293,7 @@ LLM
 Grounded output
 ```
 
-No source → no authoritative generation.
+No approved source → no authoritative generation. Treat uploaded and retrieved content as untrusted input; source authority, validity dates, conflicts, and reviewer decisions must be explicit.
 
 ---
 
@@ -1387,17 +1398,21 @@ Assessment Blueprint
  ↓
 Question Intent
  ↓
-Question Generation
+Assessment Planning
  ↓
-Deterministic Validation
+Task Specification
  ↓
-LLM Critic
+Question Construction
  ↓
-Semantic Similarity
+Hard Validity Gates
  ↓
-Intent Comparison
+Grounding and Claim Verification
  ↓
-Final Question
+Semantic Quality and Intent Adjudication
+ ↓
+Human Review when required
+ ↓
+Published Question
 ```
 
 ---
@@ -1407,10 +1422,12 @@ Final Question
 The blueprint must define:
 
 - competency
+- weighted claims and evidence requirements
 - sub-competency
 - learning objective
 - number of questions
 - cognitive distribution
+- evidence-mode distribution
 - difficulty distribution
 - question types
 - scenario requirements
@@ -1436,6 +1453,8 @@ Easy = 2
 Medium = 5
 Hard = 3
 ```
+
+The example distribution is policy-configurable. A blueprint is a real test specification, not only a list of topics.
 
 ---
 
@@ -1488,9 +1507,9 @@ Never generate solely from a document.
 
 ---
 
-## 6.5 Two-stage generation
+## 6.5 Three-phase generation and adjudication
 
-### Stage A — Generate assessment specification
+### Phase A — Assessment planning
 
 ```text
 LO
@@ -1508,9 +1527,9 @@ Action
 
 ↓
 
-Structured question intent.
+Structured task specification and question intent.
 
-### Stage B — Generate question
+### Phase B — Item construction
 
 ```text
 Question Intent
@@ -1520,7 +1539,11 @@ Source Context
 
 ↓
 
-Question.
+Structured question candidate.
+
+### Phase C — Item adjudication
+
+Apply deterministic checks, grounding and claim verification, semantic validation, duplicate-intent detection, and an independent AI critic. Route items requiring policy or quality decisions to a human reviewer.
 
 This separation makes validation much easier.
 
@@ -1534,6 +1557,16 @@ Verify:
 2. Explanation is supported by source.
 3. No external unsupported claim is required.
 4. Question does not rely on missing context.
+5. Each option is classified as entailed, contradicted, or unsupported by the approved source.
+
+Hard validity gates run before soft quality ranking:
+
+- exactly one defensible answer;
+- correct claim and competency alignment;
+- no contradiction or answer-key inconsistency;
+- sufficient context and policy compliance.
+
+Only valid items are ranked for clarity, distractor quality, novelty, realism, linguistic quality, and estimated difficulty.
 
 ---
 
@@ -1768,21 +1801,11 @@ Do not immediately claim a competency from one lucky answer.
 
 ### MVP
 
-Use rule-based adaptive difficulty:
-
-```text
-Strong performance
- ↓
-Increase difficulty
-
-Weak performance
- ↓
-Reduce difficulty / probe prerequisite
-```
+Use rule-based, multistage adaptive assessment. Route the official into competency-specific diagnostic modules while preserving blueprint coverage, evidence-mode balance, content balance, and exposure limits. Adapt difficulty within a module; do not use one global correct → harder / wrong → easier variable.
 
 ### Future
 
-IRT/BKT can replace the heuristic once enough real response data exists.
+Use calibrated IRT/CAT for item-level ability estimation and knowledge tracing for mastery across sequential learning opportunities. Keep these models separate and introduce them only after sufficient real response data exists.
 
 Do not pretend small synthetic datasets are sufficient for calibrated IRT.
 
@@ -3046,6 +3069,18 @@ The system is NOT MVP-complete until all of the following work through the real 
 
 The modules are feature-oriented, but they should be built in dependency order.
 
+## Phase 0 — Requirements, Contracts & Evaluation Baseline
+
+Before implementation, define:
+
+- FRAC/PS competency and position requirements;
+- provider-neutral `LearningProvider` contract;
+- approved competency and assessment benchmark data;
+- privacy, retention, RBAC, and review policies;
+- MVP vertical slice and measurable acceptance metrics.
+
+Use `MockProvider` or `CSVProvider` where live iGOT/NSSTA credentials or API specifications are unavailable. Do not invent undocumented external endpoints.
+
 ## Phase 1 — Domain Foundation
 
 Build:
@@ -3071,7 +3106,10 @@ Build:
 - evidence model
 - assessment attempt model
 - competency estimate
-- confidence
+- latent mastery/ability estimate
+- semantic proficiency mapping
+- Evidence Sufficiency Index
+- attainment gates
 - provenance
 - history
 
@@ -3114,7 +3152,7 @@ Gap
 → Recommendation
 ```
 
-Then prerequisite-aware ranking.
+Then prerequisite-aware ranking. Introduce a generic learning-resource model with `IGOT`, `NSSTA`, `INTERNAL`, and `OTHER` providers, and represent prerequisites as a DAG using PostgreSQL edge tables.
 
 ---
 
@@ -3123,14 +3161,16 @@ Then prerequisite-aware ranking.
 Build:
 
 ```text
-Document
-→ chunks
+Document / Presentation / Video
+→ asynchronous processing job
+→ layout-aware chunks and provenance
 → topics
 → LOs
 → competency mapping
+→ embeddings and hybrid index
 ```
 
-Then RAG.
+Add object storage, Redis queues, fine-grained citations, source authority/versioning, conflict handling, and hybrid RAG. Python workers handle OCR, ASR, embeddings, NLP, and generation; TypeScript/Node handles domain transactions and APIs.
 
 ---
 
@@ -3151,6 +3191,8 @@ Build in this order:
 11. Scenario generation.
 12. Question versioning.
 
+Also add item exposure control, empirical difficulty statistics, and QTI-compatible internal item/result structures. Hard validity gates must run before soft quality scores.
+
 Do NOT start by making a PDF-to-MCQ endpoint.
 
 ---
@@ -3164,7 +3206,8 @@ Build:
 - response persistence
 - results
 - evidence creation
-- adaptive rules
+- multistage competency-specific adaptive rules
+- exposure limits and content-balance rules
 
 ---
 
@@ -3194,6 +3237,9 @@ Add:
 - audit
 - human override
 - conflict handling
+- department/organisation scope and privacy controls
+- AI reproducibility metadata
+- transactional outbox and durable security logging
 
 ---
 
@@ -3211,12 +3257,13 @@ Add:
 
 ## Phase 11 — External Integration
 
-Only after the internal system is stable:
+The provider contract starts in Phase 0; production synchronization follows internal validation:
 
 - normalized external course model
-- provider adapter
+- `IGotProvider`, `NSSTAProvider`, `MockProvider`, and `CSVProvider` adapters
 - iGOT/NSSTA integration where technically available
 - external completion events
+- callback idempotency, sync status, external IDs, and periodic reconciliation
 
 Do not make the core system dependent on an external API during early development.
 
