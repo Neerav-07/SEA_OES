@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
  */
 
 const Header = ({
-	logo = 'Your App',
+	logo = 'Karmayogi AI',
 	logoHref = '/',
 	navItems = [],
 	userMenu = null,
@@ -23,18 +23,18 @@ const Header = ({
 			className='flex items-center gap-3 logo-brand group'
 			onClick={onLogoClick}
 		>
-			<img src='/navlogo.png' alt='Your App' className='h-12 w-12 object-contain transition-transform duration-500 group-hover:scale-110' />
-			<div className="flex items-baseline gap-0.5">
-				<span className="text-(--app-color-text) text-2xl!">Sport</span>
-				<span className="logo-shield text-2xl!">Shield</span>
+			<img src='/navlogo.png' alt='Karmayogi AI' className='h-10 w-10 object-contain transition-transform duration-500 group-hover:scale-110' />
+			<div className="flex items-baseline gap-1">
+				<span className="text-(--app-color-text) text-xl! font-black uppercase tracking-wider">Karmayogi</span>
+				<span className="logo-shield text-xl! font-black uppercase tracking-wider text-(--app-color-primary)">AI</span>
 			</div>
 		</button>
 	) : (
 		<Link to={logoHref} className='flex items-center gap-3 logo-brand group'>
-			<img src='/navlogo.png' alt='Your App' className='h-12 w-12 object-contain transition-transform duration-500 group-hover:scale-110' />
-			<div className="flex items-baseline gap-0.5">
-				<span className="text-(--app-color-text) text-2xl!">Sport</span>
-				<span className="logo-shield text-2xl!">Shield</span>
+			<img src='/navlogo.png' alt='Karmayogi AI' className='h-10 w-10 object-contain transition-transform duration-500 group-hover:scale-110' />
+			<div className="flex items-baseline gap-1">
+				<span className="text-(--app-color-text) text-xl! font-black uppercase tracking-wider">Karmayogi</span>
+				<span className="logo-shield text-xl! font-black uppercase tracking-wider text-(--app-color-primary)">AI</span>
 			</div>
 		</Link>
 	);

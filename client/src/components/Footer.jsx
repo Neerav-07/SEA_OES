@@ -9,14 +9,14 @@ export default function Footer() {
 				<div className='grid gap-12 lg:grid-cols-[1.5fr_1fr_1fr_1fr] pb-16'>
 					<div className='space-y-6'>
 						<Link to='/' className='flex items-center gap-3 logo-brand group'>
-							<img src='/navlogo.png' alt='Your App' className='h-10 w-10 object-contain transition-transform duration-500 group-hover:rotate-12' />
-							<div className="flex items-baseline gap-0.5">
-								<span className="text-(--app-color-text) text-xl!">Sport</span>
-								<span className="logo-shield text-xl!">Shield</span>
+							<img src='/navlogo.png' alt='Karmayogi AI' className='h-10 w-10 object-contain transition-transform duration-500 group-hover:rotate-12' />
+							<div className="flex items-baseline gap-1">
+								<span className="text-(--app-color-text) text-xl! font-black uppercase tracking-wider">Karmayogi</span>
+								<span className="logo-shield text-xl! font-black uppercase tracking-wider text-(--app-color-primary)">AI</span>
 							</div>
 						</Link>
 						<p className='max-w-xs text-sm leading-7 text-(--app-color-text-muted)'>
-							The next-generation command center for digital rights protection. Monitor, detect, and enforce your content integrity across the global web.
+							Evidence-driven competency intelligence and AI-enabled capacity building for India's Official Statistical System (MoSPI DIID & NSSTA).
 						</p>
 						<div className='flex items-center gap-4'>
 							<a href='#' className='p-2 rounded-full border border-(--app-color-border) text-(--app-color-text-muted) hover:text-(--app-color-primary) hover:border-(--app-color-primary) transition-all'>
@@ -32,42 +32,42 @@ export default function Footer() {
 					</div>
 
 					<div>
-						<h4 className='text-xs font-black uppercase tracking-[0.2em] text-(--app-color-text) mb-6'>Product</h4>
+						<h4 className='text-xs font-black uppercase tracking-[0.2em] text-(--app-color-text) mb-6'>Platform</h4>
 						<ul className='space-y-4 text-sm text-(--app-color-text-muted)'>
-							<li><a href='#product' className='hover:text-(--app-color-primary) transition-colors'>Overview</a></li>
-							<li><a href='#capabilities' className='hover:text-(--app-color-primary) transition-colors'>Capabilities</a></li>
-							<li><a href='#workflow' className='hover:text-(--app-color-primary) transition-colors'>Workflow</a></li>
-							<li><Link to='/register' className='hover:text-(--app-color-primary) transition-colors'>Get Started</Link></li>
+							<li><a href='#product' className='hover:text-(--app-color-primary) transition-colors'>Competency Frameworks</a></li>
+							<li><a href='#capabilities' className='hover:text-(--app-color-primary) transition-colors'>Skill Gap Intelligence</a></li>
+							<li><a href='#workflow' className='hover:text-(--app-color-primary) transition-colors'>iGOT Karmayogi API</a></li>
+							<li><Link to='/register' className='hover:text-(--app-color-primary) transition-colors'>Learner Onboarding</Link></li>
 						</ul>
 					</div>
 
 					<div>
-						<h4 className='text-xs font-black uppercase tracking-[0.2em] text-(--app-color-text) mb-6'>Contact & Support</h4>
+						<h4 className='text-xs font-black uppercase tracking-[0.2em] text-(--app-color-text) mb-6'>Ecosystem</h4>
 						<ul className='space-y-4 text-sm text-(--app-color-text-muted)'>
 							<li className='flex items-center gap-2'>
-								<Mail size={14} className='text-(--app-color-success)' />
-								<a href='mailto:code369decode@gmail.com' className='hover:text-(--app-color-primary) transition-colors'>code369decode@gmail.com</a>
+								<ExternalLink size={14} className='text-(--app-color-primary)' />
+								<a href='https://mospi.gov.in' target='_blank' rel='noreferrer' className='hover:text-(--app-color-primary) transition-colors'>MoSPI Official</a>
 							</li>
 							<li className='flex items-center gap-2'>
 								<ExternalLink size={14} />
-								<a href='#' className='hover:text-(--app-color-primary) transition-colors'>Documentation</a>
+								<a href='https://nssta.gov.in' target='_blank' rel='noreferrer' className='hover:text-(--app-color-primary) transition-colors'>NSSTA Training</a>
 							</li>
 							<li className='flex items-center gap-2'>
 								<ExternalLink size={14} />
-								<a href='#' className='hover:text-(--app-color-primary) transition-colors'>API Status</a>
+								<a href='https://igotkarmayogi.gov.in' target='_blank' rel='noreferrer' className='hover:text-(--app-color-primary) transition-colors'>iGOT Karmayogi</a>
 							</li>
 						</ul>
 					</div>
 
 					<div>
-						<h4 className='text-xs font-black uppercase tracking-[0.2em] text-(--app-color-text) mb-6'>Organization</h4>
+						<h4 className='text-xs font-black uppercase tracking-[0.2em] text-(--app-color-text) mb-6'>Governance</h4>
 						<ul className='space-y-4 text-sm text-(--app-color-text-muted)'>
-							<li><a href='#' className='hover:text-(--app-color-primary) transition-colors'>About Team</a></li>
-							<li><a href='#' className='hover:text-(--app-color-primary) transition-colors'>Terms of Service</a></li>
-							<li><a href='#' className='hover:text-(--app-color-primary) transition-colors'>Privacy Policy</a></li>
+							<li><a href='#' className='hover:text-(--app-color-primary) transition-colors'>DIID Division</a></li>
+							<li><a href='#' className='hover:text-(--app-color-primary) transition-colors'>Cyber Security Guidelines</a></li>
+							<li><a href='#' className='hover:text-(--app-color-primary) transition-colors'>Data Privacy Framework</a></li>
 							<li className='pt-2'>
 								<span className='inline-flex items-center rounded-lg bg-(--app-color-primary-soft) px-2.5 py-1 text-[10px] font-bold text-(--app-color-primary) uppercase tracking-wider'>
-									v1.0.0 Stable
+									SIH 2026 PS 26101
 								</span>
 							</li>
 						</ul>
@@ -76,10 +76,10 @@ export default function Footer() {
 
 				<div className='pt-10 border-t border-(--app-color-border) flex flex-col md:flex-row items-center justify-between gap-6'>
 					<p className='text-xs text-(--app-color-text-muted) font-medium'>
-						© {new Date().getFullYear()} Your App. All rights reserved.
+						© {new Date().getFullYear()} Karmayogi AI (MoSPI DIID & NSSTA). All rights reserved.
 					</p>
 					<p className='text-xs text-(--app-color-text-muted)'>
-						Built with precision by <span className='font-bold text-(--app-color-text)'>Team Esc(Reality);</span>
+						Built for <span className='font-bold text-(--app-color-text)'>India's Official Statistical System</span>
 					</p>
 					<div className='flex items-center gap-6 text-xs font-semibold text-(--app-color-text-muted) uppercase tracking-widest'>
 						<a href='#' className='hover:text-(--app-color-text) transition-colors'>Cookie Policy</a>

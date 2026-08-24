@@ -23,10 +23,10 @@ const Sidebar = ({
 		>
 			{/* Logo Section */}
 			<Link to='/' className={`flex items-center gap-3 p-6 hover:opacity-80 transition-opacity ${isCollapsed ? 'justify-center p-4' : ''}`}>
-				<img src='/logo.png' alt='Logo' className='h-10 w-10 object-contain' />
+				<img src='/logo.png' alt='Logo' className='h-9 w-9 object-contain' />
 				{!isCollapsed && (
-					<span className='text-sm font-bold uppercase tracking-[0.2em] text-[var(--app-color-text)]'>
-						Your App
+					<span className='text-sm font-black uppercase tracking-[0.15em] text-[var(--app-color-text)]'>
+						Karmayogi <span className='text-[var(--app-color-primary)]'>AI</span>
 					</span>
 				)}
 			</Link>
@@ -74,7 +74,7 @@ const Sidebar = ({
 			{/* Footer */}
 			{!isCollapsed && (
 				<div className='border-t border-[var(--app-color-border)] p-4 text-xs text-[var(--app-color-text-muted)]'>
-					<p>© 2026 Your App</p>
+					<p>© 2026 MoSPI DIID / NSSTA</p>
 				</div>
 			)}
 		</aside>
