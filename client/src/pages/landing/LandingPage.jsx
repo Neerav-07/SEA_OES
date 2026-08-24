@@ -69,16 +69,23 @@ export default function LandingPage() {
       <section className="relative z-10 mx-auto max-w-7xl px-6 pt-4 pb-12 lg:pt-8 lg:pb-16">
         <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
           {/* Left Text Column */}
-          <div className="lg:col-span-7 text-left space-y-8">
-            <h1 className="text-4xl font-black leading-[1.2] tracking-tight text-[#020617] lg:text-[50px] xl:text-[58px]">
-              Empowering India's <br />
-              <span className="relative inline-block mt-2 pb-3 bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8] bg-clip-text text-transparent">
-                statistical workforce!
-                <svg className="absolute bottom-0 left-0 w-full h-[10px] text-[#1D4ED8]" viewBox="0 0 100 10" preserveAspectRatio="none">
-                  <path d="M2,5 Q50,9 98,4" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
-                </svg>
-              </span>
+          <div className="lg:col-span-6 text-left space-y-6">
+            <h1 className="text-3xl font-black leading-[1.2] tracking-tight text-[#020617] sm:text-4xl lg:text-[46px] xl:text-[54px]">
+              <span className="block whitespace-nowrap">Empowering India's</span>
+              <span className="block text-[#1D4ED8] mt-1 whitespace-nowrap">statistical workforce!</span>
             </h1>
+
+            <p className="text-lg lg:text-xl font-semibold text-slate-500 tracking-wide mt-1">
+              For India's Official Statistical System
+            </p>
+
+            <div className="text-xs lg:text-sm font-medium tracking-wide text-slate-400 flex flex-wrap items-center gap-x-2.5 gap-y-1 pt-1">
+              <span>Competency Intelligence</span>
+              <span className="text-slate-300 font-bold">·</span>
+              <span>Personalized Pathways</span>
+              <span className="text-slate-300 font-bold">·</span>
+              <span>Continuous Assessment</span>
+            </div>
 
             <div className="flex flex-col items-start gap-4 sm:flex-row pt-4">
               <Link to="/register" className="flex items-center gap-2 rounded-2xl bg-[#1E3A8A] px-8 py-4 text-base font-bold !text-white shadow-lg hover:bg-[#172554] transition-all hover:scale-105">
@@ -91,7 +98,7 @@ export default function LandingPage() {
           </div>
 
           {/* Right Product Story Demo Animation Column */}
-          <div className="lg:col-span-5 flex justify-end w-full">
+          <div className="lg:col-span-6 flex justify-end w-full">
             <div className="w-full max-w-lg lg:mr-0 lg:ml-auto">
               <HeroProductStoryDemo />
             </div>
