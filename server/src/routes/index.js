@@ -20,6 +20,8 @@ import igotRouter from "./igot.route.js";
 import nsstaRouter from "./nssta.route.js";
 import attemptRouter from "./attempt.route.js";
 import reviewRouter from "./review.route.js";
+import assistantRouter from "./assistant.route.js";
+import predictionsRouter from "./predictions.route.js";
 
 const router = Router();
 
@@ -44,5 +46,7 @@ router.use("/igot", igotRouter);
 router.use("/nssta", nsstaRouter);
 router.use("/attempts", attemptRouter);
 router.use("/review", reviewRouter);
+router.use("/assistant", assistantRouter);
+router.use("/predictions", predictionsRouter);
 
 export default router;
