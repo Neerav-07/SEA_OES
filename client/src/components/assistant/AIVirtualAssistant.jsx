@@ -122,17 +122,20 @@ export default function AIVirtualAssistant() {
   // Sleek Circular Corner Launcher Button when Closed
   if (!isOpen) {
     return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-tr from-slate-950 via-slate-900 to-blue-950 text-white shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center ring-2 ring-blue-500/40 shadow-blue-500/20 group"
-        title="Open Kshamata AI Assistant"
-      >
-        <div className="relative flex items-center justify-center">
+      <div className="fixed bottom-6 right-6 z-40 flex items-center justify-center">
+        {/* Pulsing Dark Black-Blue Gradient Border Aura */}
+        <span className="absolute -inset-1 rounded-full bg-gradient-to-tr from-slate-950 via-blue-900 to-slate-950 animate-pulse opacity-80 blur-xs"></span>
+        <span className="absolute -inset-1.5 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-900 to-slate-950 animate-ping opacity-40"></span>
+
+        {/* Main Circular Launcher Button */}
+        <button
+          onClick={() => setIsOpen(true)}
+          className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-slate-950 via-slate-900 to-blue-950 text-white shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center border-2 border-blue-500/60 shadow-blue-950/50 group"
+          title="Open Kshamata AI Assistant"
+        >
           <Bot className="w-6 h-6 text-blue-400 group-hover:scale-110 transition-transform" />
-          <span className="absolute -top-2 -right-2 w-3.5 h-3.5 bg-blue-400 rounded-full animate-ping opacity-90"></span>
-          <span className="absolute -top-2 -right-2 w-3.5 h-3.5 bg-blue-500 rounded-full ring-2 ring-slate-950 shadow-sm"></span>
-        </div>
-      </button>
+        </button>
+      </div>
     );
   }
 
