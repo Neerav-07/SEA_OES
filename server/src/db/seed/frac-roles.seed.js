@@ -5,6 +5,7 @@
  * Platform roles (ADMIN/EMPLOYEE) are on the users.platform_role column.
  * FRAC roles define the competency requirements within the domain.
  */
+import { eq } from 'drizzle-orm';
 import { db } from '../index.js';
 import { roles, competencyRequirements } from '../schema/index.js';
 
@@ -152,7 +153,7 @@ export async function seedFracRoles(competencyRows) {
       description: role.description,
     }).onConflictDoNothing().returning();
 
-    const roleRow = row ?? (await db.select().from(roles).where({ code: role.code }))?.[0];
+    const roleRow = row ?? (await db.select().from(roles).where(eq(roles.code, role.code)))?.[0];
     if (!roleRow) continue;
     insertedRoles.push(roleRow);
 
