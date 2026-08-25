@@ -259,7 +259,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
       if (document.hidden) {
         setTabSwitchCount((prev) => {
           const next = prev + 1;
-          toast.error(`⚠️ Anti-Cheating Protocol: Tab/Window switch detected! (Violation count: ${next})`, {
+          toast.error(`MoSPI Examination Security Alert: Session focus lost. Event recorded in official audit log (Violation: ${next})`, {
             duration: 5000,
           });
           return next;
@@ -452,7 +452,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
               {tabSwitchCount > 0 && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold animate-pulse">
                   <ShieldAlert className="w-4 h-4 text-rose-400" />
-                  <span>Tab Switches: {tabSwitchCount}</span>
+                  <span>Security Audit: {tabSwitchCount} Focus Event(s)</span>
                 </div>
               )}
 
