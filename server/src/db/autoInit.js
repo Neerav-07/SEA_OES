@@ -74,7 +74,8 @@ const TABLE_QUERIES = [
 
   `CREATE TABLE IF NOT EXISTS learning_objectives (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-    sub_competency_id uuid NOT NULL REFERENCES sub_competencies(id) ON DELETE CASCADE,
+    competency_id uuid REFERENCES competencies(id) ON DELETE CASCADE,
+    sub_competency_id uuid REFERENCES sub_competencies(id) ON DELETE CASCADE,
     code text NOT NULL,
     title text NOT NULL,
     taxonomy_level integer DEFAULT 1 NOT NULL,
@@ -83,6 +84,8 @@ const TABLE_QUERIES = [
 
   `ALTER TABLE sub_competencies ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now() NOT NULL;`,
   `ALTER TABLE learning_objectives ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now() NOT NULL;`,
+  `ALTER TABLE learning_objectives ADD COLUMN IF NOT EXISTS competency_id uuid REFERENCES competencies(id) ON DELETE CASCADE;`,
+  `ALTER TABLE learning_objectives ALTER COLUMN sub_competency_id DROP NOT NULL;`,
 
   `CREATE TABLE IF NOT EXISTS competency_requirements (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
