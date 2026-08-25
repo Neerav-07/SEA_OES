@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
+import Spinner from '../../../components/Spinner';
 
 // 10 Very Large, Codeforces-Style Story-Based Official MoSPI Problem Statements
 const DEFAULT_CASE_STUDIES = [
@@ -482,12 +483,12 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
   if (loading) {
     return (
       <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
-        <div className="bg-white border border-slate-200 rounded-3xl p-10 max-w-md w-full text-center shadow-2xl space-y-4">
-          <div className="animate-spin rounded-full h-14 w-14 border-b-3 border-blue-900 mx-auto"></div>
-          <h3 className="text-xl font-black text-slate-900">Initializing Exam Environment...</h3>
-          <p className="text-slate-600 font-medium text-xs">
-            Loading official MoSPI case-study scenarios, setting anti-cheating triggers, and calibrating timer.
-          </p>
+        <div className="bg-white border border-slate-200/80 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl">
+          <Spinner
+            variant="radial"
+            label="Initializing Exam Environment..."
+            subtext="Loading official MoSPI case-study scenarios, setting anti-cheating triggers, and calibrating timer."
+          />
         </div>
       </div>
     );
