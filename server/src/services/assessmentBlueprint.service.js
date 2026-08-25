@@ -5,10 +5,10 @@ import {
   assessmentBlueprintClaims,
   assessmentBlueprintObjectives,
   assessmentBlueprints,
-} from '../db/schema/assessmentBlueprints.js';
-import { competencies } from '../db/schema/competencies.js';
-import { competencyClaims, learningObjectives } from '../db/schema/learningObjectives.js';
-import { sourceDocumentVersions, sourceDocuments } from '../db/schema/sourceProvenance.js';
+} from '../db/schema/index.js';
+import { competencies } from '../db/schema/index.js';
+import { competencyClaims, learningObjectives } from '../db/schema/index.js';
+import { sourceDocumentVersions, sourceDocuments } from '../db/schema/index.js';
 import {
   validateAssessmentBlueprint as validateBlueprintConfiguration,
   validateBlueprintId,

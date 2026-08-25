@@ -2,10 +2,7 @@ import 'dotenv/config';
 import pg from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 
-import { assessmentBlueprintClaims, assessmentBlueprintObjectives, assessmentBlueprints } from './schema/assessmentBlueprints.js';
-import { competencies } from './schema/competencies.js';
-import { competencyClaims, learningObjectives } from './schema/learningObjectives.js';
-import { sourceChunks, sourceDocumentVersions, sourceDocuments } from './schema/sourceProvenance.js';
+import { assessmentBlueprintClaims, assessmentBlueprintObjectives, assessmentBlueprints, competencies, competencyClaims, learningObjectives, sourceChunks, sourceDocumentVersions, sourceDocuments } from './schema/index.js';
 
 const IDS = {
   competency: '11111111-1111-4111-8111-111111111111',

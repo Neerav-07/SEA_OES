@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, uuid, real, jsonb } from 'drizzle-orm/pg-core';
-import { officials } from './officials.js';
-import { competencies } from './competencies.js';
+import { officials } from '../core/officials.js';
+import { competencies } from '../core/competencies.js';
 
 export const competencyHistory = pgTable('competency_history', {
   id: uuid('id').defaultRandom().primaryKey(),

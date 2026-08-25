@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { and, asc, desc, eq, ilike, max } from 'drizzle-orm';
 
 import { getDb } from '../db/index.js';
-import { sourceChunks, sourceDocumentVersions, sourceDocuments } from '../db/schema/sourceProvenance.js';
+import { sourceChunks, sourceDocumentVersions, sourceDocuments } from '../db/schema/index.js';
 import {
   validateIngestionPayload,
   validateSourcePayload,
