@@ -78,6 +78,10 @@ const TABLE_QUERIES = [
     sub_competency_id uuid REFERENCES sub_competencies(id) ON DELETE CASCADE,
     code text NOT NULL,
     title text NOT NULL,
+    description text,
+    target_level real DEFAULT 3.0,
+    status text DEFAULT 'ACTIVE' NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
     taxonomy_level integer DEFAULT 1 NOT NULL,
     created_at timestamp DEFAULT now() NOT NULL
   );`,
@@ -85,6 +89,10 @@ const TABLE_QUERIES = [
   `ALTER TABLE sub_competencies ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now() NOT NULL;`,
   `ALTER TABLE learning_objectives ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now() NOT NULL;`,
   `ALTER TABLE learning_objectives ADD COLUMN IF NOT EXISTS competency_id uuid REFERENCES competencies(id) ON DELETE CASCADE;`,
+  `ALTER TABLE learning_objectives ADD COLUMN IF NOT EXISTS description text;`,
+  `ALTER TABLE learning_objectives ADD COLUMN IF NOT EXISTS target_level real DEFAULT 3.0;`,
+  `ALTER TABLE learning_objectives ADD COLUMN IF NOT EXISTS status text DEFAULT 'ACTIVE';`,
+  `ALTER TABLE learning_objectives ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;`,
   `ALTER TABLE learning_objectives ALTER COLUMN sub_competency_id DROP NOT NULL;`,
 
   `CREATE TABLE IF NOT EXISTS competency_requirements (
