@@ -15,21 +15,26 @@ import {
   FileCheck2,
   Layers,
   Sparkles,
+  FileText,
+  Database,
+  Building2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
 
-// 5 Rich Official MoSPI Statistical Case Study Scenarios
+// 10 Comprehensive MoSPI Case Study Scenarios (Official Industry Standard)
 const DEFAULT_CASE_STUDIES = [
   {
     id: 'CS_01',
     bloomLevel: 'EVALUATE',
-    questionType: 'CASE_STUDY_SCENARIO',
-    stem: 'CASE STUDY: NSS 79th Round Domestic Tourism Survey Audit & Weight Calibration',
-    caseStudyContext: `SCENARIO BACKGROUND:
+    questionType: 'CASE_STUDY',
+    division: 'Field Operations Division (FOD)',
+    documentRef: 'MoSPI/NSS/79R/AUDIT-01',
+    stem: 'CASE STUDY 1: NSS 79th Round Domestic Tourism Survey Audit & Weight Calibration',
+    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
 During the data validation audit of the 79th Round National Sample Survey (NSS) covering domestic tourism expenditure across rural/urban sectors, the Field Operations Division (FOD) reported a 14.2% unit non-response in rural sub-strata of Region IX. Preliminary exploratory data analysis reveals that the non-response is concentrated among high-income agricultural households possessing mechanized farming assets.
 
-PROBLEM STATEMENT:
+EXAMINATION PROBLEM:
 As the Senior Statistical Officer supervising data quality assurance, which weighting adjustment and calibration procedure must be applied to prevent downward bias in national tourism expenditure estimates without inflating variance beyond acceptable design limits?`,
     options: [
       { text: 'Execute GREG (Generalized Regression Estimator) calibration using land holding size and tractor ownership as auxiliary benchmark variables to adjust sample multiplier weights.', isCorrect: true },
@@ -43,12 +48,14 @@ As the Senior Statistical Officer supervising data quality assurance, which weig
   {
     id: 'CS_02',
     bloomLevel: 'ANALYZE',
-    questionType: 'CASE_STUDY_SCENARIO',
-    stem: 'CASE STUDY: Consumer Price Index (CPI) Base-Year Revision & SNA 2008 Double-Deflation',
-    caseStudyContext: `SCENARIO BACKGROUND:
+    questionType: 'CASE_STUDY',
+    division: 'National Accounts Division (NAD)',
+    documentRef: 'MoSPI/NAD/CPI-REV/2026',
+    stem: 'CASE STUDY 2: Consumer Price Index (CPI) Base-Year Revision & SNA 2008 Double-Deflation',
+    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
 The National Accounts Division (NAD) is revising the base year of the Consumer Price Index (Rural/Urban). During Gross Value Added (GVA) estimation for the Unorganized Retail Trade sector, price deflators computed from the new CPI series indicate an anomalous 8.5% divergence when compared against the Wholesale Price Index (WPI) manufacturing deflator.
 
-PROBLEM STATEMENT:
+EXAMINATION PROBLEM:
 Evaluating the methodological impact under SNA 2008 guidelines, how should the statistical analyst resolve this deflation discrepancy to ensure real GVA reflects physical economic activity accurately?`,
     options: [
       { text: 'Construct a double-deflation index separating trade margins from physical output using sector-specific CPI service sub-indices.', isCorrect: true },
@@ -62,12 +69,14 @@ Evaluating the methodological impact under SNA 2008 guidelines, how should the s
   {
     id: 'CS_03',
     bloomLevel: 'APPLY',
-    questionType: 'CASE_STUDY_SCENARIO',
-    stem: 'CASE STUDY: Python & R Microdata Cleaning Pipeline for 5 Million PLFS Records',
-    caseStudyContext: `SCENARIO BACKGROUND:
+    questionType: 'CASE_STUDY',
+    division: 'Data Informatics & Innovation Division (DIID)',
+    documentRef: 'MoSPI/DIID/PLFS-ETL/V2',
+    stem: 'CASE STUDY 3: Python & R Microdata Cleaning Pipeline for 5 Million PLFS Records',
+    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
 A data informatics team at MoSPI DIID is building an automated ETL pipeline in Python (Pandas/Statsmodels) to ingest 5 million raw Computer-Assisted Personal Interview (CAPI) records from the Periodic Labour Force Survey (PLFS). The dataset exhibits structural outliers in weekly hours worked (values exceeding 168 hours) and inconsistent occupation codes (NCO-2015).
 
-PROBLEM STATEMENT:
+EXAMINATION PROBLEM:
 Which programmatic validation rule enforces data integrity while preserving valid extreme values required for labor force participation modeling?`,
     options: [
       { text: 'Implement winsorization at 99th percentile combined with regex verification against NCO-2015 official master lookup dictionaries.', isCorrect: true },
@@ -81,12 +90,14 @@ Which programmatic validation rule enforces data integrity while preserving vali
   {
     id: 'CS_04',
     bloomLevel: 'EVALUATE',
-    questionType: 'CASE_STUDY_SCENARIO',
-    stem: 'CASE STUDY: Microdata Anonymization & Statistical Disclosure Control (SDC)',
-    caseStudyContext: `SCENARIO BACKGROUND:
+    questionType: 'CASE_STUDY',
+    division: 'Data Governance & Dissemination Unit',
+    documentRef: 'MoSPI/NDSAP/SDC-GOV/2026',
+    stem: 'CASE STUDY 4: Microdata Anonymization & Statistical Disclosure Control (SDC)',
+    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
 Prior to releasing the public-use microdata file (PUMF) for the Annual Survey of Unincorporated Sector Enterprises (ASUSE), the Data Governance Committee requires strict compliance with NDSAP privacy directives. A risk audit reveals that certain enterprise units in niche 4-digit NIC codes can be re-identified using district location and turnover capital.
 
-PROBLEM STATEMENT:
+EXAMINATION PROBLEM:
 What SDC technique balances disclosure protection with analytical utility for economic researchers?`,
     options: [
       { text: 'Apply k-anonymity (k>=5) combined with microaggregation on turnover variables and top-coding on extreme revenue categories.', isCorrect: true },
@@ -100,12 +111,14 @@ What SDC technique balances disclosure protection with analytical utility for ec
   {
     id: 'CS_05',
     bloomLevel: 'ANALYZE',
-    questionType: 'CASE_STUDY_SCENARIO',
-    stem: 'CASE STUDY: Multi-Stage Stratified PPS Sampling Variance Estimation',
-    caseStudyContext: `SCENARIO BACKGROUND:
+    questionType: 'CASE_STUDY',
+    division: 'Survey Design & Research Division (SDRD)',
+    documentRef: 'MoSPI/SDRD/SAMPLING-DEFF',
+    stem: 'CASE STUDY 5: Multi-Stage Stratified PPS Sampling Variance Estimation & DEFF Adjustment',
+    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
 In a two-stage stratified sampling design for rural household surveys, Primary Sampling Units (PSUs) are selected with Probability Proportional to Size (PPSWR), and Ultimate Sampling Units (USUs) are selected via systematic sampling. The calculated design effect (DEFF) is 2.85, indicating substantial intra-cluster correlation.
 
-PROBLEM STATEMENT:
+EXAMINATION PROBLEM:
 To achieve a target margin of error of +/- 2.5% at 95% confidence, how must the sampling design be adjusted?`,
     options: [
       { text: 'Increase the number of selected PSUs while decreasing the number of USUs sampled per PSU to reduce intra-cluster variance contribution.', isCorrect: true },
@@ -116,6 +129,111 @@ To achieve a target margin of error of +/- 2.5% at 95% confidence, how must the 
     correctAnswer: 0,
     explanation: 'High DEFF (2.85) indicates cluster homogeneity. Increasing the number of PSUs (clusters) while sampling fewer households per PSU decreases variance efficiently under fixed budget constraints.',
   },
+  {
+    id: 'CS_06',
+    bloomLevel: 'APPLY',
+    questionType: 'CASE_STUDY',
+    division: 'Economic Statistics Division (ESD)',
+    documentRef: 'MoSPI/ESD/ASI-CAPITAL-2026',
+    stem: 'CASE STUDY 6: Annual Survey of Industries (ASI) Fixed Capital Imputation',
+    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
+During the Annual Survey of Industries (ASI) processing, 4.8% of registered manufacturing units in the 3-digit NIC sector omitted schedule block C (Fixed Assets & Depreciation). Cross-validation with GSTIN portal data shows reported turnover figures remain valid.
+
+EXAMINATION PROBLEM:
+How should the Statistical Officer impute net fixed capital to prevent under-estimation of Gross Fixed Capital Formation (GFCF)?`,
+    options: [
+      { text: 'Apply capital-to-turnover ratio imputation derived from homogeneous 4-digit NIC peer size classes in the same state.', isCorrect: true },
+      { text: 'Assign zero fixed capital to all non-reporting factories.', isCorrect: false },
+      { text: 'Impute capital using unweighted national mean across all manufacturing sectors.', isCorrect: false },
+      { text: 'Delete non-reporting factory records from the master sample frame.', isCorrect: false },
+    ],
+    correctAnswer: 0,
+    explanation: 'Peer-class capital-to-turnover ratio imputation maintains sectoral capital intensity structures aligned with ASI methodology.',
+  },
+  {
+    id: 'CS_07',
+    bloomLevel: 'ANALYZE',
+    questionType: 'CASE_STUDY',
+    division: 'Labour Statistics Unit (LSU)',
+    documentRef: 'MoSPI/LSU/PLFS-WPR-AUDIT',
+    stem: 'CASE STUDY 7: PLFS Activity Status Classification & Worker Population Ratio (WPR)',
+    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
+In the Periodic Labour Force Survey (PLFS), an individual worked 3 days in agriculture (subsistence), 2 days in MGNREGA road construction, and looked for work for 2 days during the 7-day reference period (Current Weekly Status - CWS).
+
+EXAMINATION PROBLEM:
+How should the official classify the individual primary activity status under PLFS CWS accounting rules?`,
+    options: [
+      { text: 'Classify as Employed (Code 11/31) based on the major time-criterion (5 days total work in reference week).', isCorrect: true },
+      { text: 'Classify as Unemployed (Code 81) due to seeking work for 2 days.', isCorrect: false },
+      { text: 'Classify as Out of Labour Force (Code 91) due to subsistence farming component.', isCorrect: false },
+      { text: 'Split individual weight across 3 separate labor force status categories.', isCorrect: false },
+    ],
+    correctAnswer: 0,
+    explanation: 'CWS applies major time-criterion (5 working days out of 7), placing the respondent firmly in the Employed labor force status.',
+  },
+  {
+    id: 'CS_08',
+    bloomLevel: 'APPLY',
+    questionType: 'CASE_STUDY',
+    division: 'Economic Statistics Division (ESD)',
+    documentRef: 'MoSPI/ESD/IIP-WEIGHTS-2026',
+    stem: 'CASE STUDY 8: Index of Industrial Production (IIP) Weight Revision & Item Basket Shift',
+    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
+The Economic Statistics Division is updating the IIP item basket to capture emerging digital manufacturing sectors (semiconductors, solar PV modules). The current basket over-weights legacy coal mining products relative to current GVA contributions.
+
+EXAMINATION PROBLEM:
+Which Laspeyres weighting modification ensures continuity while reflecting structural shifts in industrial output?`,
+    options: [
+      { text: 'Chain-linked Laspeyres index formulation with annual weight updating for fast-growing high-tech product groups.', isCorrect: true },
+      { text: 'Fixed-weight Paasche index updated once every 15 years.', isCorrect: false },
+      { text: 'Unweighted arithmetic average of physical output production ratios.', isCorrect: false },
+      { text: 'Complete removal of mining and energy sectors from industrial production tracking.', isCorrect: false },
+    ],
+    correctAnswer: 0,
+    explanation: 'Chain-linked Laspeyres indexing incorporates new high-growth item groups seamlessly without creating structural trend breaks in IIP time-series.',
+  },
+  {
+    id: 'CS_09',
+    bloomLevel: 'EVALUATE',
+    questionType: 'CASE_STUDY',
+    division: 'Sustainable Development Goals Unit (SDGU)',
+    documentRef: 'MoSPI/SDG/NIF-METRICS-2026',
+    stem: 'CASE STUDY 9: National Indicator Framework (NIF) for SDG Monitoring & Data Disaggregation',
+    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
+Under SDG Goal 8 (Decent Work & Economic Growth), MoSPI reports NIF indicator 8.5.2 (Unemployment Rate by gender and disability). A state-level statistical audit reveals missing disability disaggregation in 3 Union Territories due to low sample representation in PLFS sub-samples.
+
+EXAMINATION PROBLEM:
+Which statistical aggregation strategy produces valid state-level SDG reports without publishing unreliable small-area estimates?`,
+    options: [
+      { text: 'Apply Small Area Estimation (SAE) modeling pooling administrative disability registries with PLFS survey estimates.', isCorrect: true },
+      { text: 'Publish unweighted survey sample averages despite high coefficients of variation (>35%).', isCorrect: false },
+      { text: 'Suppress all SDG Goal 8 reporting for the entire country.', isCorrect: false },
+      { text: 'Replace missing survey estimates with regional population projections.', isCorrect: false },
+    ],
+    correctAnswer: 0,
+    explanation: 'Small Area Estimation (SAE) combines survey data with administrative benchmarks to yield reliable disaggregated SDG indicators for small sub-populations.',
+  },
+  {
+    id: 'CS_10',
+    bloomLevel: 'APPLY',
+    questionType: 'CASE_STUDY',
+    division: 'Data Informatics & Innovation Division (DIID)',
+    documentRef: 'MoSPI/DIID/GIGW-PORTAL-AUDIT',
+    stem: 'CASE STUDY 10: Official Microdata Dissemination Portal & GIGW Compliance',
+    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
+MoSPI’s official microdata dissemination portal is being upgraded to meet Guidelines for Indian Government Websites (GIGW 3.0) and FAIR (Findable, Accessible, Interoperable, Reusable) data principles.
+
+EXAMINATION PROBLEM:
+Which API architecture ensures seamless machine-to-machine interoperability for national statistical data sharing?`,
+    options: [
+      { text: 'Restful REST/JSON & SDMX API endpoints with OpenAPI 3.0 schemas and automated data dictionary metadata tagging.', isCorrect: true },
+      { text: 'FTP download folder containing raw unindexed CSV files only.', isCorrect: false },
+      { text: 'Proprietary binary database files requiring specialized offline software.', isCorrect: false },
+      { text: 'HTML table web pages without programmatic API access.', isCorrect: false },
+    ],
+    correctAnswer: 0,
+    explanation: 'SDMX & RESTful APIs with OpenAPI schemas satisfy GIGW 3.0 and FAIR principles for machine-readable official statistical data sharing.',
+  },
 ];
 
 export default function AssessmentPlayerModal({ assessmentId, onClose, onComplete }) {
@@ -125,7 +243,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [responses, setResponses] = useState({}); // { questionId: selectedOptionIndex }
-  const [timeLeft, setTimeLeft] = useState(1800); // 30 minutes
+  const [timeLeft, setTimeLeft] = useState(2400); // 40 minutes for 10 case studies
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
   const [instantFeedback, setInstantFeedback] = useState(false);
@@ -164,9 +282,9 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
         setAttempt(data.attempt);
         setAssessment(data.assessment);
         
-        // Ensure 5 rich case studies if array is empty or short
+        // Ensure 10 rich case studies (Industry Standard)
         const fetchedQs = data.questions || [];
-        setQuestions(fetchedQs.length >= 5 ? fetchedQs : DEFAULT_CASE_STUDIES);
+        setQuestions(fetchedQs.length >= 10 ? fetchedQs : DEFAULT_CASE_STUDIES);
 
         // Restore responses if resuming
         if (data.attempt?.responses) {
@@ -182,7 +300,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
           }
         }
       } catch (err) {
-        console.error('Failed to start assessment attempt, loading default case studies:', err);
+        console.error('Failed to start assessment attempt, loading 10 MoSPI case studies:', err);
         setQuestions(DEFAULT_CASE_STUDIES);
       } finally {
         setLoading(false);
@@ -292,7 +410,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
           <div className="animate-spin rounded-full h-14 w-14 border-b-3 border-blue-900 mx-auto"></div>
           <h3 className="text-xl font-black text-slate-900">Initializing Exam Environment...</h3>
           <p className="text-slate-600 font-medium text-xs">
-            Loading official MoSPI case-study scenarios, setting anti-cheating triggers, and calibrating timer.
+            Loading 10 official MoSPI case-study scenarios, setting anti-cheating triggers, and calibrating timer.
           </p>
         </div>
       </div>
@@ -308,7 +426,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
       {/* ── 1. Top Enterprise Examination Header Bar ── */}
       <div className="px-6 py-4 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white border-b border-slate-800 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-400/30">
+          <div className="p-2.5 rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-400/30">
             <FileCheck2 className="w-6 h-6" />
           </div>
           <div>
@@ -321,7 +439,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
               </span>
             </div>
             <h2 className="text-base md:text-lg font-black text-white tracking-tight mt-0.5">
-              {assessment?.title || 'Senior Statistical Officer Competency Diagnostic Exam'}
+              {assessment?.title || 'Senior Statistical Officer Competency Diagnostic Exam (10 Case Studies)'}
             </h2>
           </div>
         </div>
@@ -366,7 +484,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
       {result ? (
         /* ── RESULT SCREEN ── */
         <div className="flex-1 bg-slate-50 p-6 md:p-10 overflow-y-auto space-y-6">
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-5xl mx-auto space-y-6">
             <div className="text-center bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
               <div className="inline-flex p-4 rounded-full bg-emerald-50 text-emerald-700 mb-4 ring-2 ring-emerald-200">
                 <Award className="w-12 h-12 text-emerald-600" />
@@ -395,7 +513,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
             {/* Detailed Case-Study Rationale Breakdown */}
             <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
               <h4 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-blue-900" /> Case-Study Breakdown & Statistical Rationale
+                <BookOpen className="w-5 h-5 text-blue-900" /> Case-Study Breakdown & Statistical Rationale (10 Items)
               </h4>
 
               <div className="space-y-4">
@@ -410,7 +528,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-extrabold px-2.5 py-0.5 rounded bg-white border border-slate-200 text-slate-800">
-                        Item {idx + 1}
+                        Item {idx + 1} of 10
                       </span>
                       <span className={`px-2.5 py-0.5 rounded font-black ${
                         resp.isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
@@ -446,31 +564,48 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
         /* ── DEDICATED FULL-SCREEN QUESTION PLAYER SCREEN ── */
         <div className="flex-1 bg-slate-50 flex flex-col md:flex-row overflow-hidden">
           
-          {/* ── Left Column: Case Study Scenario & Background Panel ── */}
-          <div className="w-full md:w-1/2 p-6 md:p-8 bg-white border-b md:border-b-0 md:border-r border-slate-200 overflow-y-auto space-y-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-md text-[10px] font-black bg-blue-50 text-blue-900 border border-blue-200 uppercase tracking-wider">
-                  {currentQ?.bloomLevel || 'EVALUATE'}
+          {/* ── Left Column: Clean Filled MoSPI Official Examination Case-Study Dossier ── */}
+          <div className="w-full md:w-1/2 p-6 md:p-8 bg-white border-b md:border-b-0 md:border-r border-slate-200 overflow-y-auto space-y-6">
+            
+            {/* Dossier Header Badge */}
+            <div className="p-4 rounded-2xl bg-slate-900 text-white border border-slate-800 space-y-2 shadow-sm">
+              <div className="flex items-center justify-between text-xs text-slate-300">
+                <span className="flex items-center gap-1.5 font-extrabold uppercase tracking-wider text-blue-400 text-[11px]">
+                  <Building2 className="w-3.5 h-3.5" /> Ministry of Statistics & Programme Implementation
                 </span>
-                <span className="px-3 py-1 rounded-md text-[10px] font-black bg-purple-50 text-purple-900 border border-purple-200 uppercase tracking-wider">
-                  {currentQ?.questionType || 'CASE_STUDY'}
-                </span>
+                <span className="font-mono text-[10px] text-slate-400">{currentQ?.documentRef || 'MoSPI/FRAC/2026'}</span>
               </div>
-              <span className="text-xs font-bold text-slate-400">
+              <h4 className="text-sm font-black text-white tracking-tight">
+                {currentQ?.division || 'Survey Design & Statistical Research Division'}
+              </h4>
+            </div>
+
+            {/* Case Study Meta Pills */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-3 py-1 rounded-lg text-[10px] font-black bg-blue-50 text-blue-900 border border-blue-200 uppercase tracking-wider">
+                Bloom Level: {currentQ?.bloomLevel || 'EVALUATE'}
+              </span>
+              <span className="px-3 py-1 rounded-lg text-[10px] font-black bg-purple-50 text-purple-900 border border-purple-200 uppercase tracking-wider">
+                Type: {currentQ?.questionType || 'CASE_STUDY'}
+              </span>
+              <span className="px-3 py-1 rounded-lg text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wider">
                 Item {currentIndex + 1} of {questions.length}
               </span>
             </div>
 
-            <div className="space-y-3">
+            {/* Formatted Case Study Context & Problem Statement */}
+            <div className="space-y-4">
               <h3 className="text-base md:text-lg font-black text-slate-900 leading-snug">
                 {currentQ?.stem || 'Statistical Methodology Case Study'}
               </h3>
 
               {currentQ?.caseStudyContext && (
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 text-xs font-medium text-slate-800 leading-relaxed space-y-3 whitespace-pre-line shadow-xs">
-                  <div className="flex items-center gap-1.5 text-blue-900 font-extrabold uppercase tracking-wider text-[11px] mb-1 border-b border-slate-200 pb-2">
-                    <BookOpen className="w-4 h-4" /> Official MoSPI Examination Background Scenario
+                <div className="p-5 rounded-2xl bg-slate-50/90 border border-slate-200 text-xs font-medium text-slate-800 leading-relaxed space-y-3 whitespace-pre-line shadow-xs">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2.5 mb-2">
+                    <span className="text-blue-900 font-extrabold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-blue-900" /> Official Case Study Dossier
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400">Strictly Confidential Exam Document</span>
                   </div>
                   {currentQ.caseStudyContext}
                 </div>
@@ -478,17 +613,19 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
             </div>
           </div>
 
-          {/* ── Right Column: Question Options & Interactive Player Area ── */}
+          {/* ── Right Column: 10 Question Navigation Grid & Options Area ── */}
           <div className="w-full md:w-1/2 flex flex-col justify-between bg-slate-50/70 p-6 md:p-8 overflow-y-auto">
             <div className="space-y-6">
               
-              {/* Question Navigation Grid (Q1, Q2, Q3, Q4, Q5) */}
-              <div className="bg-white border border-slate-200 p-4 rounded-2xl space-y-2 shadow-xs">
+              {/* 10 Question Navigation Grid (Q1 to Q10) */}
+              <div className="bg-white border border-slate-200 p-4 rounded-2xl space-y-2.5 shadow-xs">
                 <div className="flex items-center justify-between text-xs font-extrabold text-slate-700">
-                  <span>Examination Question Grid</span>
-                  <span className="text-blue-900">Answered: {answeredCount} / {questions.length}</span>
+                  <span>10-Item Official Exam Grid</span>
+                  <span className="text-blue-900 font-black">Answered: {answeredCount} / {questions.length}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                
+                {/* 10 Clickable Grid Pills */}
+                <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
                   {questions.map((q, qIdx) => {
                     const isAns = responses[q.id] !== undefined;
                     const isCurr = qIdx === currentIndex;
@@ -496,7 +633,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
                       <button
                         key={qIdx}
                         onClick={() => setCurrentIndex(qIdx)}
-                        className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition-all border ${
+                        className={`py-2 rounded-xl text-xs font-extrabold transition-all border ${
                           isCurr
                             ? 'bg-blue-900 text-white border-blue-900 ring-2 ring-blue-500/20 shadow-xs'
                             : isAns
