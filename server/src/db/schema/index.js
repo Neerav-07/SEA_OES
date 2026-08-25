@@ -16,3 +16,5 @@ export * from "./subCompetencyEstimates.js";
 export * from "./skillGaps.js";
 export * from "./resourceItems.js";
 export * from "./analytics.js";
+export * from "./igot.js";
+export * from "./nssta.js";
