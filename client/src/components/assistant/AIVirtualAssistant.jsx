@@ -124,13 +124,13 @@ export default function AIVirtualAssistant() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-tr from-slate-950 via-slate-900 to-blue-950 text-white shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center ring-2 ring-blue-500/30 group"
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-tr from-slate-950 via-slate-900 to-blue-950 text-white shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center ring-2 ring-blue-500/40 shadow-blue-500/20 group"
         title="Open Kshamata AI Assistant"
       >
         <div className="relative flex items-center justify-center">
           <Bot className="w-6 h-6 text-blue-400 group-hover:scale-110 transition-transform" />
-          <span className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 rounded-full animate-ping"></span>
-          <span className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 rounded-full ring-2 ring-slate-900"></span>
+          <span className="absolute -top-2 -right-2 w-3.5 h-3.5 bg-blue-400 rounded-full animate-ping opacity-90"></span>
+          <span className="absolute -top-2 -right-2 w-3.5 h-3.5 bg-blue-500 rounded-full ring-2 ring-slate-950 shadow-sm"></span>
         </div>
       </button>
     );
