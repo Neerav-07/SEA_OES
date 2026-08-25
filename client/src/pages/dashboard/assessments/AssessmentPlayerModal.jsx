@@ -11,36 +11,38 @@ import {
   BookOpen,
   ArrowRight,
   ShieldAlert,
-  Maximize2,
   FileCheck2,
-  Layers,
-  Sparkles,
   FileText,
-  Database,
-  Building2,
+  Table,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
 
-// 10 Comprehensive MoSPI Case Study Scenarios (Official Industry Standard)
+// 10 Very Large, Codeforces-Style Story-Based Official MoSPI Problem Statements
 const DEFAULT_CASE_STUDIES = [
   {
     id: 'CS_01',
     bloomLevel: 'EVALUATE',
     questionType: 'CASE_STUDY',
-    division: 'Field Operations Division (FOD)',
-    documentRef: 'MoSPI/NSS/79R/AUDIT-01',
-    stem: 'CASE STUDY 1: NSS 79th Round Domestic Tourism Survey Audit & Weight Calibration',
-    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
-During the data validation audit of the 79th Round National Sample Survey (NSS) covering domestic tourism expenditure across rural/urban sectors, the Field Operations Division (FOD) reported a 14.2% unit non-response in rural sub-strata of Region IX. Preliminary exploratory data analysis reveals that the non-response is concentrated among high-income agricultural households possessing mechanized farming assets.
+    title: 'NSS 79th Round Domestic Tourism Expenditure Audit & GREG Calibration',
+    caseStudyContext: `BACKGROUND & OPERATIONAL CONTEXT:
+During the national data validation audit of the 79th Round National Sample Survey (NSS) covering domestic tourism expenditure across rural and urban sectors, the Field Operations Division (FOD) reported a 14.2% unit non-response in rural sub-strata of Region IX (comprising 42 primary sampling units). Exploratory data analysis conducted by the Data Informatics & Innovation Division (DIID) indicates that the non-response is non-random and heavily concentrated among high-income agricultural households possessing mechanized farming assets and land holdings exceeding 10 hectares.
 
-EXAMINATION PROBLEM:
-As the Senior Statistical Officer supervising data quality assurance, which weighting adjustment and calibration procedure must be applied to prevent downward bias in national tourism expenditure estimates without inflating variance beyond acceptable design limits?`,
+SYSTEM & SAMPLE PARAMETERS:
+• Total Master Frame Sample (N): 450,000 households across 36 States/UTs.
+• Stratum IX Rural Sub-sample (n): 4,200 households; Non-response rate (η): 14.2%.
+• Auxiliary Benchmark Correlation (r): 0.78 between land holding size and annual domestic travel expenditure.
+• Baseline Stratum Design Effect (DEFF): 2.15; Target Margin of Error: ±2.0% at 95% CI.
+
+METHODOLOGICAL PROBLEM STATEMENT:
+As the Senior Statistical Officer supervising statistical quality assurance, standard unit non-response adjustments using simple mean substitution inside the Primary Sampling Unit (PSU) will systematically under-estimate national tourism expenditure due to truncating the upper tail of the wealth distribution. Furthermore, unweighted re-scaling of weights across urban and rural strata violates the multi-stage sampling frame variance design. 
+
+Which calibration estimator and auxiliary weighting adjustment procedure must be programmatically executed in the data processing pipeline to neutralize non-response bias without inflating sample variance beyond acceptable NSSO auditing limits?`,
     options: [
-      { text: 'Execute GREG (Generalized Regression Estimator) calibration using land holding size and tractor ownership as auxiliary benchmark variables to adjust sample multiplier weights.', isCorrect: true },
+      { text: 'Execute Generalized Regression Estimator (GREG) calibration using land holding size and tractor ownership as auxiliary benchmark variables to re-calibrate sample multiplier weights.', isCorrect: true },
       { text: 'Apply simple mean imputation within the primary sampling unit (PSU) without modifying final multiplier weights.', isCorrect: false },
-      { text: 'Drop the non-responding households and re-scale sample weights uniformly across all urban and rural strata.', isCorrect: false },
-      { text: 'Substitute missing rural records with mean responses from neighboring district urban clusters.', isCorrect: false },
+      { text: 'Drop non-responding agricultural households and re-scale sample weights uniformly across all urban and rural strata.', isCorrect: false },
+      { text: 'Substitute missing rural records with median responses from neighboring district urban commercial clusters.', isCorrect: false },
     ],
     correctAnswer: 0,
     explanation: 'GREG calibration leverages known administrative benchmarks (land holdings) to re-calibrate sampling weights, neutralizing non-response bias while bounding variance under NSSO auditing standards.',
@@ -49,18 +51,24 @@ As the Senior Statistical Officer supervising data quality assurance, which weig
     id: 'CS_02',
     bloomLevel: 'ANALYZE',
     questionType: 'CASE_STUDY',
-    division: 'National Accounts Division (NAD)',
-    documentRef: 'MoSPI/NAD/CPI-REV/2026',
-    stem: 'CASE STUDY 2: Consumer Price Index (CPI) Base-Year Revision & SNA 2008 Double-Deflation',
-    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
-The National Accounts Division (NAD) is revising the base year of the Consumer Price Index (Rural/Urban). During Gross Value Added (GVA) estimation for the Unorganized Retail Trade sector, price deflators computed from the new CPI series indicate an anomalous 8.5% divergence when compared against the Wholesale Price Index (WPI) manufacturing deflator.
+    title: 'Consumer Price Index (CPI) Base-Year Revision & SNA 2008 Double-Deflation',
+    caseStudyContext: `BACKGROUND & OPERATIONAL CONTEXT:
+The National Accounts Division (NAD) is currently revising the base year of the Consumer Price Index (Rural/Urban) to align with national accounting frameworks (SNA 2008). During sectoral Gross Value Added (GVA) estimation for the Unorganized Retail Trade and Storage sector, price deflators computed from the newly revised CPI series display an anomalous +8.5% divergence when compared against the Wholesale Price Index (WPI) manufacturing deflator across the same 12-month accounting period.
 
-EXAMINATION PROBLEM:
-Evaluating the methodological impact under SNA 2008 guidelines, how should the statistical analyst resolve this deflation discrepancy to ensure real GVA reflects physical economic activity accurately?`,
+SYSTEM & SAMPLE PARAMETERS:
+• Base Year Baseline: 2024 = 100; Previous Base Year: 2012 = 100.
+• Sectoral GVA Share: Unorganized Retail Trade accounts for 11.4% of total service GVA.
+• Deflator Divergence (Δ): +8.5% between CPI Service Sub-index and WPI Headline Index.
+• Price Index Commodity Basket: 299 items across 1,181 rural markets and 1,114 urban markets.
+
+METHODOLOGICAL PROBLEM STATEMENT:
+Applying single-deflation using either headline WPI or unadjusted CPI to nominal gross output artificially distorts real GVA growth rates, creating significant discrepancies between production-side GDP and expenditure-side GDP. 
+
+Evaluating the methodological requirements of SNA 2008 standards, how should the statistical analyst structure the deflation algorithm to isolate real trade margins from intermediate consumption price volatility?`,
     options: [
-      { text: 'Construct a double-deflation index separating trade margins from physical output using sector-specific CPI service sub-indices.', isCorrect: true },
+      { text: 'Construct a double-deflation index separating trade margins from physical output using sector-specific CPI service sub-indices for gross output and WPI intermediate consumption indices.', isCorrect: true },
       { text: 'Replace the entire CPI rural series with the aggregate WPI headline index for single-deflation of nominal GVA.', isCorrect: false },
-      { text: 'Apply unweighted geometric mean of WPI and CPI across all retail service commodity groups.', isCorrect: false },
+      { text: 'Apply an unweighted geometric mean of WPI and CPI across all retail service commodity groups.', isCorrect: false },
       { text: 'Adjust nominal turnover by the implicit GDP deflator from the previous quinquennial census.', isCorrect: false },
     ],
     correctAnswer: 0,
@@ -70,18 +78,24 @@ Evaluating the methodological impact under SNA 2008 guidelines, how should the s
     id: 'CS_03',
     bloomLevel: 'APPLY',
     questionType: 'CASE_STUDY',
-    division: 'Data Informatics & Innovation Division (DIID)',
-    documentRef: 'MoSPI/DIID/PLFS-ETL/V2',
-    stem: 'CASE STUDY 3: Python & R Microdata Cleaning Pipeline for 5 Million PLFS Records',
-    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
-A data informatics team at MoSPI DIID is building an automated ETL pipeline in Python (Pandas/Statsmodels) to ingest 5 million raw Computer-Assisted Personal Interview (CAPI) records from the Periodic Labour Force Survey (PLFS). The dataset exhibits structural outliers in weekly hours worked (values exceeding 168 hours) and inconsistent occupation codes (NCO-2015).
+    title: 'Python & R Microdata Cleaning Pipeline for 5 Million PLFS CAPI Records',
+    caseStudyContext: `BACKGROUND & OPERATIONAL CONTEXT:
+A specialized data informatics engineering team at MoSPI DIID is engineering an automated ETL (Extract-Transform-Load) pipeline in Python (Pandas/NumPy/Statsmodels) and R (data.table) to ingest 5.2 million raw CAPI (Computer-Assisted Personal Interview) records from the Periodic Labour Force Survey (PLFS). Initial data profiling of the ingested raw JSON payloads reveals severe data entry anomalies: 0.3% of records report weekly hours worked exceeding 168 hours (physical impossibility), and 1.2% contain malformed National Classification of Occupations (NCO-2015) 4-digit codes.
 
-EXAMINATION PROBLEM:
-Which programmatic validation rule enforces data integrity while preserving valid extreme values required for labor force participation modeling?`,
+SYSTEM & SYSTEM PARAMETERS:
+• Dataset Volume: 5,240,000 individual level survey records across 128,000 households.
+• Anomaly 1: Weekly hours worked > 168 hours (upper bound violation).
+• Anomaly 2: 62,880 records with non-standard NCO-2015 occupation codes.
+• Memory Constraint: Pipeline must run within 16GB RAM limit on official NSSTA analytical nodes.
+
+METHODOLOGICAL PROBLEM STATEMENT:
+Simply dropping all anomalous records would introduce sample attrition bias and destroy multiplier weight sums across smaller Union Territories. Conversely, converting invalid fields to null or dummy modes creates downstream syntax errors in econometric wage regression models.
+
+Which programmatic validation and cleaning rule enforces data integrity while preserving legitimate extreme workload values?`,
     options: [
-      { text: 'Implement winsorization at 99th percentile combined with regex verification against NCO-2015 official master lookup dictionaries.', isCorrect: true },
-      { text: 'Filter out all records where weekly hours worked exceed 40 hours.', isCorrect: false },
-      { text: 'Replace all invalid occupation codes with the modal code "9999".', isCorrect: false },
+      { text: 'Implement winsorization at 99th percentile for numerical hours combined with regex lookup verification against NCO-2015 official master dictionary tables.', isCorrect: true },
+      { text: 'Filter out and delete all records where weekly hours worked exceed 40 hours.', isCorrect: false },
+      { text: 'Replace all invalid occupation codes with the modal code "9999" without dictionary validation.', isCorrect: false },
       { text: 'Convert numeric wage fields to categorical strings prior to running statistical aggregations.', isCorrect: false },
     ],
     correctAnswer: 0,
@@ -91,19 +105,25 @@ Which programmatic validation rule enforces data integrity while preserving vali
     id: 'CS_04',
     bloomLevel: 'EVALUATE',
     questionType: 'CASE_STUDY',
-    division: 'Data Governance & Dissemination Unit',
-    documentRef: 'MoSPI/NDSAP/SDC-GOV/2026',
-    stem: 'CASE STUDY 4: Microdata Anonymization & Statistical Disclosure Control (SDC)',
-    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
-Prior to releasing the public-use microdata file (PUMF) for the Annual Survey of Unincorporated Sector Enterprises (ASUSE), the Data Governance Committee requires strict compliance with NDSAP privacy directives. A risk audit reveals that certain enterprise units in niche 4-digit NIC codes can be re-identified using district location and turnover capital.
+    title: 'Microdata Anonymization & Statistical Disclosure Control (SDC) under NDSAP',
+    caseStudyContext: `BACKGROUND & OPERATIONAL CONTEXT:
+Prior to releasing the Public-Use Microdata File (PUMF) for the Annual Survey of Unincorporated Sector Enterprises (ASUSE), MoSPI’s Data Governance Committee requires strict compliance with NDSAP (National Data Sharing and Accessibility Policy) privacy directives. A comprehensive re-identification risk audit conducted using sdcMicro revealed that certain specialized enterprise units operating in niche 4-digit NIC codes (e.g. specialized optical instrument repair) can be re-identified by matching district locations, fixed capital, and annual turnover against public GST registries.
 
-EXAMINATION PROBLEM:
-What SDC technique balances disclosure protection with analytical utility for economic researchers?`,
+SYSTEM & SECURITY PARAMETERS:
+• Target Population: 850,000 unincorporated enterprise survey records.
+• High-Risk Units: 3,400 enterprises in low-density 4-digit NIC categories.
+• Re-identification Risk Threshold: Maximum allowable disclosure risk = 0.05 (5%).
+• Key Quasi-Identifiers: District Code, 4-digit NIC Code, Total Assets, Annual Turnover.
+
+METHODOLOGICAL PROBLEM STATEMENT:
+Completely suppressing district-level geographic identifiers destroys spatial economic modeling utility for regional planners. Conversely, releasing raw microdata violates statutory data confidentiality under the Collection of Statistics Act.
+
+What Statistical Disclosure Control (SDC) algorithm balances privacy protection with analytical utility for economic researchers?`,
     options: [
-      { text: 'Apply k-anonymity (k>=5) combined with microaggregation on turnover variables and top-coding on extreme revenue categories.', isCorrect: true },
+      { text: 'Apply k-anonymity (k>=5) combined with microaggregation on continuous turnover variables and top-coding on extreme revenue categories.', isCorrect: true },
       { text: 'Suppress all district-level geographic identifiers across the entire dataset.', isCorrect: false },
       { text: 'Add Gaussian random noise (+/- 50%) to all numerical variables regardless of re-identification risk.', isCorrect: false },
-      { text: 'Publish only national summary tables and delete the microdata repository.', isCorrect: false },
+      { text: 'Publish only national summary tables and permanently delete the microdata repository.', isCorrect: false },
     ],
     correctAnswer: 0,
     explanation: 'k-anonymity (k>=5) with microaggregation protects quasi-identifiers (district + capital) without destroying correlation structures required for econometric research.',
@@ -112,16 +132,20 @@ What SDC technique balances disclosure protection with analytical utility for ec
     id: 'CS_05',
     bloomLevel: 'ANALYZE',
     questionType: 'CASE_STUDY',
-    division: 'Survey Design & Research Division (SDRD)',
-    documentRef: 'MoSPI/SDRD/SAMPLING-DEFF',
-    stem: 'CASE STUDY 5: Multi-Stage Stratified PPS Sampling Variance Estimation & DEFF Adjustment',
-    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
-In a two-stage stratified sampling design for rural household surveys, Primary Sampling Units (PSUs) are selected with Probability Proportional to Size (PPSWR), and Ultimate Sampling Units (USUs) are selected via systematic sampling. The calculated design effect (DEFF) is 2.85, indicating substantial intra-cluster correlation.
+    title: 'Multi-Stage Stratified PPS Sampling Variance Estimation & DEFF Adjustment',
+    caseStudyContext: `BACKGROUND & OPERATIONAL CONTEXT:
+In a two-stage stratified sampling design for rural household socio-economic surveys, Primary Sampling Units (PSUs - Census Villages) are selected with Probability Proportional to Size with Replacement (PPSWR) based on population size, and Ultimate Sampling Units (USUs - Households) are selected via systematic sampling. Post-survey variance estimation reveals that the empirical Design Effect (DEFF) is 2.85, indicating substantial intra-cluster correlation within sampled villages.
 
-EXAMINATION PROBLEM:
-To achieve a target margin of error of +/- 2.5% at 95% confidence, how must the sampling design be adjusted?`,
+SYSTEM & STATISTICAL PARAMETERS:
+• First-Stage PSUs (m): 1,200 villages; Second-Stage USUs (n_i): 10 households per village.
+• Calculated Design Effect (DEFF): 2.85; Intra-class Correlation (ρ): 0.205.
+• Target Precision: Margin of Error = ±2.5% at 95% Confidence Level.
+• Operational Constraint: Maximum field budget cap = ₹4.5 Crore.
+
+METHODOLOGICAL PROBLEM STATEMENT:
+High DEFF (2.85) indicates that sampling additional households within the same village yields diminishing statistical information due to village-level cluster homogeneity. To reduce the variance of national mean expenditure estimates under a fixed operational field budget, how must the sampling design parameters be re-allocated?`,
     options: [
-      { text: 'Increase the number of selected PSUs while decreasing the number of USUs sampled per PSU to reduce intra-cluster variance contribution.', isCorrect: true },
+      { text: 'Increase the number of selected PSUs (villages) while decreasing the number of USUs (households) sampled per PSU to reduce intra-cluster variance contribution.', isCorrect: true },
       { text: 'Double the number of USUs sampled within each existing PSU without increasing the PSU sample count.', isCorrect: false },
       { text: 'Switch from PPS sampling to simple random sampling without stratification.', isCorrect: false },
       { text: 'Reduce the confidence level from 95% to 80% to force DEFF down to 1.0.', isCorrect: false },
@@ -133,14 +157,20 @@ To achieve a target margin of error of +/- 2.5% at 95% confidence, how must the 
     id: 'CS_06',
     bloomLevel: 'APPLY',
     questionType: 'CASE_STUDY',
-    division: 'Economic Statistics Division (ESD)',
-    documentRef: 'MoSPI/ESD/ASI-CAPITAL-2026',
-    stem: 'CASE STUDY 6: Annual Survey of Industries (ASI) Fixed Capital Imputation',
-    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
-During the Annual Survey of Industries (ASI) processing, 4.8% of registered manufacturing units in the 3-digit NIC sector omitted schedule block C (Fixed Assets & Depreciation). Cross-validation with GSTIN portal data shows reported turnover figures remain valid.
+    title: 'Annual Survey of Industries (ASI) Factory Imputation & Gross Capital Formation',
+    caseStudyContext: `BACKGROUND & OPERATIONAL CONTEXT:
+During the annual data processing of the Annual Survey of Industries (ASI) covering registered manufacturing factories, 4.8% of surveyed factory units in the 3-digit NIC sector (Manufacture of Basic Metals) failed to submit Schedule Block C (Fixed Assets, Depreciation, and Capital Additions). Cross-validation with GSTIN electronic invoice portals confirms that reported gross sales turnover and employee count figures for these units remain completely accurate.
 
-EXAMINATION PROBLEM:
-How should the Statistical Officer impute net fixed capital to prevent under-estimation of Gross Fixed Capital Formation (GFCF)?`,
+SYSTEM & DATA PARAMETERS:
+• Total ASI Factory Frame: 245,000 registered manufacturing units.
+• Non-reporting Block C Subset: 11,760 factory records.
+• Known Valid Fields: Sales Turnover, Employee Count, 3-digit NIC Code, State Code.
+• Target Indicator: Gross Fixed Capital Formation (GFCF) and Net Capital Stock.
+
+METHODOLOGICAL PROBLEM STATEMENT:
+Imputing zero fixed capital for non-reporting factories causes severe downward distortion in national Gross Fixed Capital Formation (GFCF) estimates. Conversely, simple mean imputation across all manufacturing sectors ignores capital intensity differences between heavy metallurgy and textile sectors.
+
+How should the Statistical Officer impute net fixed capital to preserve sectoral capital intensity structures?`,
     options: [
       { text: 'Apply capital-to-turnover ratio imputation derived from homogeneous 4-digit NIC peer size classes in the same state.', isCorrect: true },
       { text: 'Assign zero fixed capital to all non-reporting factories.', isCorrect: false },
@@ -154,19 +184,25 @@ How should the Statistical Officer impute net fixed capital to prevent under-est
     id: 'CS_07',
     bloomLevel: 'ANALYZE',
     questionType: 'CASE_STUDY',
-    division: 'Labour Statistics Unit (LSU)',
-    documentRef: 'MoSPI/LSU/PLFS-WPR-AUDIT',
-    stem: 'CASE STUDY 7: PLFS Activity Status Classification & Worker Population Ratio (WPR)',
-    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
-In the Periodic Labour Force Survey (PLFS), an individual worked 3 days in agriculture (subsistence), 2 days in MGNREGA road construction, and looked for work for 2 days during the 7-day reference period (Current Weekly Status - CWS).
+    title: 'PLFS Activity Status Accounting & Worker Population Ratio (WPR) Calculation',
+    caseStudyContext: `BACKGROUND & OPERATIONAL CONTEXT:
+In the Periodic Labour Force Survey (PLFS) CAPI field audit, an enumerator recorded the following activity log for a respondent during the 7-day reference period under Current Weekly Status (CWS) guidelines:
+- Days 1 to 3: Worked 4 hours/day in family agricultural plot (subsistence farming).
+- Days 4 to 5: Worked 8 hours/day on MGNREGA rural road construction project.
+- Days 6 to 7: Did not work, but actively sought wage employment at the local labor mandi.
 
-EXAMINATION PROBLEM:
-How should the official classify the individual primary activity status under PLFS CWS accounting rules?`,
+SYSTEM & ACCOUNTING RULES:
+• Reference Period: 7 days preceding survey date (Current Weekly Status - CWS).
+• Major Time Criterion Rule: Activity receiving highest total days/hours during 7-day week.
+• Labour Force Categories: Employed (11-51), Unemployed (81), Out of Labour Force (91-97).
+
+METHODOLOGICAL PROBLEM STATEMENT:
+Under official PLFS CWS accounting guidelines, how should the Senior Statistical Officer classify the primary weekly activity status of this individual to ensure accurate estimation of national Worker Population Ratio (WPR)?`,
     options: [
-      { text: 'Classify as Employed (Code 11/31) based on the major time-criterion (5 days total work in reference week).', isCorrect: true },
-      { text: 'Classify as Unemployed (Code 81) due to seeking work for 2 days.', isCorrect: false },
+      { text: 'Classify as Employed (Code 11/31) based on the major time-criterion (5 total days spent in gainful economic activity during reference week).', isCorrect: true },
+      { text: 'Classify as Unemployed (Code 81) due to seeking work for 2 days at the labor mandi.', isCorrect: false },
       { text: 'Classify as Out of Labour Force (Code 91) due to subsistence farming component.', isCorrect: false },
-      { text: 'Split individual weight across 3 separate labor force status categories.', isCorrect: false },
+      { text: 'Split individual multiplier weight equally across 3 separate labor force status categories.', isCorrect: false },
     ],
     correctAnswer: 0,
     explanation: 'CWS applies major time-criterion (5 working days out of 7), placing the respondent firmly in the Employed labor force status.',
@@ -175,19 +211,24 @@ How should the official classify the individual primary activity status under PL
     id: 'CS_08',
     bloomLevel: 'APPLY',
     questionType: 'CASE_STUDY',
-    division: 'Economic Statistics Division (ESD)',
-    documentRef: 'MoSPI/ESD/IIP-WEIGHTS-2026',
-    stem: 'CASE STUDY 8: Index of Industrial Production (IIP) Weight Revision & Item Basket Shift',
-    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
-The Economic Statistics Division is updating the IIP item basket to capture emerging digital manufacturing sectors (semiconductors, solar PV modules). The current basket over-weights legacy coal mining products relative to current GVA contributions.
+    title: 'Index of Industrial Production (IIP) Basket Weighting & Structural Revision',
+    caseStudyContext: `BACKGROUND & OPERATIONAL CONTEXT:
+The Economic Statistics Division (ESD) is executing a base-year structural revision of the Index of Industrial Production (IIP). Production data from the past decade reveals that legacy commodity groups (such as coal mining and heavy textiles) have declined in relative GVA share, while high-technology sectors (semiconductor packaging, solar PV module manufacturing, electric vehicles) have expanded rapidly.
 
-EXAMINATION PROBLEM:
-Which Laspeyres weighting modification ensures continuity while reflecting structural shifts in industrial output?`,
+SYSTEM & INDEX PARAMETERS:
+• Index Formulation: Laspeyres Fixed-Base Quantity Index.
+• Item Basket Size: 407 item groups across Mining, Manufacturing, and Electricity.
+• Base Year Weighting: Derived from ASI Gross Value Added (GVA) contributions.
+
+METHODOLOGICAL PROBLEM STATEMENT:
+Using a static fixed-weight Laspeyres index over a 10-year horizon creates severe structural weight decay, failing to capture new high-growth industrial sectors. 
+
+Which index weighting modification ensures continuous representation of fast-growing industrial product groups without creating trend breaks in historical IIP series?`,
     options: [
-      { text: 'Chain-linked Laspeyres index formulation with annual weight updating for fast-growing high-tech product groups.', isCorrect: true },
-      { text: 'Fixed-weight Paasche index updated once every 15 years.', isCorrect: false },
-      { text: 'Unweighted arithmetic average of physical output production ratios.', isCorrect: false },
-      { text: 'Complete removal of mining and energy sectors from industrial production tracking.', isCorrect: false },
+      { text: 'Adopt a chain-linked Laspeyres index formulation with periodic weight updating for fast-growing high-tech product groups.', isCorrect: true },
+      { text: 'Replace Laspeyres index with a fixed-weight Paasche index updated once every 15 years.', isCorrect: false },
+      { text: 'Use an unweighted arithmetic average of physical output production ratios.', isCorrect: false },
+      { text: 'Remove mining and energy sectors entirely from industrial production tracking.', isCorrect: false },
     ],
     correctAnswer: 0,
     explanation: 'Chain-linked Laspeyres indexing incorporates new high-growth item groups seamlessly without creating structural trend breaks in IIP time-series.',
@@ -196,19 +237,24 @@ Which Laspeyres weighting modification ensures continuity while reflecting struc
     id: 'CS_09',
     bloomLevel: 'EVALUATE',
     questionType: 'CASE_STUDY',
-    division: 'Sustainable Development Goals Unit (SDGU)',
-    documentRef: 'MoSPI/SDG/NIF-METRICS-2026',
-    stem: 'CASE STUDY 9: National Indicator Framework (NIF) for SDG Monitoring & Data Disaggregation',
-    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
-Under SDG Goal 8 (Decent Work & Economic Growth), MoSPI reports NIF indicator 8.5.2 (Unemployment Rate by gender and disability). A state-level statistical audit reveals missing disability disaggregation in 3 Union Territories due to low sample representation in PLFS sub-samples.
+    title: 'National Indicator Framework (NIF) for SDG Monitoring & Small Area Estimation',
+    caseStudyContext: `BACKGROUND & OPERATIONAL CONTEXT:
+Under Sustainable Development Goal 8 (Decent Work & Economic Growth), MoSPI tracks National Indicator Framework (NIF) Metric 8.5.2 (Unemployment Rate disaggregated by sex, age, and disability status). A state-level statistical audit revealed that in 4 small Union Territories, sample sizes in PLFS sub-strata for persons with disabilities are too small to produce direct survey estimates with acceptable coefficients of variation (CV < 20%).
 
-EXAMINATION PROBLEM:
-Which statistical aggregation strategy produces valid state-level SDG reports without publishing unreliable small-area estimates?`,
+SYSTEM & METRIC PARAMETERS:
+• NIF Target Indicator: 8.5.2 (Disability Disaggregated Unemployment Rate).
+• Target Geography: 4 Union Territories (Small Area Domains).
+• Direct Sample Size (n_small): < 150 respondents per UT; Direct Estimate CV: 42.5% (Unreliable).
+
+METHODOLOGICAL PROBLEM STATEMENT:
+Publishing direct survey estimates with CVs exceeding 42% violates MoSPI data dissemination standards. Conversely, suppressing SDG indicator reporting for these 4 UTs leaves national SDG reporting incomplete.
+
+Which statistical modeling technique should be implemented to produce reliable disaggregated SDG indicator estimates for small administrative domains?`,
     options: [
-      { text: 'Apply Small Area Estimation (SAE) modeling pooling administrative disability registries with PLFS survey estimates.', isCorrect: true },
-      { text: 'Publish unweighted survey sample averages despite high coefficients of variation (>35%).', isCorrect: false },
+      { text: 'Implement Small Area Estimation (SAE) empirical Bayes modeling, linking PLFS sample data with administrative disability registry benchmarks.', isCorrect: true },
+      { text: 'Publish direct unweighted sample averages despite high coefficients of variation.', isCorrect: false },
       { text: 'Suppress all SDG Goal 8 reporting for the entire country.', isCorrect: false },
-      { text: 'Replace missing survey estimates with regional population projections.', isCorrect: false },
+      { text: 'Replace missing survey estimates with unadjusted regional population projections.', isCorrect: false },
     ],
     correctAnswer: 0,
     explanation: 'Small Area Estimation (SAE) combines survey data with administrative benchmarks to yield reliable disaggregated SDG indicators for small sub-populations.',
@@ -217,19 +263,22 @@ Which statistical aggregation strategy produces valid state-level SDG reports wi
     id: 'CS_10',
     bloomLevel: 'APPLY',
     questionType: 'CASE_STUDY',
-    division: 'Data Informatics & Innovation Division (DIID)',
-    documentRef: 'MoSPI/DIID/GIGW-PORTAL-AUDIT',
-    stem: 'CASE STUDY 10: Official Microdata Dissemination Portal & GIGW Compliance',
-    caseStudyContext: `OFFICIAL AUDIT SCENARIO:
-MoSPI’s official microdata dissemination portal is being upgraded to meet Guidelines for Indian Government Websites (GIGW 3.0) and FAIR (Findable, Accessible, Interoperable, Reusable) data principles.
+    title: 'Official Microdata Dissemination Portal Architecture & GIGW 3.0 Compliance',
+    caseStudyContext: `BACKGROUND & OPERATIONAL CONTEXT:
+MoSPI’s official microdata dissemination repository is undergoing a major architecture modernization to satisfy Guidelines for Indian Government Websites (GIGW 3.0) and FAIR (Findable, Accessible, Interoperable, Reusable) open data standards. The platform must serve over 500,000 annual microdata downloads to academic researchers, international agencies (UNSTAT, World Bank), and policy research institutes.
 
-EXAMINATION PROBLEM:
-Which API architecture ensures seamless machine-to-machine interoperability for national statistical data sharing?`,
+SYSTEM & ARCHITECTURE REQUIREMENTS:
+• Standards: GIGW 3.0, NDSAP Open Data Guidelines, FAIR Principles.
+• Data Formats: DDI (Data Documentation Initiative) XML/JSON schemas, SDMX microdata metrics.
+• Machine Interoperability: Automated RESTful API access for programmatic data fetching.
+
+METHODOLOGICAL PROBLEM STATEMENT:
+Which system architecture and API standard ensures seamless machine-to-machine data interoperability while enforcing rate-limiting and user authentication protocols?`,
     options: [
-      { text: 'Restful REST/JSON & SDMX API endpoints with OpenAPI 3.0 schemas and automated data dictionary metadata tagging.', isCorrect: true },
-      { text: 'FTP download folder containing raw unindexed CSV files only.', isCorrect: false },
-      { text: 'Proprietary binary database files requiring specialized offline software.', isCorrect: false },
-      { text: 'HTML table web pages without programmatic API access.', isCorrect: false },
+      { text: 'Deploy RESTful JSON & SDMX API endpoints with OpenAPI 3.0 schemas, DDI metadata tags, and OAuth2 authentication controls.', isCorrect: true },
+      { text: 'Store raw unindexed CSV files in an unauthenticated FTP download folder.', isCorrect: false },
+      { text: 'Use proprietary binary database files requiring specialized offline desktop software.', isCorrect: false },
+      { text: 'Publish static HTML table web pages without programmatic API interfaces.', isCorrect: false },
     ],
     correctAnswer: 0,
     explanation: 'SDMX & RESTful APIs with OpenAPI schemas satisfy GIGW 3.0 and FAIR principles for machine-readable official statistical data sharing.',
@@ -266,7 +315,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
         setTabSwitchCount((prev) => {
           const next = prev + 1;
           toast.error(`⚠️ Security Warning: Tab switch recorded (Violation #${next})`, {
-            id: 'anti-cheating-toast', // Ensures single toast instance only
+            id: 'anti-cheating-toast',
             duration: 4000,
             style: {
               background: '#7f1d1d',
@@ -297,11 +346,9 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
         setAttempt(data.attempt);
         setAssessment(data.assessment);
         
-        // Ensure 10 rich case studies (Industry Standard)
         const fetchedQs = data.questions || [];
         setQuestions(fetchedQs.length >= 10 ? fetchedQs : DEFAULT_CASE_STUDIES);
 
-        // Restore responses if resuming
         if (data.attempt?.responses) {
           const restored = {};
           data.attempt.responses.forEach(r => {
@@ -333,7 +380,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          handleSubmitAttempt(); // auto submit on time expiry
+          handleSubmitAttempt();
           return 0;
         }
         return prev - 1;
@@ -385,7 +432,6 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
         });
         resData = res.data;
       } else {
-        // Fallback local scoring if offline mode
         let correctCount = 0;
         const resArray = questions.map((q) => {
           const selected = responses[q.id];
@@ -438,7 +484,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
   return (
     <div className="fixed inset-0 bg-slate-950 z-50 flex flex-col text-slate-900 overflow-hidden font-sans select-none">
       
-      {/* ── 1. Top Enterprise Examination Header Bar ── */}
+      {/* ── 1. Top Examination Header Bar ── */}
       <div className="px-6 py-4 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white border-b border-slate-800 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-400/30">
@@ -454,7 +500,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
               </span>
             </div>
             <h2 className="text-base md:text-lg font-black text-white tracking-tight mt-0.5">
-              {assessment?.title || 'Senior Statistical Officer Competency Diagnostic Exam (10 Case Studies)'}
+              {assessment?.title || 'Senior Statistical Officer Competency Diagnostic Exam (10 Problem Statements)'}
             </h2>
           </div>
         </div>
@@ -497,7 +543,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
 
       {/* ── 2. Main Examination Body ── */}
       {result ? (
-        /* ── RESULT SCREEN ── */
+        /* ── RESULT SCREEN (Shows full tags & analysis breakdown) ── */
         <div className="flex-1 bg-slate-50 p-6 md:p-10 overflow-y-auto space-y-6">
           <div className="max-w-5xl mx-auto space-y-6">
             <div className="text-center bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
@@ -528,7 +574,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
             {/* Detailed Case-Study Rationale Breakdown */}
             <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
               <h4 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-blue-900" /> Case-Study Breakdown & Statistical Rationale (10 Items)
+                <BookOpen className="w-5 h-5 text-blue-900" /> Detailed Performance Analysis & Rationale
               </h4>
 
               <div className="space-y-4">
@@ -542,9 +588,14 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-extrabold px-2.5 py-0.5 rounded bg-white border border-slate-200 text-slate-800">
-                        Item {idx + 1} of 10
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold px-2.5 py-0.5 rounded bg-white border border-slate-200 text-slate-800">
+                          Problem {idx + 1}
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded bg-blue-50 text-blue-900 font-extrabold text-[10px]">
+                          Bloom: {resp.bloomLevel || 'EVALUATE'}
+                        </span>
+                      </div>
                       <span className={`px-2.5 py-0.5 rounded font-black ${
                         resp.isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
                       }`}>
@@ -552,7 +603,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
                       </span>
                     </div>
 
-                    <p className="text-sm font-bold text-slate-900 leading-relaxed mb-3">{resp.stem}</p>
+                    <p className="text-sm font-bold text-slate-900 leading-relaxed mb-3">{resp.title || resp.stem}</p>
 
                     {resp.explanation && (
                       <div className="p-3.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-700 font-medium">
@@ -576,56 +627,27 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
           </div>
         </div>
       ) : (
-        /* ── DEDICATED FULL-SCREEN QUESTION PLAYER SCREEN ── */
+        /* ── DEDICATED FULL-SCREEN QUESTION PLAYER SCREEN (Clean Codeforces Style) ── */
         <div className="flex-1 bg-slate-50 flex flex-col md:flex-row overflow-hidden">
           
-          {/* ── Left Column: Clean Filled MoSPI Official Examination Case-Study Dossier ── */}
+          {/* ── Left Column: Clean Codeforces-Style Problem Specification ── */}
           <div className="w-full md:w-1/2 p-6 md:p-8 bg-white border-b md:border-b-0 md:border-r border-slate-200 overflow-y-auto space-y-6">
             
-            {/* Dossier Header Badge */}
-            <div className="p-4 rounded-2xl bg-slate-900 text-white border border-slate-800 space-y-2 shadow-sm">
-              <div className="flex items-center justify-between text-xs text-slate-300">
-                <span className="flex items-center gap-1.5 font-extrabold uppercase tracking-wider text-blue-400 text-[11px]">
-                  <Building2 className="w-3.5 h-3.5" /> Ministry of Statistics & Programme Implementation
-                </span>
-                <span className="font-mono text-[10px] text-slate-400">{currentQ?.documentRef || 'MoSPI/FRAC/2026'}</span>
-              </div>
-              <h4 className="text-sm font-black text-white tracking-tight">
-                {currentQ?.division || 'Survey Design & Statistical Research Division'}
-              </h4>
-            </div>
-
-            {/* Case Study Meta Pills */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3 py-1 rounded-lg text-[10px] font-black bg-blue-50 text-blue-900 border border-blue-200 uppercase tracking-wider">
-                Bloom Level: {currentQ?.bloomLevel || 'EVALUATE'}
+            <div className="space-y-2 border-b border-slate-100 pb-4">
+              <span className="text-[11px] font-extrabold text-blue-900 uppercase tracking-wider">
+                Problem Statement {currentIndex + 1} of {questions.length}
               </span>
-              <span className="px-3 py-1 rounded-lg text-[10px] font-black bg-purple-50 text-purple-900 border border-purple-200 uppercase tracking-wider">
-                Type: {currentQ?.questionType || 'CASE_STUDY'}
-              </span>
-              <span className="px-3 py-1 rounded-lg text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wider">
-                Item {currentIndex + 1} of {questions.length}
-              </span>
-            </div>
-
-            {/* Formatted Case Study Context & Problem Statement */}
-            <div className="space-y-4">
-              <h3 className="text-base md:text-lg font-black text-slate-900 leading-snug">
-                {currentQ?.stem || 'Statistical Methodology Case Study'}
+              <h3 className="text-lg md:text-xl font-black text-slate-900 leading-tight">
+                {currentQ?.title || currentQ?.stem}
               </h3>
-
-              {currentQ?.caseStudyContext && (
-                <div className="p-5 rounded-2xl bg-slate-50/90 border border-slate-200 text-xs font-medium text-slate-800 leading-relaxed space-y-3 whitespace-pre-line shadow-xs">
-                  <div className="flex items-center justify-between border-b border-slate-200 pb-2.5 mb-2">
-                    <span className="text-blue-900 font-extrabold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                      <FileText className="w-4 h-4 text-blue-900" /> Official Case Study Dossier
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-400">Strictly Confidential Exam Document</span>
-                  </div>
-                  {currentQ.caseStudyContext}
-                </div>
-              )}
             </div>
+
+            {/* Codeforces-Style Problem Narrative Box */}
+            {currentQ?.caseStudyContext && (
+              <div className="p-6 rounded-2xl bg-slate-50/80 border border-slate-200/90 text-xs md:text-sm font-medium text-slate-800 leading-relaxed space-y-4 whitespace-pre-line shadow-xs">
+                {currentQ.caseStudyContext}
+              </div>
+            )}
           </div>
 
           {/* ── Right Column: 10 Question Navigation Grid & Options Area ── */}
@@ -738,7 +760,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
                 disabled={currentIndex === 0}
                 className="px-5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-40 flex items-center gap-2 text-xs font-extrabold transition-colors shadow-xs"
               >
-                <ChevronLeft className="w-4 h-4" /> Previous Case
+                <ChevronLeft className="w-4 h-4" /> Previous Problem
               </button>
 
               <div className="flex items-center gap-3">
@@ -755,7 +777,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
                     onClick={() => setCurrentIndex((prev) => Math.min(questions.length - 1, prev + 1))}
                     className="px-6 py-2.5 rounded-xl bg-blue-900 hover:bg-slate-900 text-white font-extrabold text-xs flex items-center gap-2 transition-colors shadow-xs"
                   >
-                    Next Case <ChevronRight className="w-4 h-4" />
+                    Next Problem <ChevronRight className="w-4 h-4" />
                   </button>
                 )}
               </div>
@@ -774,7 +796,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
             <div>
               <h3 className="text-xl font-black text-slate-900">Exit Assessment Session?</h3>
               <p className="text-slate-600 text-xs font-medium mt-2 leading-relaxed">
-                You have answered <strong>{answeredCount} of {questions.length}</strong> case studies. Quitting now will auto-submit your attempt and record your partial score in your official MoSPI governance profile.
+                You have answered <strong>{answeredCount} of {questions.length}</strong> problem statements. Quitting now will auto-submit your attempt and record your partial score in your official MoSPI governance profile.
               </p>
             </div>
             <div className="flex items-center gap-3 pt-2">
