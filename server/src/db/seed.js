@@ -12,6 +12,7 @@
  * All inserts use ON CONFLICT DO NOTHING — safe to run multiple times.
  */
 import bcrypt from 'bcrypt';
+import { eq } from 'drizzle-orm';
 import { db } from './index.js';
 import { users, officials, evidence } from './schema/index.js';
 import { seedMoSPICompetencies } from './seed/mospi-competencies.seed.js';
@@ -122,20 +123,21 @@ async function seedDemoUsers() {
   const adminHash = await bcrypt.hash('Admin@123!', 12);
   const empHash = await bcrypt.hash('Test@123!', 12);
 
-  const [adminUser] = await db.insert(users).values({
-    name: 'Dr. Sunita Rao',
-    email: 'admin@nssta.gov.in',
-    passwordHash: adminHash,
-    platformRole: 'ADMIN',
-    designation: 'Director (Capacity Building)',
-    department: 'NSSTA, MoSPI',
-    cadre: 'ISS',
-  }).onConflictDoNothing().returning();
-
-  const empDefs = [
+  const demoUsersList = [
+    {
+      name: 'Dr. Sunita Rao',
+      email: 'admin@nssta.gov.in',
+      passwordHash: adminHash,
+      platformRole: 'ADMIN',
+      designation: 'Director (Capacity Building)',
+      department: 'NSSTA, MoSPI',
+      cadre: 'ISS',
+    },
     {
       name: 'Dr. Rajesh Kumar',
       email: 'rajesh.kumar@mospi.gov.in',
+      passwordHash: empHash,
+      platformRole: 'EMPLOYEE',
       designation: 'Senior Statistical Officer',
       department: 'DIID, MoSPI',
       cadre: 'ISS',
@@ -143,6 +145,8 @@ async function seedDemoUsers() {
     {
       name: 'Ms. Priya Sharma',
       email: 'priya.sharma@nsso.gov.in',
+      passwordHash: empHash,
+      platformRole: 'EMPLOYEE',
       designation: 'Assistant Director (Surveys)',
       department: 'NSSO, MoSPI',
       cadre: 'ISS',
@@ -150,24 +154,45 @@ async function seedDemoUsers() {
     {
       name: 'Mr. Amit Verma',
       email: 'amit.verma@mospi.gov.in',
+      passwordHash: empHash,
+      platformRole: 'EMPLOYEE',
       designation: 'Statistical Analyst',
       department: 'DIID, MoSPI',
       cadre: 'SSS',
     },
   ];
 
+  let adminUserRow = null;
   const employeeUsers = [];
-  for (const emp of empDefs) {
-    const [row] = await db.insert(users).values({
-      ...emp,
-      passwordHash: empHash,
-      platformRole: 'EMPLOYEE',
-    }).onConflictDoNothing().returning();
-    if (row) employeeUsers.push(row);
+
+  for (const u of demoUsersList) {
+    const [existing] = await db.select().from(users).where(eq(users.email, u.email));
+    let userRow = null;
+
+    if (existing) {
+      await db.update(users).set({
+        passwordHash: u.passwordHash,
+        platformRole: u.platformRole,
+        name: u.name,
+        designation: u.designation,
+        department: u.department,
+        cadre: u.cadre,
+      }).where(eq(users.id, existing.id));
+      userRow = { ...existing, ...u };
+    } else {
+      const [inserted] = await db.insert(users).values(u).returning();
+      userRow = inserted;
+    }
+
+    if (u.platformRole === 'ADMIN') {
+      adminUserRow = userRow;
+    } else {
+      employeeUsers.push(userRow);
+    }
   }
 
   console.log(`✅ Seeded 1 ADMIN + ${employeeUsers.length} EMPLOYEE demo users`);
-  return { adminUser, employeeUsers };
+  return { adminUser: adminUserRow, employeeUsers };
 }
 
 // ── Demo Officials ─────────────────────────────────────────────────────────
