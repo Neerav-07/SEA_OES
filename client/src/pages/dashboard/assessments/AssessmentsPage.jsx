@@ -1,422 +1,506 @@
-import { useState, useEffect } from 'react';
-import { Sliders, Sparkles, BookOpen, Layers, Activity, Calendar, ShieldCheck, RefreshCw, FileText, CheckCircle2 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useEffect, useRef, useState } from 'react';
+import { CheckCircle2, ClipboardList, FileText, Plus, RefreshCw, Save, ShieldCheck, XCircle } from 'lucide-react';
 
-import PageHeader from '../../../components/PageHeader.jsx';
+import Alert from '../../../components/Alert.jsx';
 import Button from '../../../components/Button.jsx';
+import Card from '../../../components/Card.jsx';
+import Checkbox from '../../../components/Checkbox.jsx';
+import EmptyState from '../../../components/EmptyState.jsx';
+import Input from '../../../components/Input.jsx';
+import PageHeader from '../../../components/PageHeader.jsx';
+import Select from '../../../components/Select.jsx';
 import Spinner from '../../../components/Spinner.jsx';
-import api from '../../../services/api.js';
+import {
+  createAssessmentBlueprint,
+  getAssessmentBlueprint,
+  listAssessmentBlueprints,
+  listBlueprintClaims,
+  listBlueprintCompetencies,
+  listBlueprintLearningObjectives,
+  updateAssessmentBlueprint,
+  validateAssessmentBlueprint,
+} from '../../../services/assessmentBlueprint.api.js';
+import { assembleAssessment, generateQuestion, getAssessment, reviewQuestion, reviseQuestion, validateAssessment, validateQuestion } from '../../../services/source.api.js';
+
+const COGNITIVE_LEVELS = ['REMEMBER', 'UNDERSTAND', 'APPLY', 'ANALYZE', 'EVALUATE'];
+const QUESTION_TYPES = ['MCQ', 'SCENARIO'];
+const EVIDENCE_TYPES = [
+  'Knowledge Evidence (MCQ / Quiz)',
+  'Application Evidence (Scenario / Case Study)',
+  'Performance Evidence (Virtual Lab / Exercise)',
+  'External Certificate / Accredited Training',
+  'iGOT / NSSTA Course Module Completion',
+];
+
+const emptyForm = () => ({
+  title: '',
+  status: 'DRAFT',
+  competencyId: '',
+  targetProficiency: '',
+  questionCount: '10',
+  cognitiveDistribution: { REMEMBER: 0, UNDERSTAND: 0, APPLY: 10, ANALYZE: 0, EVALUATE: 0 },
+  supportedQuestionTypes: ['MCQ'],
+  claims: [],
+  learningObjectives: [],
+  sourceRestrictions: { documentIds: [], documentVersionIds: [] },
+  evidenceRequirements: { evidenceTypes: [], requireGrounding: false },
+});
+
+function apiErrors(error) {
+  const response = error?.response?.data;
+  if (Array.isArray(response?.errors) && response.errors.length > 0) return response.errors;
+  return [{ code: 'API_ERROR', field: '', message: response?.message || error?.message || 'The request could not be completed.' }];
+}
+
+function mappingIds(mappings, key) {
+  return new Set((mappings || []).map((mapping) => mapping[key]));
+}
+
+function blueprintToForm(result) {
+  const blueprint = result?.blueprint || {};
+  return {
+    title: blueprint.title || '',
+    status: blueprint.status || 'DRAFT',
+    competencyId: blueprint.competencyId || '',
+    targetProficiency: blueprint.targetProficiency ?? '',
+    questionCount: blueprint.questionCount ?? '',
+    cognitiveDistribution: blueprint.cognitiveDistribution || {},
+    supportedQuestionTypes: Array.isArray(blueprint.supportedQuestionTypes) ? blueprint.supportedQuestionTypes : [],
+    claims: (Array.isArray(result.claims) ? result.claims : []).map((mapping) => ({ claimId: mapping.claimId, questionCount: mapping.questionCount })),
+    learningObjectives: (Array.isArray(result.learningObjectives) ? result.learningObjectives : []).map((mapping) => ({
+      learningObjectiveId: mapping.learningObjectiveId,
+      questionCount: mapping.questionCount,
+    })),
+    sourceRestrictions: {
+      documentIds: Array.isArray(blueprint.sourceRestrictions?.documentIds) ? blueprint.sourceRestrictions.documentIds : [],
+      documentVersionIds: Array.isArray(blueprint.sourceRestrictions?.documentVersionIds) ? blueprint.sourceRestrictions.documentVersionIds : [],
+    },
+    evidenceRequirements: {
+      evidenceTypes: Array.isArray(blueprint.evidenceRequirements?.evidenceTypes) ? blueprint.evidenceRequirements.evidenceTypes : [],
+      requireGrounding: blueprint.evidenceRequirements?.requireGrounding || false,
+    },
+  };
+}
+
+function toPayload(form) {
+  return {
+    ...form,
+    targetProficiency: Number(form.targetProficiency),
+    questionCount: Number(form.questionCount),
+    cognitiveDistribution: Object.fromEntries(
+      COGNITIVE_LEVELS.map((level) => [level, Number(form.cognitiveDistribution[level] || 0)]),
+    ),
+  };
+}
+
+function identifiersFromText(value) {
+  return value.split(',').map((item) => item.trim()).filter(Boolean);
+}
+
+function errorForField(errors, field) {
+  return errors.find((error) => error.field === field)?.message || '';
+}
 
 export default function AssessmentsPage() {
-  const [activeTab, setActiveTab] = useState('build');
+  const [blueprints, setBlueprints] = useState([]);
   const [competencies, setCompetencies] = useState([]);
-  const [assessmentsList, setAssessmentsList] = useState([]);
+  const [claims, setClaims] = useState([]);
+  const [learningObjectives, setLearningObjectives] = useState([]);
+  const [selectedBlueprintId, setSelectedBlueprintId] = useState('');
+  const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
-
-  // Blueprint form states
-  const [title, setTitle] = useState('NSS 79th Round Data Validation Assessment');
-  const [selectedCompId, setSelectedCompId] = useState('');
-  const [questionCount, setQuestionCount] = useState(5);
+  const [loadingBlueprint, setLoadingBlueprint] = useState(false);
+  const [loadingLookups, setLoadingLookups] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [errors, setErrors] = useState([]);
+  const [pageError, setPageError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [validationResult, setValidationResult] = useState(null);
+  const [generationResult, setGenerationResult] = useState(null);
   const [generating, setGenerating] = useState(false);
-  const [generatedResult, setGeneratedResult] = useState(null);
+  const [questionAction, setQuestionAction] = useState(false);
+  const [assemblyResult, setAssemblyResult] = useState(null);
+  const [assembling, setAssembling] = useState(false);
+  const lookupRequestRef = useRef(0);
 
-  // Bloom taxonomy distributions
-  const [bloom, setBloom] = useState({
-    REMEMBER: 1,
-    UNDERSTAND: 1,
-    APPLY: 2,
-    ANALYZE: 1,
-  });
-
-  // Difficulty distributions
-  const [difficulty, setDifficulty] = useState({
-    EASY: 1,
-    MEDIUM: 3,
-    HARD: 1,
-  });
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    setLoading(true);
+  const loadLookupData = async (competencyId) => {
+    const requestId = lookupRequestRef.current + 1;
+    lookupRequestRef.current = requestId;
+    if (!competencyId) {
+      setClaims([]);
+      setLearningObjectives([]);
+      return;
+    }
+    setLoadingLookups(true);
     try {
-      const [compRes, assessRes] = await Promise.allSettled([
-        api.get('/competencies'),
-        api.get('/assessments'),
+      const [claimResponse, objectiveResponse] = await Promise.all([
+        listBlueprintClaims(competencyId),
+        listBlueprintLearningObjectives(competencyId),
       ]);
-
-      if (compRes.status === 'fulfilled' && compRes.value.data?.data) {
-        setCompetencies(compRes.value.data.data);
-        if (compRes.value.data.data.length > 0) {
-          setSelectedCompId(compRes.value.data.data[0].id);
-        }
+      if (!Array.isArray(claimResponse?.items) || !Array.isArray(objectiveResponse?.items)) {
+        throw new Error('Lookup data returned an invalid response.');
       }
-
-      if (assessRes.status === 'fulfilled' && assessRes.value.data?.data) {
-        setAssessmentsList(assessRes.value.data.data);
-      }
-    } catch {
-      // Fallback handles UI gracefully
+      if (requestId !== lookupRequestRef.current) return;
+      setClaims(claimResponse.items);
+      setLearningObjectives(objectiveResponse.items);
+    } catch (error) {
+      if (requestId !== lookupRequestRef.current) return;
+      setClaims([]);
+      setLearningObjectives([]);
+      setPageError(apiErrors(error)[0].message);
     } finally {
-      setLoading(false);
+      if (requestId === lookupRequestRef.current) setLoadingLookups(false);
     }
   };
 
-  const handleGenerateBlueprint = async (e) => {
-    e.preventDefault();
-    if (!title.trim()) {
-      toast.error('Assessment title is required');
+  const loadBlueprint = async (id) => {
+    setLoadingBlueprint(true);
+    setPageError('');
+    setErrors([]);
+    setValidationResult(null);
+    try {
+      const result = await getAssessmentBlueprint(id);
+      if (!result?.blueprint || !Array.isArray(result.claims) || !Array.isArray(result.learningObjectives)) throw new Error('Blueprint response returned an invalid shape.');
+      const nextForm = blueprintToForm(result);
+      setSelectedBlueprintId(id);
+      setForm(nextForm);
+      await loadLookupData(nextForm.competencyId);
+    } catch (error) {
+      setPageError(apiErrors(error)[0].message);
+    } finally {
+      setLoadingBlueprint(false);
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([listAssessmentBlueprints(), listBlueprintCompetencies()])
+      .then(([blueprintResponse, competencyResponse]) => {
+        if (!active) return;
+        if (!Array.isArray(blueprintResponse?.items) || !Array.isArray(competencyResponse?.items)) {
+          throw new Error('Blueprint lookup returned an invalid response.');
+        }
+        setBlueprints(blueprintResponse.items);
+        setCompetencies(competencyResponse.items);
+      })
+      .catch((error) => {
+        if (active) setPageError(apiErrors(error)[0].message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  const updateForm = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    setErrors([]);
+    setValidationResult(null);
+    setSuccessMessage('');
+  };
+
+  const handleNew = () => {
+    setSelectedBlueprintId('');
+    setForm(emptyForm());
+    setClaims([]);
+    setLearningObjectives([]);
+    setErrors([]);
+    setValidationResult(null);
+    setPageError('');
+    setSuccessMessage('');
+  };
+
+  const handleCompetencyChange = async (event) => {
+    const competencyId = event.target.value;
+    updateForm('competencyId', competencyId);
+    setForm((current) => ({ ...current, competencyId, claims: [], learningObjectives: [] }));
+    setClaims([]);
+    setLearningObjectives([]);
+    setPageError('');
+    await loadLookupData(competencyId);
+  };
+
+  const toggleMapping = (field, identifierField, identifier, checked) => {
+    setForm((current) => ({
+      ...current,
+      [field]: checked
+        ? [...current[field], { [identifierField]: identifier, questionCount: 1 }]
+        : current[field].filter((mapping) => mapping[identifierField] !== identifier),
+    }));
+    setErrors([]);
+    setValidationResult(null);
+  };
+
+  const updateMappingCount = (field, identifierField, identifier, value) => {
+    setForm((current) => ({
+      ...current,
+      [field]: current[field].map((mapping) => (
+        mapping[identifierField] === identifier ? { ...mapping, questionCount: value === '' ? '' : Number(value) } : mapping
+      )),
+    }));
+    setErrors([]);
+  };
+
+  const toggleListValue = (field, value) => {
+    const values = form[field].includes(value) ? form[field].filter((item) => item !== value) : [...form[field], value];
+    updateForm(field, values);
+  };
+
+  const handleSave = async (event) => {
+    event.preventDefault();
+    setErrors([]);
+    setPageError('');
+    setSuccessMessage('');
+    if (!form.title.trim() || !form.competencyId || !form.targetProficiency || Number(form.questionCount) <= 0) {
+      setErrors([{ code: 'CLIENT_FORM_INCOMPLETE', field: 'form', message: 'Complete the required blueprint fields before saving.' }]);
       return;
     }
-
-    setGenerating(true);
-    setGeneratedResult(null);
-
+    setSaving(true);
     try {
-      const res = await api.post('/assessments', {
-        title,
-        competencyId: selectedCompId,
-        totalQuestions: questionCount,
-        bloomDistribution: bloom,
-        difficultyDistribution: difficulty,
-      });
+      const result = selectedBlueprintId
+        ? await updateAssessmentBlueprint(selectedBlueprintId, toPayload(form))
+        : await createAssessmentBlueprint(toPayload(form));
+      const id = result?.blueprint?.id;
+      if (!id) throw new Error('The server did not return a persisted blueprint.');
+      setSelectedBlueprintId(id);
+      const refreshed = await getAssessmentBlueprint(id);
+      setForm(blueprintToForm(refreshed));
+      await loadLookupData(refreshed.blueprint.competencyId);
+      const listResponse = await listAssessmentBlueprints();
+      setBlueprints(Array.isArray(listResponse?.items) ? listResponse.items : []);
+      setSuccessMessage('Blueprint draft saved.');
+    } catch (error) {
+      setErrors(apiErrors(error));
+    } finally {
+      setSaving(false);
+    }
+  };
 
-      if (res.data?.data) {
-        setGeneratedResult(res.data.data);
-        toast.success('Assessment blueprint generated and validated successfully!');
-        // Refresh the list of blueprints
-        const listRes = await api.get('/assessments');
-        if (listRes.data?.data) {
-          setAssessmentsList(listRes.data.data);
-        }
+  const handleValidate = async () => {
+    if (!selectedBlueprintId) {
+      setErrors([{ code: 'BLUEPRINT_NOT_PERSISTED', field: 'blueprint', message: 'Save the blueprint before validating it.' }]);
+      return;
+    }
+    setValidating(true);
+    setPageError('');
+    try {
+      const result = await validateAssessmentBlueprint(selectedBlueprintId);
+      if (typeof result?.valid !== 'boolean' || !Array.isArray(result?.errors) || !Array.isArray(result?.warnings)) {
+        throw new Error('Validation response returned an invalid shape.');
       }
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to generate assessment blueprint.');
+      setValidationResult(result);
+    } catch (error) {
+      setErrors(apiErrors(error));
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!selectedBlueprintId) {
+      setErrors([{ code: 'BLUEPRINT_NOT_PERSISTED', field: 'blueprint', message: 'Save the blueprint before generating a question.' }]);
+      return;
+    }
+    setGenerating(true);
+    setErrors([]);
+    setGenerationResult(null);
+    try {
+      const result = await generateQuestion({
+        blueprintId: selectedBlueprintId,
+        claimId: form.claims[0]?.claimId,
+        learningObjectiveId: form.learningObjectives[0]?.learningObjectiveId,
+        questionType: form.supportedQuestionTypes[0] || 'MCQ',
+      });
+      setGenerationResult(result);
+    } catch (error) {
+      setErrors(apiErrors(error));
     } finally {
       setGenerating(false);
     }
   };
 
-  const handleLoadAssessmentDetails = async (assessId) => {
-    setLoading(true);
-    try {
-      const res = await api.get(`/assessments/${assessId}`);
-      if (res.data?.data) {
-        setGeneratedResult(res.data.data);
-        setActiveTab('build');
-        toast.success(`Loaded details for "${res.data.data.assessment.title}"`);
-      }
-    } catch {
-      toast.error('Could not load assessment details');
-    } finally {
-      setLoading(false);
-    }
+  const handleQuestionValidation = async () => {
+    if (!generationResult?.question?.id) return;
+    setQuestionAction(true); setErrors([]);
+    try { setGenerationResult({ ...generationResult, validation: await validateQuestion(generationResult.question.id) }); }
+    catch (error) { setErrors(apiErrors(error)); }
+    finally { setQuestionAction(false); }
   };
 
-  const getBloomTagColor = (level) => {
-    switch (level) {
-      case 'REMEMBER':
-        return 'bg-blue-50 text-blue-700 border-blue-100';
-      case 'UNDERSTAND':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-      case 'APPLY':
-        return 'bg-amber-50 text-amber-700 border-amber-100';
-      case 'ANALYZE':
-        return 'bg-purple-50 text-purple-700 border-purple-100';
-      default:
-        return 'bg-slate-50 text-slate-700 border-slate-100';
-    }
+  const handleReview = async (action) => {
+    if (!generationResult?.question?.id) return;
+    setQuestionAction(true); setErrors([]);
+    try { const result = await reviewQuestion(generationResult.question.id, { action }); setGenerationResult({ ...generationResult, question: result.question, questionVersion: result.version }); }
+    catch (error) { setErrors(apiErrors(error)); }
+    finally { setQuestionAction(false); }
   };
+
+  const handleRevision = async () => {
+    if (!generationResult?.question?.id) return;
+    setQuestionAction(true); setErrors([]);
+    try { const result = await reviseQuestion(generationResult.question.id, { rationale: 'Revised during review.' }); setGenerationResult({ ...generationResult, questionVersion: result.version, revision: result }); }
+    catch (error) { setErrors(apiErrors(error)); }
+    finally { setQuestionAction(false); }
+  };
+
+  const handleAssembly = async () => {
+    if (!selectedBlueprintId) return;
+    setAssembling(true); setErrors([]);
+    try { const result = await assembleAssessment(selectedBlueprintId); setAssemblyResult(result); }
+    catch (error) { setErrors(apiErrors(error)); }
+    finally { setAssembling(false); }
+  };
+
+  const handleAssemblyValidation = async () => {
+    if (!assemblyResult?.assessment?.id) return;
+    setAssembling(true); setErrors([]);
+    try { const result = await validateAssessment(assemblyResult.assessment.id); setAssemblyResult({ ...assemblyResult, validation: result, persisted: await getAssessment(assemblyResult.assessment.id) }); }
+    catch (error) { setErrors(apiErrors(error)); }
+    finally { setAssembling(false); }
+  };
+
+  if (loading) return <Spinner label="Loading assessment blueprint workspace..." />;
+
+  const claimIds = mappingIds(form.claims, 'claimId');
+  const objectiveIds = mappingIds(form.learningObjectives, 'learningObjectiveId');
+  const isEditable = !selectedBlueprintId || form.status === 'DRAFT';
 
   return (
-    <div className="space-y-8">
-      {/* ── Page Header ── */}
+    <div className="space-y-6">
       <PageHeader
-        title="Assessment Blueprint & Question Studio"
-        subtitle="Generate grounded Bloom's Taxonomy-aligned MCQs, verify semantic validity, and trace test items back to official training sources."
+        title="Assessment Blueprint Studio"
+        subtitle="Configure competency-aligned assessments from persisted taxonomy data."
       />
 
-      {/* ── Tabs Navigation ── */}
-      <div className="flex border-b border-slate-200">
-        <button
-          onClick={() => setActiveTab('build')}
-          className={`flex items-center gap-2 border-b-2 px-6 py-3.5 text-sm font-bold transition-all ${
-            activeTab === 'build'
-              ? 'border-[#1E3A8A] text-[#1E3A8A]'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Sparkles size={16} /> Blueprint Studio
-        </button>
-        <button
-          onClick={() => setActiveTab('blueprints')}
-          className={`flex items-center gap-2 border-b-2 px-6 py-3.5 text-sm font-bold transition-all ${
-            activeTab === 'blueprints'
-              ? 'border-[#1E3A8A] text-[#1E3A8A]'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <FileText size={16} /> Generated Blueprints ({assessmentsList.length})
-        </button>
+      {pageError && <Alert type="error" title="Could not load data" message={pageError} />}
+      {successMessage && <Alert type="success" title="Saved" message={successMessage} />}
+      {errors.length > 0 && (
+        <Alert type="error" title="Action requires attention" message="The server rejected this request or the form is incomplete.">
+          <ul className="list-disc space-y-1 pl-5">
+            {errors.map((error, index) => <li key={`${error.code}-${index}`}>{error.field ? `${error.field}: ` : ''}{error.message} <span className="font-mono text-xs">({error.code})</span></li>)}
+          </ul>
+        </Alert>
+      )}
+
+      <div className="flex flex-col gap-3 rounded-xl border border-(--app-color-border) bg-white p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between">
+        <Select
+          label="Existing blueprint"
+          value={selectedBlueprintId}
+          onChange={(event) => event.target.value ? loadBlueprint(event.target.value) : handleNew()}
+          options={blueprints.map((blueprint) => ({ value: blueprint.id, label: `${blueprint.title} · ${blueprint.status}` }))}
+          placeholder={blueprints.length ? 'Select a saved blueprint' : 'No saved blueprints'}
+          disabled={loadingBlueprint}
+          className="sm:min-w-[24rem]"
+        />
+        <Button variant="secondary" onClick={handleNew} disabled={loadingBlueprint}>
+          <Plus className="h-4 w-4" /> New blueprint
+        </Button>
       </div>
 
-      {loading && !generating ? (
-        <div className="rounded-2xl border border-slate-200 bg-white py-16">
-          <Spinner label="Loading assessment records..." />
-        </div>
-      ) : activeTab === 'build' ? (
-        <div className="grid gap-8 lg:grid-cols-[1fr_1.3fr]">
-          {/* Left panel: Blueprint builder */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm relative overflow-hidden space-y-6">
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-700 to-[#1E3A8A]" />
-            <div className="flex items-center gap-2">
-              <Sliders size={20} className="text-[#1E3A8A]" />
-              <h3 className="text-base font-black text-slate-900">Blueprint Parameters</h3>
+      {loadingBlueprint ? <Spinner label="Loading blueprint..." /> : (
+        <form onSubmit={handleSave} className="space-y-6">
+          <Card title="Blueprint details" subtitle="Set the competency target and size of the assessment.">
+            <div className="grid gap-5 md:grid-cols-2">
+              <Input label="Title" required value={form.title} onChange={(event) => updateForm('title', event.target.value)} error={errorForField(errors, 'title')} disabled={!isEditable} placeholder="e.g. Survey Sampling Diagnostic" />
+              <Select label="Competency" required value={form.competencyId} onChange={handleCompetencyChange} options={competencies.map((competency) => ({ value: competency.id, label: `${competency.code} · ${competency.name}` }))} placeholder="Select a competency" error={errorForField(errors, 'competencyId')} disabled={!isEditable || loadingLookups} />
+              <Input label="Target proficiency" required type="number" min="0.01" step="0.1" value={form.targetProficiency} onChange={(event) => updateForm('targetProficiency', event.target.value)} error={errorForField(errors, 'targetProficiency')} disabled={!isEditable} />
+              <Input label="Question count" required type="number" min="1" step="1" value={form.questionCount} onChange={(event) => updateForm('questionCount', event.target.value)} error={errorForField(errors, 'questionCount')} disabled={!isEditable} />
             </div>
+            {competencies.length === 0 && <EmptyState icon={ClipboardList} title="No competencies available" message="The authenticated account has no persisted competency records to configure." />}
+          </Card>
 
-            <form onSubmit={handleGenerateBlueprint} className="space-y-5">
-              {/* Title input */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                  Assessment Title
-                </label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-[#1E3A8A] focus:outline-none"
-                  placeholder="Enter assessment purpose/title..."
-                />
-              </div>
-
-              {/* Competency target */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                  Target Competency
-                </label>
-                <select
-                  value={selectedCompId}
-                  onChange={(e) => setSelectedCompId(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-[#1E3A8A] focus:outline-none"
-                >
-                  {competencies.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      [{c.code}] {c.name}
-                    </option>
-                  ))}
-                  {competencies.length === 0 && (
-                    <option value="">No competencies configured</option>
-                  )}
-                </select>
-              </div>
-
-              {/* Question Count slider */}
-              <div>
-                <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                  <span>Number of Questions</span>
-                  <span className="text-[#1E3A8A]">{questionCount} MCQs</span>
-                </div>
-                <input
-                  type="range"
-                  min="2"
-                  max="10"
-                  value={questionCount}
-                  onChange={(e) => setQuestionCount(Number(e.target.value))}
-                  className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#1E3A8A]"
-                />
-              </div>
-
-              {/* Cognitive level settings */}
-              <div className="space-y-3.5">
-                <span className="block text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Bloom's Cognitive Distribution
-                </span>
-                <div className="grid gap-3 grid-cols-2">
-                  {Object.entries(bloom).map(([level, val]) => (
-                    <div key={level} className="flex items-center justify-between bg-slate-50 border border-slate-100 p-2.5 rounded-xl">
-                      <span className="text-xs font-bold text-slate-600 capitalize">
-                        {level.toLowerCase()}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setBloom((prev) => ({ ...prev, [level]: Math.max(0, val - 1) }))}
-                          className="h-6 w-6 rounded-md bg-white border border-slate-200 text-slate-600 font-bold flex items-center justify-center hover:bg-slate-50"
-                        >
-                          -
-                        </button>
-                        <span className="text-xs font-mono font-bold text-slate-800">{val}</span>
-                        <button
-                          type="button"
-                          onClick={() => setBloom((prev) => ({ ...prev, [level]: val + 1 }))}
-                          className="h-6 w-6 rounded-md bg-white border border-slate-200 text-slate-600 font-bold flex items-center justify-center hover:bg-slate-50"
-                        >
-                          +
-                        </button>
+          <div className="grid gap-6 xl:grid-cols-2">
+            <Card title="Competency claims" subtitle="Select the claims this blueprint should assess and allocate questions.">
+              {loadingLookups ? <Spinner label="Loading claims..." /> : claims.length === 0 ? <EmptyState icon={FileText} title={form.competencyId ? 'No active claims' : 'Select a competency first'} message={form.competencyId ? 'This competency has no active claims available for selection.' : 'Claims will appear after a competency is selected.'} /> : (
+                <div className="space-y-3">
+                  {claims.map((claim, index) => {
+                    const mapping = form.claims.find((item) => item.claimId === claim.id);
+                    return <div key={claim.id} className="rounded-lg border border-(--app-color-border) p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <Checkbox id={`claim-${claim.id}`} checked={claimIds.has(claim.id)} onChange={(event) => toggleMapping('claims', 'claimId', claim.id, event.target.checked)} label={`${claim.code} · ${claim.statement}`} disabled={!isEditable} />
+                        {mapping && <Input aria-label={`Questions for claim ${claim.code}`} type="number" min="0" step="1" value={mapping.questionCount} onChange={(event) => updateMappingCount('claims', 'claimId', claim.id, event.target.value)} className="w-24" disabled={!isEditable} />}
                       </div>
-                    </div>
-                  ))}
+                      <p className="mt-2 pl-8 text-xs text-(--app-color-text-muted)">Claim {index + 1} · {claim.status}</p>
+                    </div>;
+                  })}
                 </div>
-              </div>
+              )}
+            </Card>
 
-              {/* Generate button */}
-              <Button
-                variant="primary"
-                type="submit"
-                disabled={generating}
-                loading={generating}
-                className="w-full justify-center !text-white"
-              >
-                <Sparkles size={16} className="!text-white mr-1" /> Generate & Verify Assessment
-              </Button>
-            </form>
+            <Card title="Learning objectives" subtitle="Select the objectives this blueprint should cover and allocate questions.">
+              {loadingLookups ? <Spinner label="Loading learning objectives..." /> : learningObjectives.length === 0 ? <EmptyState icon={FileText} title={form.competencyId ? 'No active learning objectives' : 'Select a competency first'} message={form.competencyId ? 'This competency has no active learning objectives available.' : 'Learning objectives will appear after a competency is selected.'} /> : (
+                <div className="space-y-3">
+                  {learningObjectives.map((objective, index) => {
+                    const mapping = form.learningObjectives.find((item) => item.learningObjectiveId === objective.id);
+                    return <div key={objective.id} className="rounded-lg border border-(--app-color-border) p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <Checkbox id={`objective-${objective.id}`} checked={objectiveIds.has(objective.id)} onChange={(event) => toggleMapping('learningObjectives', 'learningObjectiveId', objective.id, event.target.checked)} label={`${objective.code} · ${objective.title}`} disabled={!isEditable} />
+                        {mapping && <Input aria-label={`Questions for objective ${objective.code}`} type="number" min="0" step="1" value={mapping.questionCount} onChange={(event) => updateMappingCount('learningObjectives', 'learningObjectiveId', objective.id, event.target.value)} className="w-24" disabled={!isEditable} />}
+                      </div>
+                      <p className="mt-2 pl-8 text-xs text-(--app-color-text-muted)">{objective.description || 'No description provided.'} · {objective.status}</p>
+                    </div>;
+                  })}
+                </div>
+              )}
+            </Card>
           </div>
 
-          {/* Right panel: Questions rendering & studio */}
-          <div className="space-y-6">
-            {!generatedResult ? (
-              <div className="rounded-3xl border border-dashed border-slate-300 p-12 text-center text-slate-500 bg-white">
-                <BookOpen size={48} className="mx-auto text-slate-300 mb-3" />
-                <h4 className="text-base font-bold text-slate-700">No Assessment Blueprint Generated Yet</h4>
-                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                  Configure the blueprint specifications on the left and trigger generation to output verifiable test items.
-                </p>
+          <div className="grid gap-6 xl:grid-cols-2">
+            <Card title="Cognitive distribution" subtitle="Allocations must total the configured question count.">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {COGNITIVE_LEVELS.map((level) => <Input key={level} label={level} type="number" min="0" step="1" value={form.cognitiveDistribution[level] ?? 0} onChange={(event) => updateForm('cognitiveDistribution', { ...form.cognitiveDistribution, [level]: event.target.value === '' ? '' : Number(event.target.value) })} disabled={!isEditable} />)}
               </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Blueprint Summary Card */}
-                <div className="rounded-3xl border border-slate-200 bg-slate-900 text-white p-6 shadow-md relative overflow-hidden">
-                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-bold text-blue-300 border border-white/5 uppercase">
-                        Grounded Blueprint
-                      </span>
-                      <h4 className="text-lg font-black mt-2 leading-snug">{generatedResult.assessment.title}</h4>
-                      <p className="text-xs text-slate-300 font-medium mt-1">
-                        Source Material: {generatedResult.assessment.sourceMaterialName}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Items</span>
-                      <span className="text-xl font-black text-blue-400">{generatedResult.assessment.totalQuestions} MCQs</span>
-                    </div>
-                  </div>
+            </Card>
 
-                  {/* Quality Checklist Dashboard */}
-                  <div className="mt-5 pt-4 border-t border-white/10 grid gap-3 sm:grid-cols-2 text-xs">
-                    <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                      <ShieldCheck size={14} /> Exactly one correct option verified
-                    </div>
-                    <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                      <ShieldCheck size={14} /> Entailment claim verification passed
-                    </div>
-                    <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                      <ShieldCheck size={14} /> Distractors validated for high quality
-                    </div>
-                    <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                      <ShieldCheck size={14} /> Intent duplicate checks passed (Index: 96)
-                    </div>
-                  </div>
-                </div>
-
-                {/* Questions timeline */}
-                <div className="space-y-5">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                    <Layers size={16} className="text-[#1E3A8A]" /> Grounded Test Items
-                  </h3>
-
-                  {generatedResult.questions.map((q, idx) => (
-                    <div key={q.id || idx} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-                      {/* Stem and tags */}
-                      <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-3">
-                        <div className="flex items-center gap-2.5">
-                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-xs font-bold text-blue-700">
-                            {idx + 1}
-                          </span>
-                          <span className={`rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase ${getBloomTagColor(q.bloomLevel)}`}>
-                            {q.bloomLevel}
-                          </span>
-                          <span className="rounded-md bg-slate-50 border border-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                            94/100 Quality
-                          </span>
-                        </div>
-                      </div>
-
-                      <h5 className="text-sm font-bold text-slate-900 leading-snug">{q.stem}</h5>
-
-                      {/* Options */}
-                      <div className="grid gap-2.5 sm:grid-cols-2 text-xs">
-                        {Array.isArray(q.options) && q.options.map((opt, oIdx) => (
-                          <div
-                            key={oIdx}
-                            className={`rounded-2xl border p-3 flex items-center justify-between ${
-                              opt.isCorrect
-                                ? 'border-emerald-200 bg-emerald-50/70 text-emerald-900 font-semibold'
-                                : 'border-slate-100 bg-slate-50 text-slate-700'
-                            }`}
-                          >
-                            <span>{opt.text}</span>
-                            {opt.isCorrect && <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />}
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Explanation */}
-                      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs space-y-1">
-                        <span className="block font-bold text-slate-700">Authoritative Explanation</span>
-                        <p className="text-slate-600 leading-relaxed font-medium">{q.explanation}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <Card title="Question types" subtitle="Use only question types supported by the assessment domain.">
+              <div className="space-y-3">
+                {QUESTION_TYPES.map((type) => <Checkbox key={type} id={`type-${type}`} label={type} checked={form.supportedQuestionTypes.includes(type)} onChange={() => toggleListValue('supportedQuestionTypes', type)} disabled={!isEditable} />)}
               </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        /* tab blueprints: lists generated blueprints */
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">Blueprint Registry</h3>
-              <p className="text-xs text-slate-500 font-medium">History of generated assessment blueprints in the MoSPI framework.</p>
-            </div>
-            <Button variant="secondary" size="sm" onClick={fetchData}>
-              <RefreshCw size={14} className="mr-1" /> Refresh
-            </Button>
+            </Card>
           </div>
 
-          {assessmentsList.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 bg-slate-50 rounded-2xl">
-              <FileText size={36} className="mx-auto text-slate-300 mb-2" />
-              <p className="text-sm font-semibold">No blueprints generated yet.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {assessmentsList.map((item) => (
-                <div key={item.id} className="flex items-center justify-between py-4 hover:bg-slate-50/50 px-3 rounded-2xl transition-colors">
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-bold text-slate-900">{item.title}</h4>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 font-medium">
-                      <span className="font-semibold text-slate-600">[{item.competencyCode}] {item.competencyName}</span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1"><Layers size={12} /> {item.totalQuestions} Questions</span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(item.createdAt).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                  <Button variant="secondary" size="sm" onClick={() => handleLoadAssessmentDetails(item.id)}>
-                    View Studio
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+          <div className="grid gap-6 xl:grid-cols-2">
+            <Card title="Evidence requirements" subtitle="Optional configuration accepted by the current Blueprint API.">
+              <div className="space-y-3">
+                {EVIDENCE_TYPES.map((type) => <Checkbox key={type} id={`evidence-${type}`} label={type} checked={form.evidenceRequirements.evidenceTypes.includes(type)} onChange={() => setForm((current) => ({ ...current, evidenceRequirements: { ...current.evidenceRequirements, evidenceTypes: current.evidenceRequirements.evidenceTypes.includes(type) ? current.evidenceRequirements.evidenceTypes.filter((item) => item !== type) : [...current.evidenceRequirements.evidenceTypes, type] } }))} disabled={!isEditable} />)}
+                <Checkbox id="require-grounding" label="Require source grounding" checked={form.evidenceRequirements.requireGrounding} onChange={(event) => setForm((current) => ({ ...current, evidenceRequirements: { ...current.evidenceRequirements, requireGrounding: event.target.checked } }))} disabled={!isEditable} />
+              </div>
+            </Card>
+
+            <Card title="Source restrictions" subtitle="Enter persisted document or version IDs. PDF management is outside this workspace.">
+              <div className="space-y-4">
+                <Input label="Document IDs" value={form.sourceRestrictions.documentIds.join(', ')} onChange={(event) => setForm((current) => ({ ...current, sourceRestrictions: { ...current.sourceRestrictions, documentIds: identifiersFromText(event.target.value) } }))} disabled={!isEditable} placeholder="UUID, UUID" />
+                <Input label="Document version IDs" value={form.sourceRestrictions.documentVersionIds.join(', ')} onChange={(event) => setForm((current) => ({ ...current, sourceRestrictions: { ...current.sourceRestrictions, documentVersionIds: identifiersFromText(event.target.value) } }))} disabled={!isEditable} placeholder="UUID, UUID" />
+              </div>
+            </Card>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Button type="submit" loading={saving} disabled={!isEditable}><Save className="h-4 w-4" /> Save draft</Button>
+            <Button type="button" variant="secondary" onClick={handleValidate} loading={validating} disabled={!selectedBlueprintId}><ShieldCheck className="h-4 w-4" /> Validate persisted blueprint</Button>
+            <Button type="button" variant="secondary" onClick={handleGenerate} loading={generating} disabled={!selectedBlueprintId}><FileText className="h-4 w-4" /> Generate grounded question</Button>
+            <Button type="button" variant="success" onClick={handleAssembly} loading={assembling} disabled={!selectedBlueprintId}><ClipboardList className="h-4 w-4" /> Assemble assessment</Button>
+          </div>
+        </form>
       )}
+
+      {validationResult && <Card title="Validation result" subtitle="Diagnostics returned by the persisted Blueprint validation service.">
+        <div className={`mb-4 flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-bold ${validationResult.valid ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+          {validationResult.valid ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
+          {validationResult.valid ? 'VALID' : 'INVALID'}
+        </div>
+        {validationResult.errors.length > 0 && <div className="space-y-2"><h4 className="text-sm font-bold text-(--app-color-text)">Errors</h4>{validationResult.errors.map((error, index) => <p key={`${error.code}-${index}`} className="text-sm text-red-700"><span className="font-mono text-xs">{error.code}</span> · {error.field || 'blueprint'} · {error.message}</p>)}</div>}
+        {validationResult.warnings.length > 0 && <div className="mt-4 space-y-2"><h4 className="text-sm font-bold text-(--app-color-text)">Warnings</h4>{validationResult.warnings.map((warning, index) => <p key={index} className="text-sm text-amber-700">{warning.message || warning}</p>)}</div>}
+      </Card>}
+
+      {generationResult && <Card title="Generated question" subtitle="Question output and source evidence returned by the grounded generation pipeline.">
+        {generationResult.status === 'INSUFFICIENT_EVIDENCE' ? <Alert type="warning" title="Insufficient evidence" message={generationResult.message} /> : <div className="space-y-4"><p className="text-base font-semibold">{generationResult.question?.stem || generationResult.questionVersion?.stem}</p><div className="space-y-2">{(generationResult.question?.options || []).map((option) => <p key={option.id || option.text} className="rounded border border-(--app-color-border) p-2 text-sm">{option.id || ''} {option.text}</p>)}</div><p className="text-xs text-(--app-color-text-muted)">Provenance: {generationResult.provenance?.map((item) => item.sourceChunkId).join(', ') || 'none'}</p><p className="text-xs font-semibold">Validation: {generationResult.validation?.status || generationResult.questionVersion?.validationStatus || 'PENDING'} · Review: {generationResult.question?.reviewStatus || generationResult.questionVersion?.reviewStatus || 'DRAFT'}</p><div className="flex flex-wrap gap-2"><Button type="button" variant="secondary" onClick={handleQuestionValidation} loading={questionAction}>Validate question</Button><Button type="button" variant="success" onClick={() => handleReview('APPROVE')} loading={questionAction}>Approve</Button><Button type="button" variant="danger" onClick={() => handleReview('REJECT')} loading={questionAction}>Reject</Button><Button type="button" variant="secondary" onClick={handleRevision} loading={questionAction}>Request revision</Button></div>{generationResult.validation?.errors?.length > 0 && <Alert type="error" title="Validation errors" message={generationResult.validation.errors.map((item) => item.message).join(' ')}/>}</div>}
+      </Card>}
+
+      {assemblyResult && <Card title="Assembled assessment" subtitle="Blueprint-driven selection of approved, validated current question versions."><div className="space-y-3"><p className="text-sm font-semibold">Assessment {assemblyResult.assessment?.id} · {assemblyResult.items?.length || assemblyResult.persisted?.items?.length || 0} questions</p>{(assemblyResult.items || assemblyResult.persisted?.items || []).map((item, index) => <div key={item.item?.id || item.item?.questionId || index} className="rounded border border-(--app-color-border) p-3 text-sm"><span className="font-semibold">{item.item?.position || index + 1}.</span> {item.version?.stem || item.question?.stem}</div>)}<Button type="button" variant="secondary" onClick={handleAssemblyValidation} loading={assembling}>Validate assembled assessment</Button>{assemblyResult.validation && <Alert type={assemblyResult.validation.valid ? 'success' : 'error'} title={assemblyResult.validation.valid ? 'Assembly valid' : 'Assembly invalid'} message={assemblyResult.validation.errors?.map((item) => item.message).join(' ') || 'Blueprint requirements are satisfied.'} />}</div></Card>}
+
+      {blueprints.length === 0 && <Card><EmptyState icon={RefreshCw} title="No saved blueprints" message="Create a blueprint draft from the live competency catalog above." /></Card>}
     </div>
   );
 }

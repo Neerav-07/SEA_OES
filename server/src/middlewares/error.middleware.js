@@ -10,5 +10,7 @@ export function errorHandler(err, req, res, _next) {
     console.error(`[ERROR] ${req.method} ${req.url} →`, err);
   }
 
-  return res.status(statusCode).json({ message });
+  const response = { message };
+  if (Array.isArray(err.errors)) response.errors = err.errors;
+  return res.status(statusCode).json(response);
 }
