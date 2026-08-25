@@ -9,7 +9,7 @@ import {
   listAssessmentBlueprintsController,
   updateAssessmentBlueprintController,
   validateAssessmentBlueprintController,
-} from '../controllers/assessmentBlueprint.controller.js';
+} from '../controllers/assessments/assessmentBlueprint.controller.js';
 import { verifyToken } from '../middlewares/verifyToken.js';
 
 const router = Router();

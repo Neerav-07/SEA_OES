@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { generateDiagnosticBlueprint, submitDiagnosticAttempt } from '../controllers/diagnostic.controller.js';
+import { generateDiagnosticBlueprint, submitDiagnosticAttempt } from '../controllers/assessments/diagnostic.controller.js';
 
 const router = Router();
 

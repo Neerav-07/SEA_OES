@@ -49,6 +49,7 @@ function signAccessToken(user) {
       email: user.email,
       name: user.name,
       plan: user.plan,
+      platformRole: user.platformRole || 'EMPLOYEE', // V2: ADMIN | EMPLOYEE
       type: 'access',
     },
     secret,
@@ -82,6 +83,10 @@ function buildAuthPayload(user) {
       name: user.name,
       email: user.email,
       plan: user.plan,
+      platformRole: user.platformRole || 'EMPLOYEE', // V2
+      designation: user.designation,
+      department: user.department,
+      cadre: user.cadre,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       lastLoginAt: user.lastLoginAt,
@@ -101,6 +106,11 @@ export async function registerUser(payload = {}) {
   const name = typeof payload.name === 'string' ? payload.name.trim() : '';
   const email = normalizeEmail(payload.email);
   const password = typeof payload.password === 'string' ? payload.password : '';
+  // V2: accept profile fields at registration
+  const platformRole = payload.platformRole === 'ADMIN' ? 'ADMIN' : 'EMPLOYEE';
+  const designation = typeof payload.designation === 'string' ? payload.designation.trim() : null;
+  const department = typeof payload.department === 'string' ? payload.department.trim() : null;
+  const cadre = typeof payload.cadre === 'string' ? payload.cadre.trim() : null;
 
   // Check for existing user
   const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, email));
@@ -115,7 +125,7 @@ export async function registerUser(payload = {}) {
 
   const [user] = await db
     .insert(users)
-    .values({ name, email, passwordHash })
+    .values({ name, email, passwordHash, platformRole, designation, department, cadre })
     .returning();
 
   const authPayload = buildAuthPayload(user);
@@ -248,6 +258,10 @@ export async function getUserById(userId) {
       name: users.name,
       email: users.email,
       plan: users.plan,
+      platformRole: users.platformRole, // V2
+      designation: users.designation,   // V2
+      department: users.department,     // V2
+      cadre: users.cadre,               // V2
       notifyOnHighPriority: users.notifyOnHighPriority,
       notifyDigest: users.notifyDigest,
       createdAt: users.createdAt,

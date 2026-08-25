@@ -12,7 +12,7 @@ import {
   listSourcesController,
   listVersionsController,
   updateSourceController,
-} from '../controllers/source.controller.js';
+} from '../controllers/sources/source.controller.js';
 import { verifyToken } from '../middlewares/verifyToken.js';
 
 const router = Router();

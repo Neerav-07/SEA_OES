@@ -4,7 +4,7 @@ import {
   listSkillGapsController,
   recalculateSkillGapsController,
   seedModule3Controller,
-} from "../controllers/skillGap.controller.js";
+} from '../controllers/competencies/skillGap.controller.js';
 import { verifyToken } from "../middlewares/verifyToken.js";
 
 const router = Router();

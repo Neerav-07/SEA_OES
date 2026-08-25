@@ -95,7 +95,7 @@ export default function SkillGapsPage() {
 
       {loading ? (
         <div className="rounded-2xl border border-(--app-color-border) bg-white py-16">
-          <Spinner label="Loading skill gaps..." />
+          <Spinner variant="bar" label="Analyzing workforce skill gaps..." className="py-16" />
         </div>
       ) : (
         <>

@@ -1,9 +1,9 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
 
 import { getDb } from '../db/index.js';
-import { competencies } from '../db/schema/competencies.js';
-import { competencyClaims, learningObjectives } from '../db/schema/learningObjectives.js';
-import { sourceChunks, sourceDocumentVersions, sourceDocuments } from '../db/schema/sourceProvenance.js';
+import { competencies } from '../db/schema/index.js';
+import { competencyClaims, learningObjectives } from '../db/schema/index.js';
+import { sourceChunks, sourceDocumentVersions, sourceDocuments } from '../db/schema/index.js';
 import { validateRetrievalRequest } from '../validators/retrieval.validator.js';
 
 function invalidRequest(errors) {

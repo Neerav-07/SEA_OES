@@ -1,12 +1,12 @@
 import { and, desc, eq, ne } from 'drizzle-orm';
 
-import { assessmentBlueprintClaims, assessmentBlueprintObjectives, assessmentBlueprints } from '../db/schema/assessmentBlueprints.js';
-import { assessments, questions } from '../db/schema/assessments.js';
+import { assessmentBlueprintClaims, assessmentBlueprintObjectives, assessmentBlueprints } from '../db/schema/index.js';
+import { assessments, questions } from '../db/schema/index.js';
 import { getDb } from '../db/index.js';
-import { competencies } from '../db/schema/competencies.js';
-import { competencyClaims, learningObjectives } from '../db/schema/learningObjectives.js';
-import { questionSourceProvenance, questionValidationResults, questionVersions } from '../db/schema/questionIntelligence.js';
-import { sourceChunks, sourceDocumentVersions, sourceDocuments } from '../db/schema/sourceProvenance.js';
+import { competencies } from '../db/schema/index.js';
+import { competencyClaims, learningObjectives } from '../db/schema/index.js';
+import { questionSourceProvenance, questionValidationResults, questionVersions } from '../db/schema/index.js';
+import { sourceChunks, sourceDocumentVersions, sourceDocuments } from '../db/schema/index.js';
 
 const QUESTION_TYPES = new Set(['MCQ', 'SCENARIO']);
 const COGNITIVE_LEVELS = new Set(['REMEMBER', 'UNDERSTAND', 'APPLY', 'ANALYZE', 'EVALUATE']);

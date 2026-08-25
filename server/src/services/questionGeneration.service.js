@@ -2,11 +2,11 @@ import crypto from 'node:crypto';
 import { desc, eq } from 'drizzle-orm';
 
 import { getDb } from '../db/index.js';
-import { assessments, questions } from '../db/schema/assessments.js';
-import { competencies } from '../db/schema/competencies.js';
-import { competencyClaims, learningObjectives } from '../db/schema/learningObjectives.js';
-import { questionIntents, questionSourceProvenance, questionValidationResults, questionVersions } from '../db/schema/questionIntelligence.js';
-import { sourceChunks, sourceDocumentVersions, sourceDocuments } from '../db/schema/sourceProvenance.js';
+import { assessments, questions } from '../db/schema/index.js';
+import { competencies } from '../db/schema/index.js';
+import { competencyClaims, learningObjectives } from '../db/schema/index.js';
+import { questionIntents, questionSourceProvenance, questionValidationResults, questionVersions } from '../db/schema/index.js';
+import { sourceChunks, sourceDocumentVersions, sourceDocuments } from '../db/schema/index.js';
 import { searchSourceEvidence } from './retrieval.service.js';
 import { getAssessmentBlueprintById } from './assessmentBlueprint.service.js';
 import { validateGenerationRequest } from '../validators/retrieval.validator.js';

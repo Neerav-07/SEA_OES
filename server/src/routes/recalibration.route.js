@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { recalibrateOfficialCompetencies } from '../controllers/recalibration.controller.js';
+import { recalibrateOfficialCompetencies } from '../controllers/competencies/recalibration.controller.js';
 
 const router = Router();
 

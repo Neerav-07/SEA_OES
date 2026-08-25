@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { loginController, logoutController, refreshController, registerController, getMeController } from '../controllers/auth.controller.js';
+import { loginController, logoutController, refreshController, registerController, getMeController } from '../controllers/auth/auth.controller.js';
 import { validateLoginPayload, validateRegisterPayload } from '../validators/auth.validator.js';
 import { verifyToken } from '../middlewares/verifyToken.js';
 

@@ -1,9 +1,9 @@
 import { asc, desc, eq, inArray } from 'drizzle-orm';
 
-import { assessmentQuestionItems } from '../db/schema/assessmentAssembly.js';
-import { assessments, questions } from '../db/schema/assessments.js';
+import { assessmentQuestionItems } from '../db/schema/index.js';
+import { assessments, questions } from '../db/schema/index.js';
 import { getDb } from '../db/index.js';
-import { questionSourceProvenance, questionVersions } from '../db/schema/questionIntelligence.js';
+import { questionSourceProvenance, questionVersions } from '../db/schema/index.js';
 import { getAssessmentBlueprintById } from './assessmentBlueprint.service.js';
 
 function failure(code, field, message, statusCode = 400, extra = {}) {

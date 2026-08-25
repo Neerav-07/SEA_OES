@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { searchRetrievalController } from '../controllers/retrieval.controller.js';
+import { searchRetrievalController } from '../controllers/sources/retrieval.controller.js';
 import { verifyToken } from '../middlewares/verifyToken.js';
 
 const router = Router();
