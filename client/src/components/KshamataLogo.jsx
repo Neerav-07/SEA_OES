@@ -23,28 +23,37 @@ export default function KshamataLogo({
   return (
     <div className={`inline-flex flex-col items-start select-none overflow-hidden ${className}`}>
       <div className={`tracking-tight ${currentSize} flex items-center leading-none whitespace-nowrap`}>
-        {/* Sleek Gradient K Anchor */}
-        <span className="font-extrabold tracking-tighter bg-gradient-to-br from-[#020617] via-[#1E3A8A] to-[#0F172A] bg-clip-text text-transparent transform transition-transform duration-300 hover:scale-105">
+        {/* Sleek Gradient K Anchor (Deep Dark Blue to Midnight Black) */}
+        <span
+          className={`font-black tracking-tighter transition-transform duration-300 hover:scale-105 ${
+            light
+              ? 'text-white'
+              : 'bg-gradient-to-r from-[#1E3A8A] via-[#0F172A] to-[#020617] bg-clip-text text-transparent'
+          }`}
+        >
           K
         </span>
 
-        {/* Smooth Collapsing Characters: "sham" + "ata" */}
+        {/* Smooth Collapsing Characters: "shamata" (Continuing Dark Blue to Black Gradient) */}
         <div
           className={`flex items-center transition-all duration-300 ease-in-out ${
             collapsed ? 'max-w-0 opacity-0 -translate-x-2 overflow-hidden' : 'max-w-xs opacity-100 translate-x-0'
           }`}
         >
-          <span className={`${light ? "text-white" : "text-[#020617]"} font-medium tracking-tight`}>
-            sham
-          </span>
-          <span className="font-bold tracking-tight bg-gradient-to-r from-[#1E3A8A] via-[#1D4ED8] to-[#2563EB] bg-clip-text text-transparent">
-            ata
+          <span
+            className={`font-bold tracking-tight ${
+              light
+                ? 'text-slate-100'
+                : 'bg-gradient-to-r from-[#1E3A8A] via-[#0F172A] to-[#020617] bg-clip-text text-transparent'
+            }`}
+          >
+            shamata
           </span>
         </div>
       </div>
 
       {showTagline && !collapsed && (
-        <span className={`mt-1 text-[10px] font-bold uppercase tracking-[0.2em] transition-opacity duration-200 ${light ? 'text-slate-400' : 'text-slate-600'}`}>
+        <span className={`mt-1 text-[10px] font-extrabold uppercase tracking-[0.22em] transition-opacity duration-200 ${light ? 'text-slate-400' : 'text-slate-500'}`}>
           Competency Intelligence
         </span>
       )}
