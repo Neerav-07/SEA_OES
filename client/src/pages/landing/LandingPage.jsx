@@ -65,55 +65,65 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ── Split Hero (Left Text Copy + Right Interactive Product Story Demo) ── */}
-      <section className="relative z-10 mx-auto max-w-7xl px-6 pt-4 pb-12 lg:pt-8 lg:pb-16">
-        <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
-          {/* Left Text Column */}
-          <div className="lg:col-span-6 text-left space-y-6">
-            <h1 className="text-3xl font-black leading-[1.2] tracking-tight text-[#020617] sm:text-4xl lg:text-[46px] xl:text-[54px]">
-              <span className="block whitespace-nowrap">Empowering India's</span>
-              <span className="block mt-1 whitespace-nowrap bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8] bg-clip-text text-transparent pb-1">
-                statistical workforce!
-              </span>
-            </h1>
+      {/* ── Split Hero (Mild Dark Black-Blue Shine Animation Background) ── */}
+      <section className="relative z-10 mx-4 my-4 lg:mx-12 lg:my-6 rounded-3xl hero-dark-shine-container text-white shadow-2xl border border-blue-900/40">
+        {/* Mild Shine Beam Overlay */}
+        <div className="hero-shine-beam-overlay" />
 
-            <p className="text-lg lg:text-xl font-semibold text-slate-500 tracking-wide mt-1">
-              For India's Official Statistical System
-            </p>
+        <div className="relative z-10 mx-auto max-w-7xl px-6 py-12 lg:px-12 lg:py-16">
+          <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
+            {/* Left Text Column */}
+            <div className="lg:col-span-6 text-left space-y-6">
+              <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 px-4 py-1.5 text-xs font-extrabold uppercase tracking-widest text-blue-300 ring-1 ring-blue-400/30 backdrop-blur-md">
+                <span className="h-2 w-2 rounded-full bg-blue-400 animate-ping"></span>
+                Official Statistical System • PS 26101
+              </div>
 
-            <div className="text-xs lg:text-sm font-medium tracking-wide text-slate-500 flex flex-wrap items-center gap-x-5 gap-y-2.5 pt-1">
-              <span className="flex items-center gap-1.5">
-                <span className="text-emerald-600 font-black text-sm">✓</span>
-                <span>Competency Intelligence</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="text-emerald-600 font-black text-sm">✓</span>
-                <span>Personalized Pathways</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="text-emerald-600 font-black text-sm">✓</span>
-                <span>Continuous Assessment</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="text-emerald-600 font-black text-sm">✓</span>
-                <span>Readiness Analytics</span>
-              </span>
+              <h1 className="text-3xl font-black leading-[1.18] tracking-tight text-white sm:text-4xl lg:text-[46px] xl:text-[54px]">
+                <span className="block whitespace-nowrap">Empowering India's</span>
+                <span className="block mt-1 whitespace-nowrap bg-gradient-to-r from-blue-300 via-indigo-200 to-white bg-clip-text text-transparent pb-1">
+                  statistical workforce!
+                </span>
+              </h1>
+
+              <p className="text-lg lg:text-xl font-medium text-slate-300 tracking-wide mt-1">
+                AI-Enabled Competency Intelligence & Capacity Building Platform for MoSPI
+              </p>
+
+              <div className="text-xs lg:text-sm font-medium tracking-wide text-slate-300 flex flex-wrap items-center gap-x-5 gap-y-2.5 pt-1">
+                <span className="flex items-center gap-1.5">
+                  <span className="text-emerald-400 font-black text-sm">✓</span>
+                  <span>MoSPI FRAC Framework</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="text-emerald-400 font-black text-sm">✓</span>
+                  <span>iGOT Karmayogi Pathways</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="text-emerald-400 font-black text-sm">✓</span>
+                  <span>AI MCQ RAG Generator</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="text-emerald-400 font-black text-sm">✓</span>
+                  <span>Predictive Deficit Analytics</span>
+                </span>
+              </div>
+
+              <div className="flex flex-col items-start gap-4 sm:flex-row pt-4">
+                <Link to="/register" className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-4 text-base font-bold !text-white shadow-xl hover:from-blue-500 hover:to-indigo-500 transition-all hover:scale-105">
+                  Explore Competency Portal <ArrowRight size={18} className="!text-white" />
+                </Link>
+                <Link to="/login" className="rounded-2xl border border-slate-700/80 bg-slate-900/80 px-8 py-4 text-base font-semibold text-white backdrop-blur hover:bg-slate-800 transition-colors">
+                  Official Login
+                </Link>
+              </div>
             </div>
 
-            <div className="flex flex-col items-start gap-4 sm:flex-row pt-4">
-              <Link to="/register" className="flex items-center gap-2 rounded-2xl bg-[#1E3A8A] px-8 py-4 text-base font-bold !text-white shadow-lg hover:bg-[#172554] transition-all hover:scale-105">
-                Explore Competency Portal <ArrowRight size={18} className="!text-white" />
-              </Link>
-              <Link to="/login" className="rounded-2xl border border-slate-300 bg-white/90 px-8 py-4 text-base font-semibold text-slate-900 backdrop-blur hover:bg-white transition-colors">
-                Official Login
-              </Link>
-            </div>
-          </div>
-
-          {/* Right Product Story Demo Animation Column */}
-          <div className="lg:col-span-6 flex justify-end w-full">
-            <div className="w-full max-w-lg lg:mr-0 lg:ml-auto">
-              <HeroProductStoryDemo />
+            {/* Right Product Story Demo Animation Column */}
+            <div className="lg:col-span-6 flex justify-end w-full">
+              <div className="w-full max-w-lg lg:mr-0 lg:ml-auto">
+                <HeroProductStoryDemo />
+              </div>
             </div>
           </div>
         </div>
