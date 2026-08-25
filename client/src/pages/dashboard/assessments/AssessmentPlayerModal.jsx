@@ -15,6 +15,7 @@ import {
   FileText,
   SlidersHorizontal,
   Play,
+  LogOut,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
@@ -567,16 +568,17 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
 
           <button
             onClick={() => {
-              if (isSetupCompleted && !result && answeredCount > 0) {
+              if (isSetupCompleted && !result) {
                 setShowExitConfirm(true);
               } else {
                 onClose();
               }
             }}
-            className="p-2 rounded-xl bg-white/10 hover:bg-rose-600/30 border border-white/20 text-slate-300 hover:text-white transition-colors"
-            title="Exit Examination"
+            className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs transition-all shadow-sm flex items-center gap-1.5 border border-rose-500"
+            title="End Examination Session"
           >
-            <X className="w-5 h-5" />
+            <LogOut className="w-4 h-4" />
+            <span>End Exam</span>
           </button>
         </div>
       </div>
