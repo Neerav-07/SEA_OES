@@ -22,6 +22,7 @@ import attemptRouter from "./attempt.route.js";
 import reviewRouter from "./review.route.js";
 import assistantRouter from "./assistant.route.js";
 import predictionsRouter from "./predictions.route.js";
+import reportRouter from "./report.route.js";
 
 const router = Router();
 
@@ -48,5 +49,6 @@ router.use("/attempts", attemptRouter);
 router.use("/review", reviewRouter);
 router.use("/assistant", assistantRouter);
 router.use("/predictions", predictionsRouter);
+router.use("/reports", reportRouter);
 
 export default router;
