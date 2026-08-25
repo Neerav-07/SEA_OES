@@ -82,11 +82,11 @@ export default function DashboardLayout() {
         {/* Logo & Toggle Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-slate-100">
           <Link
-            to="/"
+            to="/dashboard"
             className={`flex items-center gap-3 transition-all ${
-              isCollapsed ? 'justify-center w-full' : 'hover:opacity-80'
+              isCollapsed ? 'justify-center w-full cursor-pointer' : 'hover:opacity-80'
             }`}
-            title="Kshamata Home"
+            title="Kshamata Dashboard"
           >
             <KshamataLogo size="md" variant="full" collapsed={isCollapsed} />
           </Link>
