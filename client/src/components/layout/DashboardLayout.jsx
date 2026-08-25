@@ -117,49 +117,40 @@ export default function DashboardLayout() {
         )}
 
         {/* Nav items */}
-        <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
-          {/* Section 1: Learner Journey */}
-          <div>
-            {!isCollapsed ? (
-              <div className="px-3 mb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                Capacity Building Journey
-              </div>
-            ) : (
-              <div className="my-2 border-t border-slate-100" />
-            )}
-            <div className="space-y-1">
-              {learnerItems.map(({ label, path, icon: Icon }) => {
-                const active = location.pathname === path;
-                return (
-                  <Link
-                    key={path}
-                    to={path}
-                    title={isCollapsed ? label : undefined}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all ${
-                      isCollapsed ? 'justify-center' : ''
-                    } ${
-                      active
-                        ? 'bg-blue-50 text-blue-700 shadow-xs font-bold ring-1 ring-blue-500/20'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-blue-600' : 'text-slate-500'}`} />
-                    {!isCollapsed && <span>{label}</span>}
-                  </Link>
-                );
-              })}
-            </div>
+        <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
+          {/* Core Official Navigation */}
+          <div className="space-y-1">
+            {learnerItems.map(({ label, path, icon: Icon }) => {
+              const active = location.pathname === path;
+              return (
+                <Link
+                  key={path}
+                  to={path}
+                  title={isCollapsed ? label : undefined}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all ${
+                    isCollapsed ? 'justify-center' : ''
+                  } ${
+                    active
+                      ? 'bg-blue-50 text-blue-700 shadow-xs font-bold ring-1 ring-blue-500/20'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-blue-600' : 'text-slate-500'}`} />
+                  {!isCollapsed && <span>{label}</span>}
+                </Link>
+              );
+            })}
           </div>
 
-          {/* Section 2: Admin & Governance (Only visible to ADMIN role) */}
+          {/* Governance & Admin (Only visible to ADMIN role) */}
           {isAdmin && (
-            <div>
+            <div className="pt-2 border-t border-slate-100">
               {!isCollapsed ? (
                 <div className="px-3 mb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                   Governance & Admin
                 </div>
               ) : (
-                <div className="my-2 border-t border-slate-100" />
+                <div className="my-1 border-t border-slate-100" />
               )}
               <div className="space-y-1">
                 {adminItems.map(({ label, path, icon: Icon }) => {
