@@ -49,6 +49,7 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
+  const isAdmin = user?.platformRole === 'ADMIN';
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem('kshamata_sidebar_collapsed') === 'true';
