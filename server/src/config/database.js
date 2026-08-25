@@ -34,7 +34,6 @@ export async function connectDatabase() {
     db = drizzleNode(pool, { schema });
   }
     console.log('[DB] Connected via pg Pool (local)');
-  }
 
   return db;
 }
