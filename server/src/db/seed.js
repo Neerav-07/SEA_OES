@@ -64,13 +64,13 @@ export async function seedDatabase() {
 
 // ── iGOT Course Seeder ─────────────────────────────────────────────────────
 
-async function seedIGOTCourses(competencyRows) {
+async function seedIGOTCourses(competencyRows = []) {
   console.log('🌱 Seeding iGOT course catalogue...');
   const courses = getAllMockCourses();
   let seeded = 0;
 
   for (const course of courses) {
-    const [row] = await db.execute(`
+    const rawRes = await db.execute(`
       INSERT INTO igot_courses (igot_identifier, name, description, content_type, subject, language, duration_seconds, organisation, status, pkg_version)
       VALUES (
         '${course.identifier}',
@@ -86,16 +86,25 @@ async function seedIGOTCourses(competencyRows) {
       )
       ON CONFLICT (igot_identifier) DO NOTHING
       RETURNING id
-    `).catch(() => [null]);
+    `).catch(() => null);
 
-    if (row?.id) {
+    const rows = rawRes?.rows || (Array.isArray(rawRes) ? rawRes : []);
+    let courseDbId = rows?.[0]?.id;
+
+    if (!courseDbId) {
+      const existingRes = await db.execute(`SELECT id FROM igot_courses WHERE igot_identifier = '${course.identifier}'`).catch(() => null);
+      const existingRows = existingRes?.rows || (Array.isArray(existingRes) ? existingRes : []);
+      courseDbId = existingRows?.[0]?.id;
+    }
+
+    if (courseDbId) {
       seeded++;
       for (const compCode of (course.competencyCodes || [])) {
-        const comp = competencyRows.find(c => c.code === compCode);
+        const comp = (competencyRows || []).find(c => c.code === compCode);
         if (!comp) continue;
         await db.execute(`
           INSERT INTO igot_competency_map (igot_course_id, competency_id, relevance_score)
-          VALUES ('${row.id}', '${comp.id}', 0.9)
+          VALUES ('${courseDbId}', '${comp.id}', 0.9)
           ON CONFLICT DO NOTHING
         `).catch(() => {});
       }

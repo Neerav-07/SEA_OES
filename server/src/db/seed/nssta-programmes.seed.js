@@ -119,13 +119,12 @@ export const NSSTA_PROGRAMMES = [
   },
 ];
 
-export async function seedNsstaProgrammes(competencyRows) {
+export async function seedNsstaProgrammes(competencyRows = []) {
   console.log('🌱 Seeding NSSTA TPAC programme catalogue...');
 
   let seeded = 0;
   for (const prog of NSSTA_PROGRAMMES) {
-    // Insert programme via raw SQL since nssta_programmes is a V2-only table
-    const [inserted] = await db.execute(`
+    const rawRes = await db.execute(`
       INSERT INTO nssta_programmes (code, title, description, target_audience, duration_days, mode, capacity, nomination_url)
       VALUES (
         '${prog.code}',
@@ -139,18 +138,28 @@ export async function seedNsstaProgrammes(competencyRows) {
       )
       ON CONFLICT (code) DO NOTHING
       RETURNING id
-    `);
+    `).catch(() => null);
 
-    if (inserted?.id) {
+    const rows = rawRes?.rows || (Array.isArray(rawRes) ? rawRes : []);
+    let progId = rows?.[0]?.id;
+
+    // If ON CONFLICT DO NOTHING returned no row because it already exists, fetch id
+    if (!progId) {
+      const existingRes = await db.execute(`SELECT id FROM nssta_programmes WHERE code = '${prog.code}'`).catch(() => null);
+      const existingRows = existingRes?.rows || (Array.isArray(existingRes) ? existingRes : []);
+      progId = existingRows?.[0]?.id;
+    }
+
+    if (progId) {
       seeded++;
       for (const compCode of prog.competencyCodes) {
-        const comp = competencyRows.find(c => c.code === compCode);
+        const comp = (competencyRows || []).find(c => c.code === compCode);
         if (!comp) continue;
         await db.execute(`
           INSERT INTO nssta_competency_map (programme_id, competency_id, relevance_level)
-          VALUES ('${inserted.id}', '${comp.id}', 'PRIMARY')
+          VALUES ('${progId}', '${comp.id}', 'PRIMARY')
           ON CONFLICT DO NOTHING
-        `);
+        `).catch(() => {});
       }
     }
   }

@@ -170,32 +170,27 @@ export async function seedMoSPICompetencies() {
     },
   ];
 
-  const inserted = [];
   for (const c of compDefs) {
-    const [row] = await db.insert(competencies).values({
+    await db.insert(competencies).values({
       code: c.code,
       name: c.name,
       category: c.category,
       description: c.description,
-      // These columns added by V2 ALTER TABLE in autoInit
-      // competencyType: c.competencyType,
-      // fracSource: c.fracSource,
-    }).onConflictDoNothing().returning();
-    if (row) {
-      // Update competency_type and frac_source even for existing rows
-      await db.execute(
-        `UPDATE competencies SET competency_type = '${c.competencyType}', frac_source = '${c.fracSource}' WHERE code = '${c.code}'`
-      );
-      inserted.push({ ...row, competencyType: c.competencyType });
-    }
+    }).onConflictDoNothing();
+
+    await db.execute(
+      `UPDATE competencies SET competency_type = '${c.competencyType}', frac_source = '${c.fracSource}' WHERE code = '${c.code}'`
+    ).catch(() => {});
   }
 
-  console.log(`✅ Seeded ${inserted.length} MoSPI competencies across 4 FRAC domains`);
+  // Fetch all competencies from DB so we have complete list (including pre-existing rows)
+  const allCompRows = await db.select().from(competencies);
+  console.log(`✅ Seeded ${allCompRows.length} MoSPI competencies across 4 FRAC domains`);
 
   // Seed Learning Objectives for key competencies
-  await seedKeyLearningObjectives(inserted);
+  await seedKeyLearningObjectives(allCompRows);
 
-  return inserted;
+  return allCompRows;
 }
 
 async function seedKeyLearningObjectives(competencyRows) {
