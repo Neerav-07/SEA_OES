@@ -87,18 +87,22 @@ export async function assistantChatController(req, res, next) {
       replyMessage = generateDomainAssistantFallback(message, contextSnapshot);
     }
 
-    // Save conversation to DB
-    await db.execute(`
-      INSERT INTO assistant_conversations (official_id, messages, context_snapshot)
-      VALUES (
-        '${official.id}',
-        '${JSON.stringify([
-          { role: 'user', content: message, ts: new Date().toISOString() },
-          { role: 'assistant', content: replyMessage, ts: new Date().toISOString() },
-        ]).replace(/'/g, "''")}'::jsonb,
-        '${JSON.stringify(contextSnapshot).replace(/'/g, "''")}'::jsonb
-      )
-    `);
+    // Save conversation to DB (non-blocking)
+    try {
+      await db.execute(`
+        INSERT INTO assistant_conversations (official_id, messages, context_snapshot)
+        VALUES (
+          '${official.id}',
+          '${JSON.stringify([
+            { role: 'user', content: message, ts: new Date().toISOString() },
+            { role: 'assistant', content: replyMessage, ts: new Date().toISOString() },
+          ]).replace(/'/g, "''")}'::jsonb,
+          '${JSON.stringify(contextSnapshot).replace(/'/g, "''")}'::jsonb
+        )
+      `);
+    } catch (dbErr) {
+      console.warn('Non-blocking assistant conversation save warning:', dbErr.message);
+    }
 
     return res.status(200).json({
       reply: replyMessage,
