@@ -43,8 +43,16 @@ export async function listSkillGaps({
   priority = "learning",
 } = {}) {
   const db = getDb();
-  const conditions = [eq(officials.userId, userId)];
-  if (officialId) conditions.push(eq(skillGaps.officialId, officialId));
+  
+  const [official] = await db
+    .select({ id: officials.id, roleId: officials.roleId })
+    .from(officials)
+    .where(eq(officials.userId, userId));
+
+  if (!official) return [];
+
+  const targetOfficialId = officialId || official.id;
+  const conditions = [eq(skillGaps.officialId, targetOfficialId)];
   if (category) conditions.push(eq(skillGaps.category, category));
 
   const priorityColumn =
@@ -52,7 +60,7 @@ export async function listSkillGaps({
       ? skillGaps.assessmentPriority
       : skillGaps.learningPriority;
 
-  return db
+  let gaps = await db
     .select({
       id: skillGaps.id,
       officialId: skillGaps.officialId,
@@ -84,6 +92,49 @@ export async function listSkillGaps({
       desc(skillGaps.gapSeverity),
       desc(skillGaps.assessmentPriority),
     );
+
+  // If no skill gaps exist yet, auto-recalculate them on the fly for this official
+  if (gaps.length === 0 && official.roleId) {
+    try {
+      await recalculateSkillGaps({ userId, officialId: official.id, roleId: official.roleId });
+      gaps = await db
+        .select({
+          id: skillGaps.id,
+          officialId: skillGaps.officialId,
+          competencyId: skillGaps.competencyId,
+          competencyCode: competencies.code,
+          competencyName: competencies.name,
+          category: skillGaps.category,
+          requiredLevel: skillGaps.requiredLevel,
+          estimatedLevel: skillGaps.estimatedLevel,
+          gapSeverity: skillGaps.gapSeverity,
+          learningPriority: skillGaps.learningPriority,
+          assessmentPriority: skillGaps.assessmentPriority,
+          reasons: skillGaps.reasons,
+          evidenceSufficiency: competencyEstimates.evidenceSufficiency,
+          sufficiencyBreakdown: competencyEstimates.sufficiencyBreakdown,
+          evidenceSnapshot: competencyEstimates.evidenceSnapshot,
+          calculatedAt: skillGaps.calculatedAt,
+        })
+        .from(skillGaps)
+        .innerJoin(officials, eq(skillGaps.officialId, officials.id))
+        .innerJoin(competencies, eq(skillGaps.competencyId, competencies.id))
+        .leftJoin(
+          competencyEstimates,
+          eq(skillGaps.estimateId, competencyEstimates.id),
+        )
+        .where(and(...conditions))
+        .orderBy(
+          desc(priorityColumn),
+          desc(skillGaps.gapSeverity),
+          desc(skillGaps.assessmentPriority),
+        );
+    } catch (err) {
+      console.warn('Auto-calculation fallback warning:', err.message);
+    }
+  }
+
+  return gaps;
 }
 
 export async function getSkillGapById({ userId, gapId }) {
