@@ -12,6 +12,10 @@ import analyticsRouter from "./analytics.route.js";
 import recalibrationRouter from "./recalibration.route.js";
 import pathwayRouter from "./pathway.route.js";
 import assessmentRouter from "./assessment.route.js";
+import assessmentBlueprintRouter from "./assessmentBlueprint.route.js";
+import sourceRouter from "./source.route.js";
+import retrievalRouter from "./retrieval.route.js";
+import questionGenerationRouter from "./questionGeneration.route.js";
 
 const router = Router();
 
@@ -28,5 +32,9 @@ router.use("/analytics", analyticsRouter);
 router.use("/recalibration", recalibrationRouter);
 router.use("/pathways", pathwayRouter);
 router.use("/assessments", assessmentRouter);
+router.use("/assessment-blueprints", assessmentBlueprintRouter);
+router.use("/sources", sourceRouter);
+router.use("/retrieval", retrievalRouter);
+router.use("/questions", questionGenerationRouter);
 
 export default router;

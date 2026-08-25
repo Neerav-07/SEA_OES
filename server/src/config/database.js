@@ -36,7 +36,6 @@ export async function connectDatabase() {
     db = drizzleNode(pool, { schema });
     console.log("[DB] Connected via pg Pool (local)");
   }
-
   // Ensure tables and baseline seeds exist in database
   await ensureDatabaseTablesCreated(url);
 

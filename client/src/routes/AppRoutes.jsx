@@ -18,6 +18,7 @@ import SkillGapsPage from '../pages/dashboard/skill-gaps/SkillGapsPage.jsx';
 import LearningPathsPage from '../pages/dashboard/learning-paths/LearningPathsPage.jsx';
 import AssessmentsPage from '../pages/dashboard/assessments/AssessmentsPage.jsx';
 import AnalyticsPage from '../pages/dashboard/analytics/AnalyticsPage.jsx';
+import SourcesPage from '../pages/dashboard/sources/SourcesPage.jsx';
 
 import useAuthStore from '../store/auth.store.js';
 
@@ -64,6 +65,7 @@ export default function AppRoutes() {
             <Route path="/dashboard/learning-paths" element={<LearningPathsPage />} />
             <Route path="/dashboard/assessments" element={<AssessmentsPage />} />
             <Route path="/dashboard/analytics" element={<AnalyticsPage />} />
+            <Route path="/dashboard/sources" element={<SourcesPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

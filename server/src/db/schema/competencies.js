@@ -37,22 +37,3 @@ export const subCompetencies = pgTable(
   ],
 );
 
-export const learningObjectives = pgTable(
-  "learning_objectives",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    subCompetencyId: uuid("sub_competency_id")
-      .references(() => subCompetencies.id, { onDelete: "cascade" })
-      .notNull(),
-    code: text("code").notNull(),
-    title: text("title").notNull(),
-    taxonomyLevel: integer("taxonomy_level").default(1).notNull(), // 1: Remember, 2: Understand, 3: Apply, 4: Analyze, 5: Evaluate/Create
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => [
-    uniqueIndex("learning_objectives_sub_competency_code_idx").on(
-      table.subCompetencyId,
-      table.code,
-    ),
-  ],
-);

@@ -249,6 +249,148 @@ const TABLE_QUERIES = [
     match_confidence real DEFAULT 0.88 NOT NULL,
     created_at timestamp DEFAULT now() NOT NULL
   );`,
+
+  `CREATE TABLE IF NOT EXISTS competency_claims (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    competency_id uuid NOT NULL REFERENCES competencies(id) ON DELETE CASCADE,
+    learning_objective_id uuid REFERENCES learning_objectives(id) ON DELETE SET NULL,
+    code text NOT NULL,
+    statement text NOT NULL,
+    status text DEFAULT 'ACTIVE' NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL,
+    updated_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS assessment_blueprints (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    title text NOT NULL,
+    competency_id uuid NOT NULL REFERENCES competencies(id) ON DELETE CASCADE,
+    target_proficiency real,
+    cognitive_distribution jsonb DEFAULT '{}'::jsonb NOT NULL,
+    question_count integer DEFAULT 10 NOT NULL,
+    supported_question_types jsonb DEFAULT '[]'::jsonb NOT NULL,
+    source_restrictions jsonb DEFAULT '{}'::jsonb NOT NULL,
+    evidence_requirements jsonb DEFAULT '{}'::jsonb NOT NULL,
+    status text DEFAULT 'DRAFT' NOT NULL,
+    version integer DEFAULT 1 NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL,
+    updated_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS assessment_blueprint_claims (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    blueprint_id uuid NOT NULL REFERENCES assessment_blueprints(id) ON DELETE CASCADE,
+    claim_id uuid NOT NULL REFERENCES competency_claims(id) ON DELETE CASCADE,
+    question_count integer DEFAULT 1 NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS assessment_blueprint_objectives (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    blueprint_id uuid NOT NULL REFERENCES assessment_blueprints(id) ON DELETE CASCADE,
+    learning_objective_id uuid NOT NULL REFERENCES learning_objectives(id) ON DELETE CASCADE,
+    question_count integer DEFAULT 1 NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS source_documents (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    external_id text,
+    name text NOT NULL,
+    document_type text DEFAULT 'PDF' NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS source_document_versions (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    document_id uuid NOT NULL REFERENCES source_documents(id) ON DELETE CASCADE,
+    version integer DEFAULT 1 NOT NULL,
+    checksum text,
+    status text DEFAULT 'PENDING' NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS source_chunks (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    document_version_id uuid NOT NULL REFERENCES source_document_versions(id) ON DELETE CASCADE,
+    chunk_reference text NOT NULL,
+    page_number integer,
+    section_reference text,
+    text text NOT NULL,
+    text_start integer,
+    text_end integer,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS question_versions (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    question_id uuid NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+    version integer DEFAULT 1 NOT NULL,
+    question_type text DEFAULT 'MCQ' NOT NULL,
+    stem text NOT NULL,
+    options jsonb DEFAULT '[]'::jsonb NOT NULL,
+    correct_answer jsonb,
+    rationale text,
+    competency_id uuid REFERENCES competencies(id) ON DELETE CASCADE,
+    claim_id uuid REFERENCES competency_claims(id) ON DELETE SET NULL,
+    learning_objective_id uuid REFERENCES learning_objectives(id) ON DELETE SET NULL,
+    blueprint_id uuid REFERENCES assessment_blueprints(id) ON DELETE SET NULL,
+    bloom_level text DEFAULT 'APPLY' NOT NULL,
+    target_level real,
+    intent_hash text,
+    validation_status text DEFAULT 'PENDING' NOT NULL,
+    review_status text DEFAULT 'DRAFT' NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS question_intents (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    question_version_id uuid NOT NULL REFERENCES question_versions(id) ON DELETE CASCADE,
+    competency_id uuid REFERENCES competencies(id) ON DELETE CASCADE,
+    learning_objective_id uuid REFERENCES learning_objectives(id) ON DELETE SET NULL,
+    claim_id uuid REFERENCES competency_claims(id) ON DELETE SET NULL,
+    cognitive_process text NOT NULL,
+    required_action text NOT NULL,
+    core_concept text NOT NULL,
+    scenario_type text,
+    fingerprint jsonb NOT NULL,
+    intent_hash text NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS question_source_provenance (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    question_version_id uuid NOT NULL REFERENCES question_versions(id) ON DELETE CASCADE,
+    source_chunk_id uuid NOT NULL REFERENCES source_chunks(id) ON DELETE CASCADE,
+    page_number integer,
+    section_reference text,
+    text_start integer,
+    text_end integer,
+    source_text text,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS question_validation_results (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    question_version_id uuid NOT NULL REFERENCES question_versions(id) ON DELETE CASCADE,
+    deterministic_status text DEFAULT 'PENDING' NOT NULL,
+    grounding_status text DEFAULT 'PENDING' NOT NULL,
+    duplicate_status text DEFAULT 'PENDING' NOT NULL,
+    errors jsonb DEFAULT '[]'::jsonb NOT NULL,
+    reasons jsonb DEFAULT '[]'::jsonb NOT NULL,
+    validator_version text,
+    checked_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS assessment_question_items (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    assessment_id uuid NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+    question_id uuid NOT NULL REFERENCES questions(id) ON DELETE RESTRICT,
+    question_version_id uuid NOT NULL REFERENCES question_versions(id) ON DELETE CASCADE,
+    position integer NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
 ];
 
 export async function ensureDatabaseTablesCreated(url) {
