@@ -3,7 +3,7 @@ import { verifyToken, requireRole } from '../middlewares/verifyToken.js';
 import {
   getReviewQueueController,
   processReviewDecisionController,
-} from '../controllers/review.controller.js';
+} from '../controllers/governance/review.controller.js';
 
 const router = Router();
 

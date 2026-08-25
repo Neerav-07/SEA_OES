@@ -3,7 +3,7 @@ import { verifyToken } from '../middlewares/verifyToken.js';
 import {
   assistantChatController,
   getAssistantHistoryController,
-} from '../controllers/assistant.controller.js';
+} from '../controllers/integrations/assistant.controller.js';
 
 const router = Router();
 

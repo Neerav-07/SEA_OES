@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getCompetencies, getCompetencyById } from '../controllers/competency.controller.js';
+import { getCompetencies, getCompetencyById } from '../controllers/competencies/competency.controller.js';
 
 const router = Router();
 

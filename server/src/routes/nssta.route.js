@@ -3,7 +3,7 @@ import { verifyToken } from '../middlewares/verifyToken.js';
 import {
   getNSSTAProgrammesController,
   getNSSTAProgrammeDetailsController,
-} from '../controllers/nssta.controller.js';
+} from '../controllers/integrations/nssta.controller.js';
 
 const router = Router();
 

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { verifyToken, requireRole } from '../middlewares/verifyToken.js';
-import { getPredictiveAnalyticsController } from '../controllers/predictions.controller.js';
+import { getPredictiveAnalyticsController } from '../controllers/governance/predictions.controller.js';
 
 const router = Router();
 

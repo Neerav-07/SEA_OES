@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getOfficials, getOfficialProfile, updateOfficialRole } from '../controllers/official.controller.js';
+import { getOfficials, getOfficialProfile, updateOfficialRole } from '../controllers/competencies/official.controller.js';
 
 const router = Router();
 

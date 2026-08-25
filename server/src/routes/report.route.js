@@ -3,7 +3,7 @@ import { verifyToken, requireRole } from '../middlewares/verifyToken.js';
 import {
   generateACBPReportController,
   getOfficialSummaryReportController,
-} from '../controllers/report.controller.js';
+} from '../controllers/governance/report.controller.js';
 
 const router = Router();
 

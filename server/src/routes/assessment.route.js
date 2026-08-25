@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { createAssessment, getAssessments, getAssessmentById } from '../controllers/assessment.controller.js';
-import { assembleAssessmentController, getAssessmentController, validateAssessmentController } from '../controllers/assessmentAssembly.controller.js';
+import { createAssessment, getAssessments, getAssessmentById } from '../controllers/assessments/assessment.controller.js';
+import { assembleAssessmentController, getAssessmentController, validateAssessmentController } from '../controllers/assessments/assessmentAssembly.controller.js';
 import { verifyToken } from '../middlewares/verifyToken.js';
 
 const router = Router();

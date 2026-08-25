@@ -5,7 +5,7 @@ import {
   saveAttemptProgressController,
   submitAssessmentAttemptController,
   getAttemptHistoryController,
-} from '../controllers/attempt.controller.js';
+} from '../controllers/assessments/attempt.controller.js';
 
 const router = Router();
 

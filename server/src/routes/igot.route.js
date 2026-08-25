@@ -5,7 +5,7 @@ import {
   enrolIGOTCourseController,
   getUserIGOTEnrolmentsController,
   getIGOTCourseDetailsController,
-} from '../controllers/igot.controller.js';
+} from '../controllers/integrations/igot.controller.js';
 
 const router = Router();
 

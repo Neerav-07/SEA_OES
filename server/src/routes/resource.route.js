@@ -4,7 +4,7 @@
  * TODO: rename the router import alias and mount path in routes/index.js
  */
 import { Router } from 'express';
-import { listController, getOneController, createController, updateController, deleteController } from '../controllers/resource.controller.js';
+import { listController, getOneController, createController, updateController, deleteController } from '../controllers/integrations/resource.controller.js';
 import { validateCreateResource, validateUpdateResource } from '../validators/resource.validator.js';
 import { verifyToken } from '../middlewares/verifyToken.js';
 
