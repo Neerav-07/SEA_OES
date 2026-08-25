@@ -3,6 +3,7 @@ import { db } from '../db/index.js';
 import { officials, roles, roleCompetencies, competencies, evidence } from '../db/schema/index.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { triggerAutoGapAndRecommendations } from '../services/autoAutomation.service.js';
 
 /**
  * Generate Diagnostic Blueprint for Official Role Profile
@@ -104,13 +105,17 @@ export const submitDiagnosticAttempt = asyncHandler(async (req, res) => {
     recordedItems.push(newItem);
   }
 
+  // V2 Auto-Automation Trigger: Recalculate skill gaps & generate iGOT + NSSTA recommendations
+  const autoAutomationResult = await triggerAutoGapAndRecommendations(officialId);
+
   return sendSuccess(
     res,
     {
       officialId,
       processedCompetencies: Object.keys(competencyScores).length,
       recordedEvidence: recordedItems,
+      autoAutomation: autoAutomationResult,
     },
-    'Diagnostic assessment attempt submitted and evidence recorded'
+    'Diagnostic assessment attempt submitted, evidence recorded, and learning path updated'
   );
 });
