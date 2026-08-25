@@ -150,38 +150,40 @@ export default function DashboardLayout() {
             </div>
           </div>
 
-          {/* Section 2: Admin & Governance */}
-          <div>
-            {!isCollapsed ? (
-              <div className="px-3 mb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                Governance & Admin
+          {/* Section 2: Admin & Governance (Only visible to ADMIN role) */}
+          {isAdmin && (
+            <div>
+              {!isCollapsed ? (
+                <div className="px-3 mb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                  Governance & Admin
+                </div>
+              ) : (
+                <div className="my-2 border-t border-slate-100" />
+              )}
+              <div className="space-y-1">
+                {adminItems.map(({ label, path, icon: Icon }) => {
+                  const active = location.pathname === path;
+                  return (
+                    <Link
+                      key={path}
+                      to={path}
+                      title={isCollapsed ? label : undefined}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all ${
+                        isCollapsed ? 'justify-center' : ''
+                      } ${
+                        active
+                          ? 'bg-blue-50 text-blue-700 shadow-xs font-bold ring-1 ring-blue-500/20'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-blue-600' : 'text-slate-500'}`} />
+                      {!isCollapsed && <span>{label}</span>}
+                    </Link>
+                  );
+                })}
               </div>
-            ) : (
-              <div className="my-2 border-t border-slate-100" />
-            )}
-            <div className="space-y-1">
-              {adminItems.map(({ label, path, icon: Icon }) => {
-                const active = location.pathname === path;
-                return (
-                  <Link
-                    key={path}
-                    to={path}
-                    title={isCollapsed ? label : undefined}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all ${
-                      isCollapsed ? 'justify-center' : ''
-                    } ${
-                      active
-                        ? 'bg-blue-50 text-blue-700 shadow-xs font-bold ring-1 ring-blue-500/20'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-blue-600' : 'text-slate-500'}`} />
-                    {!isCollapsed && <span>{label}</span>}
-                  </Link>
-                );
-              })}
             </div>
-          </div>
+          )}
         </nav>
 
         {/* User / logout footer */}
