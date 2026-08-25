@@ -259,8 +259,16 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
       if (document.hidden) {
         setTabSwitchCount((prev) => {
           const next = prev + 1;
-          toast.error(`MoSPI Examination Security Alert: Session focus lost. Event recorded in official audit log (Violation: ${next})`, {
-            duration: 5000,
+          toast.error(`⚠️ Security Warning: Tab switch recorded (Violation #${next})`, {
+            duration: 4000,
+            style: {
+              background: '#7f1d1d',
+              color: '#ffffff',
+              fontWeight: '800',
+              fontSize: '13px',
+              borderRadius: '12px',
+              border: '1px solid #ef4444',
+            },
           });
           return next;
         });
