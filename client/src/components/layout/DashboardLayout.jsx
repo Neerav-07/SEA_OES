@@ -1,14 +1,9 @@
 /**
  * DashboardLayout
  *
- * Shared shell for all authenticated dashboard pages.
- *
- * TODO:
- *  1. Update navigationItems with your app's real pages
- *  2. Replace the logo/app name references
- *  3. Add socket.io connection here if your PS needs real-time features
+ * Shared shell for all authenticated dashboard pages with collapsible, sleek sidebar.
  */
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -19,10 +14,11 @@ import {
   BarChart3,
   Database,
   LogOut,
-  Settings,
   ShieldCheck,
   TrendingUp,
   FileText,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -54,7 +50,17 @@ export default function DashboardLayout() {
   const user = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
 
-  const isAdmin = user?.platformRole === 'ADMIN';
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem('kshamata_sidebar_collapsed') === 'true';
+  });
+
+  const toggleSidebar = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('kshamata_sidebar_collapsed', String(next));
+      return next;
+    });
+  };
 
   const handleLogout = async () => {
     try {
@@ -68,19 +74,58 @@ export default function DashboardLayout() {
   return (
     <div className="flex min-h-screen" style={{ background: 'var(--app-gradient-shell)' }}>
       {/* ── Sidebar ── */}
-      <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-(--app-color-border) bg-white/90 backdrop-blur">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 px-6 py-5 hover:opacity-80">
-          <KshamataLogo size="md" variant="full" />
-        </Link>
+      <aside
+        className={`sticky top-0 flex h-screen shrink-0 flex-col border-r border-slate-200/80 bg-white/95 backdrop-blur-md transition-all duration-300 ease-in-out shadow-sm z-30 ${
+          isCollapsed ? 'w-20' : 'w-64'
+        }`}
+      >
+        {/* Logo & Toggle Header */}
+        <div className="flex items-center justify-between px-4 py-4 border-b border-slate-100">
+          <Link
+            to="/"
+            className={`flex items-center gap-3 transition-all ${
+              isCollapsed ? 'justify-center w-full' : 'hover:opacity-80'
+            }`}
+            title="Kshamata Home"
+          >
+            <KshamataLogo size="md" variant="full" collapsed={isCollapsed} />
+          </Link>
+
+          {!isCollapsed && (
+            <button
+              onClick={toggleSidebar}
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose className="h-5 w-5" />
+            </button>
+          )}
+        </div>
+
+        {/* Collapsed Toggle Button when sidebar is mini */}
+        {isCollapsed && (
+          <div className="flex justify-center py-2 border-b border-slate-100/60">
+            <button
+              onClick={toggleSidebar}
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+              title="Expand sidebar"
+            >
+              <PanelLeftOpen className="h-5 w-5" />
+            </button>
+          </div>
+        )}
 
         {/* Nav items */}
-        <nav className="flex-1 space-y-6 overflow-y-auto px-4 py-2">
+        <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
           {/* Section 1: Learner Journey */}
           <div>
-            <div className="px-3 mb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-              Capacity Building Journey
-            </div>
+            {!isCollapsed ? (
+              <div className="px-3 mb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                Capacity Building Journey
+              </div>
+            ) : (
+              <div className="my-2 border-t border-slate-100" />
+            )}
             <div className="space-y-1">
               {learnerItems.map(({ label, path, icon: Icon }) => {
                 const active = location.pathname === path;
@@ -88,14 +133,17 @@ export default function DashboardLayout() {
                   <Link
                     key={path}
                     to={path}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors ${
+                    title={isCollapsed ? label : undefined}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all ${
+                      isCollapsed ? 'justify-center' : ''
+                    } ${
                       active
-                        ? 'bg-(--app-color-primary-soft) text-(--app-color-primary)'
-                        : 'text-(--app-color-text-muted) hover:bg-(--app-color-surface-elevated) hover:text-(--app-color-text)'
+                        ? 'bg-blue-50 text-blue-700 shadow-xs font-bold ring-1 ring-blue-500/20'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    {label}
+                    <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-blue-600' : 'text-slate-500'}`} />
+                    {!isCollapsed && <span>{label}</span>}
                   </Link>
                 );
               })}
@@ -104,9 +152,13 @@ export default function DashboardLayout() {
 
           {/* Section 2: Admin & Governance */}
           <div>
-            <div className="px-3 mb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-              Governance & Admin
-            </div>
+            {!isCollapsed ? (
+              <div className="px-3 mb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                Governance & Admin
+              </div>
+            ) : (
+              <div className="my-2 border-t border-slate-100" />
+            )}
             <div className="space-y-1">
               {adminItems.map(({ label, path, icon: Icon }) => {
                 const active = location.pathname === path;
@@ -114,14 +166,17 @@ export default function DashboardLayout() {
                   <Link
                     key={path}
                     to={path}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors ${
+                    title={isCollapsed ? label : undefined}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all ${
+                      isCollapsed ? 'justify-center' : ''
+                    } ${
                       active
-                        ? 'bg-(--app-color-primary-soft) text-(--app-color-primary)'
-                        : 'text-(--app-color-text-muted) hover:bg-(--app-color-surface-elevated) hover:text-(--app-color-text)'
+                        ? 'bg-blue-50 text-blue-700 shadow-xs font-bold ring-1 ring-blue-500/20'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    {label}
+                    <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-blue-600' : 'text-slate-500'}`} />
+                    {!isCollapsed && <span>{label}</span>}
                   </Link>
                 );
               })}
@@ -130,25 +185,45 @@ export default function DashboardLayout() {
         </nav>
 
         {/* User / logout footer */}
-        <div className="border-t border-(--app-color-border) p-4 space-y-2">
-          <div className="flex items-center gap-3 rounded-xl px-3 py-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--app-color-primary-soft) text-xs font-black text-(--app-color-primary)">
-              {user?.name?.[0]?.toUpperCase() ?? 'U'}
+        <div className="border-t border-slate-100 p-3 space-y-2">
+          {!isCollapsed ? (
+            <>
+              <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-xs font-black text-white shadow-xs">
+                  {user?.name?.[0]?.toUpperCase() ?? 'U'}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-bold text-slate-900">{user?.name ?? 'User'}</p>
+                  <p className="truncate text-[10px] font-medium text-slate-500">
+                    {user?.platformRole || 'EMPLOYEE'} • {user?.department || 'MoSPI'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+              >
+                <LogOut className="h-4 w-4 text-slate-400 group-hover:text-red-600" />
+                Sign out
+              </button>
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-xs font-black text-white shadow-xs cursor-pointer"
+                title={`${user?.name || 'User'} (${user?.platformRole || 'EMPLOYEE'})`}
+              >
+                {user?.name?.[0]?.toUpperCase() ?? 'U'}
+              </div>
+              <button
+                onClick={handleLogout}
+                className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                title="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </div>
-            <div className="min-w-0">
-              <p className="truncate text-xs font-bold text-(--app-color-text)">{user?.name ?? 'User'}</p>
-              <p className="truncate text-[10px] text-(--app-color-text-muted)">
-                {user?.platformRole || 'EMPLOYEE'} • {user?.department || 'MoSPI'}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-(--app-color-text-muted) hover:bg-red-50 hover:text-red-600 transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
+          )}
         </div>
       </aside>
 
