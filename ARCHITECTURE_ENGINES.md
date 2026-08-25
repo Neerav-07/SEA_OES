@@ -1,5 +1,7 @@
 # 🏛️ Kshamata V2 — Technical System Architecture & Core Engines Diagram
 
+![Kshamata V2 Technical System Architecture Diagram](ARCHITECTURE_DIAGRAM.jpg)
+
 This document presents the authoritative **System Architecture & 6 Core Technical Engines** powering **Kshamata V2 (MoSPI PS 26101 Capacity Building System)**. It maps the end-to-end official user flow to technical system components.
 
 ---
