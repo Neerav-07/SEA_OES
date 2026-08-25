@@ -10,20 +10,40 @@
  */
 import { useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Award, TrendingDown, GraduationCap, FileCheck, BarChart3, Database, LogOut, Settings } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Award,
+  TrendingDown,
+  GraduationCap,
+  FileCheck,
+  BarChart3,
+  Database,
+  LogOut,
+  Settings,
+  ShieldCheck,
+  TrendingUp,
+  FileText,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import api from '../../services/api.js';
 import useAuthStore from '../../store/auth.store.js';
 
 import KshamataLogo from '../KshamataLogo';
+import AIVirtualAssistant from '../assistant/AIVirtualAssistant.jsx';
 
-const navigationItems = [
+const learnerItems = [
   { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
   { label: 'Competency Profiles', path: '/dashboard/competencies', icon: Award },
   { label: 'Skill Gap Analysis', path: '/dashboard/skill-gaps', icon: TrendingDown },
   { label: 'iGOT & NSSTA Pathways', path: '/dashboard/learning-paths', icon: GraduationCap },
   { label: 'Assessment Engine', path: '/dashboard/assessments', icon: FileCheck },
+];
+
+const adminItems = [
+  { label: 'Question Review Queue', path: '/dashboard/admin/review-queue', icon: ShieldCheck },
+  { label: 'Predictive Analytics', path: '/dashboard/admin/predictions', icon: TrendingUp },
+  { label: 'ACBP Report Export', path: '/dashboard/admin/acbp-report', icon: FileText },
   { label: 'Source Library', path: '/dashboard/sources', icon: Database },
   { label: 'Workforce Analytics', path: '/dashboard/analytics', icon: BarChart3 },
 ];
@@ -33,6 +53,8 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
+
+  const isAdmin = user?.platformRole === 'ADMIN';
 
   const handleLogout = async () => {
     try {
@@ -53,24 +75,58 @@ export default function DashboardLayout() {
         </Link>
 
         {/* Nav items */}
-        <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-4">
-          {navigationItems.map(({ label, path, icon: Icon }) => {
-            const active = location.pathname === path;
-            return (
-              <Link
-                key={path}
-                to={path}
-                className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
-                  active
-                    ? 'bg-(--app-color-primary-soft) text-(--app-color-primary)'
-                    : 'text-(--app-color-text-muted) hover:bg-(--app-color-surface-elevated) hover:text-(--app-color-text)'
-                }`}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {label}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 space-y-6 overflow-y-auto px-4 py-2">
+          {/* Section 1: Learner Journey */}
+          <div>
+            <div className="px-3 mb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+              Capacity Building Journey
+            </div>
+            <div className="space-y-1">
+              {learnerItems.map(({ label, path, icon: Icon }) => {
+                const active = location.pathname === path;
+                return (
+                  <Link
+                    key={path}
+                    to={path}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors ${
+                      active
+                        ? 'bg-(--app-color-primary-soft) text-(--app-color-primary)'
+                        : 'text-(--app-color-text-muted) hover:bg-(--app-color-surface-elevated) hover:text-(--app-color-text)'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 2: Admin & Governance */}
+          <div>
+            <div className="px-3 mb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+              Governance & Admin
+            </div>
+            <div className="space-y-1">
+              {adminItems.map(({ label, path, icon: Icon }) => {
+                const active = location.pathname === path;
+                return (
+                  <Link
+                    key={path}
+                    to={path}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors ${
+                      active
+                        ? 'bg-(--app-color-primary-soft) text-(--app-color-primary)'
+                        : 'text-(--app-color-text-muted) hover:bg-(--app-color-surface-elevated) hover:text-(--app-color-text)'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         </nav>
 
         {/* User / logout footer */}
@@ -81,12 +137,14 @@ export default function DashboardLayout() {
             </div>
             <div className="min-w-0">
               <p className="truncate text-xs font-bold text-(--app-color-text)">{user?.name ?? 'User'}</p>
-              <p className="truncate text-[10px] text-(--app-color-text-muted)">{user?.email ?? ''}</p>
+              <p className="truncate text-[10px] text-(--app-color-text-muted)">
+                {user?.platformRole || 'EMPLOYEE'} • {user?.department || 'MoSPI'}
+              </p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-(--app-color-text-muted) hover:bg-red-50 hover:text-red-600 transition-colors"
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-(--app-color-text-muted) hover:bg-red-50 hover:text-red-600 transition-colors"
           >
             <LogOut className="h-4 w-4" />
             Sign out
@@ -98,6 +156,9 @@ export default function DashboardLayout() {
       <main className="flex-1 overflow-y-auto p-6 lg:p-8">
         <Outlet />
       </main>
+
+      {/* ── AI Virtual Assistant Floating Widget ── */}
+      <AIVirtualAssistant />
     </div>
   );
 }
