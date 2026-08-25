@@ -1,7 +1,7 @@
 import { getDb } from '../db/index.js';
 import { officials, competencyRequirements, competencyEstimates, skillGaps, competencies, recommendations } from '../db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
-import { calculateSkillGapsForOfficial } from './skillGap.service.js';
+import { recalculateSkillGaps } from './skillGap.service.js';
 import { searchCourses } from './igot.service.js';
 
 /**
@@ -15,16 +15,29 @@ export async function triggerAutoGapAndRecommendations(officialId) {
   try {
     const db = getDb();
 
-    // 1. Recalculate skill gaps for official
-    const gaps = await calculateSkillGapsForOfficial(officialId);
+    // Fetch official details to get userId and roleId
+    const [official] = await db.select({ userId: officials.userId, roleId: officials.roleId }).from(officials).where(eq(officials.id, officialId));
 
-    // Filter gaps that need learning interventions (gap_severity > 0 or priority HIGH)
-    const activeGaps = gaps.filter(g => g.gapSeverity > 0 || g.category === 'CRITICAL' || g.category === 'HIGH');
+    let gaps = [];
+    if (official && official.roleId) {
+      try {
+        gaps = await recalculateSkillGaps({ userId: official.userId, officialId, roleId: official.roleId });
+      } catch (e) {
+        console.warn('Recalculation fallback to DB query:', e.message);
+        const gapsRes = await db.select().from(skillGaps).where(eq(skillGaps.officialId, officialId));
+        gaps = gapsRes || [];
+      }
+    } else {
+      const gapsRes = await db.select().from(skillGaps).where(eq(skillGaps.officialId, officialId));
+      gaps = gapsRes || [];
+    }
+
+    // Filter gaps that need learning interventions
+    const activeGaps = (gaps || []).filter(g => (g.gapSeverity && g.gapSeverity > 0) || g.category === 'CRITICAL' || g.category === 'HIGH');
 
     const createdRecs = [];
 
     for (const gap of activeGaps) {
-      // Find competency code
       const [comp] = await db.select({ code: competencies.code, name: competencies.name }).from(competencies).where(eq(competencies.id, gap.competencyId));
       if (!comp) continue;
 
@@ -40,7 +53,7 @@ export async function triggerAutoGapAndRecommendations(officialId) {
           title: course.name,
           provider: `iGOT Karmayogi (${course.organisation || 'MoSPI'})`,
           matchScore: 0.92,
-          reason: `Auto-recommended for ${comp.name} gap (Severity: ${gap.gapSeverity.toFixed(1)}). Addresses required level for official's role.`,
+          reason: `Auto-recommended for ${comp.name} gap. Addresses required level for official's role.`,
           status: 'RECOMMENDED',
         }).onConflictDoNothing().returning();
 
@@ -75,7 +88,7 @@ export async function triggerAutoGapAndRecommendations(officialId) {
 
     return {
       officialId,
-      gapsCalculated: gaps.length,
+      gapsCalculated: (gaps || []).length,
       activeGaps: activeGaps.length,
       recommendationsGenerated: createdRecs.length,
     };
