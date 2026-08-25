@@ -61,7 +61,7 @@ export default function SourcesPage() {
     finally { setWorking(false); }
   };
 
-  if (loading) return <Spinner label="Loading source library..." />;
+  if (loading) return <Spinner variant="radial" progress={72} label="Loading source library..." className="py-20" />;
 
   return <div className="space-y-6">
     <PageHeader title="Source Library" subtitle="Manage source documents, immutable versions, and traceable chunks for later grounding." />

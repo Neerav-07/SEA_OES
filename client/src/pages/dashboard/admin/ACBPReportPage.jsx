@@ -11,6 +11,7 @@ import {
   Clock,
 } from 'lucide-react';
 import api from '../../../services/api';
+import Spinner from '../../../components/Spinner.jsx';
 
 export default function ACBPReportPage() {
   const [report, setReport] = useState(null);
@@ -77,9 +78,8 @@ export default function ACBPReportPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
-          <p className="text-slate-600 font-semibold text-sm">Compiling Annual Capacity Building Plan...</p>
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs">
+          <Spinner variant="bar" label="Compiling Annual Capacity Building Plan..." className="py-16" />
         </div>
       ) : (
         <div className="space-y-6">

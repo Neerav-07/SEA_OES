@@ -360,7 +360,7 @@ export default function AssessmentsPage() {
     finally { setAssembling(false); }
   };
 
-  if (loading) return <Spinner label="Loading assessment blueprint workspace..." />;
+  if (loading) return <Spinner variant="bar" label="Loading assessment blueprint workspace..." className="py-20" />;
 
   const claimIds = mappingIds(form.claims, 'claimId');
   const objectiveIds = mappingIds(form.learningObjectives, 'learningObjectiveId');
