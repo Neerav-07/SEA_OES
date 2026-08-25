@@ -133,7 +133,7 @@ export default function AIVirtualAssistant() {
           className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-slate-950 via-slate-900 to-blue-950 text-white shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center border-2 border-blue-500/60 shadow-blue-950/50 group"
           title="Open Kshamata AI Assistant"
         >
-          <Bot className="w-6 h-6 text-blue-400 group-hover:scale-110 transition-transform" />
+          <Bot className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
         </button>
       </div>
     );
@@ -160,8 +160,8 @@ export default function AIVirtualAssistant() {
         className="px-4 py-3.5 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 border-b border-slate-800 flex items-center justify-between cursor-grab active:cursor-grabbing select-none"
       >
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-400/30">
-            <Bot className="w-4 h-4 text-blue-400" />
+          <div className="p-1.5 rounded-lg bg-blue-500/20 text-white border border-blue-400/30">
+            <Bot className="w-4 h-4 text-white" />
           </div>
           <div>
             <h3 className="text-xs font-black text-white flex items-center gap-1.5 tracking-tight">
