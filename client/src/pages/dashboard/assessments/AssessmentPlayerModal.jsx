@@ -13,7 +13,8 @@ import {
   ShieldAlert,
   FileCheck2,
   FileText,
-  Table,
+  SlidersHorizontal,
+  Play,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
@@ -287,12 +288,17 @@ Which system architecture and API standard ensures seamless machine-to-machine d
 
 export default function AssessmentPlayerModal({ assessmentId, onClose, onComplete }) {
   const [loading, setLoading] = useState(true);
+  const [isSetupCompleted, setIsSetupCompleted] = useState(false);
+  const [examMode, setExamMode] = useState('STANDARD'); // 'STANDARD' | 'CUSTOM'
+  const [targetCount, setTargetCount] = useState(10);
+  const [targetDurationMins, setTargetDurationMins] = useState(30);
+
   const [attempt, setAttempt] = useState(null);
   const [assessment, setAssessment] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [responses, setResponses] = useState({}); // { questionId: selectedOptionIndex }
-  const [timeLeft, setTimeLeft] = useState(2400); // 40 minutes for 10 case studies
+  const [timeLeft, setTimeLeft] = useState(1800); // in seconds
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
   const [instantFeedback, setInstantFeedback] = useState(false);
@@ -302,14 +308,14 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
 
   // Anti-cheating tab switch listener (with deduplication guard)
   useEffect(() => {
-    if (result || loading) return;
+    if (result || loading || !isSetupCompleted) return;
 
     let lastFired = 0;
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
         const now = Date.now();
-        if (now - lastFired < 1000) return; // Prevent duplicate rapid events
+        if (now - lastFired < 1000) return;
         lastFired = now;
 
         setTabSwitchCount((prev) => {
@@ -333,7 +339,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [result, loading]);
+  }, [result, loading, isSetupCompleted]);
 
   // Start or resume attempt on mount
   useEffect(() => {
@@ -347,7 +353,8 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
         setAssessment(data.assessment);
         
         const fetchedQs = data.questions || [];
-        setQuestions(fetchedQs.length >= 10 ? fetchedQs : DEFAULT_CASE_STUDIES);
+        const activePool = fetchedQs.length >= 5 ? fetchedQs : DEFAULT_CASE_STUDIES;
+        setQuestions(activePool.slice(0, targetCount));
 
         if (data.attempt?.responses) {
           const restored = {};
@@ -362,19 +369,27 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
           }
         }
       } catch (err) {
-        console.error('Failed to start assessment attempt, loading 10 MoSPI case studies:', err);
-        setQuestions(DEFAULT_CASE_STUDIES);
+        console.error('Failed to start assessment attempt, loading MoSPI case studies:', err);
+        setQuestions(DEFAULT_CASE_STUDIES.slice(0, targetCount));
       } finally {
         setLoading(false);
       }
     }
 
     if (assessmentId) initAttempt();
-  }, [assessmentId]);
+  }, [assessmentId, targetCount]);
+
+  // Update questions pool when setup mode changes
+  const handleStartExam = () => {
+    const pool = DEFAULT_CASE_STUDIES.slice(0, targetCount);
+    setQuestions(pool);
+    setTimeLeft(targetDurationMins * 60);
+    setIsSetupCompleted(true);
+  };
 
   // Countdown timer
   useEffect(() => {
-    if (loading || result || timeLeft <= 0) return;
+    if (loading || !isSetupCompleted || result || timeLeft <= 0) return;
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
@@ -388,7 +403,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [loading, result, timeLeft]);
+  }, [loading, isSetupCompleted, result, timeLeft]);
 
   // Save progress on response change
   const handleSelectOption = async (questionId, optionIndex) => {
@@ -471,7 +486,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
           <div className="animate-spin rounded-full h-14 w-14 border-b-3 border-blue-900 mx-auto"></div>
           <h3 className="text-xl font-black text-slate-900">Initializing Exam Environment...</h3>
           <p className="text-slate-600 font-medium text-xs">
-            Loading 10 official MoSPI case-study scenarios, setting anti-cheating triggers, and calibrating timer.
+            Loading official MoSPI case-study scenarios, setting anti-cheating triggers, and calibrating timer.
           </p>
         </div>
       </div>
@@ -484,42 +499,66 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
   return (
     <div className="fixed inset-0 bg-slate-950 z-50 flex flex-col text-slate-900 overflow-hidden font-sans select-none">
       
-      {/* ── 1. Top Examination Header Bar ── */}
-      <div className="px-6 py-4 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white border-b border-slate-800 flex items-center justify-between shadow-lg">
+      {/* ── 1. Top Enterprise Examination Header Bar ── */}
+      <div className="px-6 py-3.5 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white border-b border-slate-800 flex items-center justify-between shadow-lg shrink-0">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-400/30">
-            <FileCheck2 className="w-6 h-6" />
+          <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-400/30">
+            <FileCheck2 className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded text-[10px] font-black bg-blue-500/20 text-blue-300 border border-blue-400/30 uppercase tracking-widest">
+              <span className="px-2 py-0.5 rounded text-[10px] font-black bg-blue-500/20 text-blue-300 border border-blue-400/30 uppercase tracking-widest">
                 MoSPI FRAC Official Exam
               </span>
               <span className="text-slate-400 text-xs font-mono">
                 ID: {assessment?.id ? String(assessment.id).slice(0, 8) : 'DIID-2026-EXAM'}
               </span>
             </div>
-            <h2 className="text-base md:text-lg font-black text-white tracking-tight mt-0.5">
-              {assessment?.title || 'Senior Statistical Officer Competency Diagnostic Exam (10 Problem Statements)'}
+            <h2 className="text-sm md:text-base font-black text-white tracking-tight mt-0.5">
+              {assessment?.title || 'Senior Statistical Officer Competency Diagnostic Exam'}
             </h2>
           </div>
         </div>
 
-        {/* Right Action & Timer Bar */}
+        {/* Top Header Grid Pills & Timer Bar */}
         <div className="flex items-center gap-4">
-          {!result && (
+          {isSetupCompleted && !result && (
             <>
-              {/* Anti-cheating Warning Counter */}
+              {/* Clean Minimal Pill Grid directly in Header */}
+              <div className="hidden lg:flex items-center gap-1 bg-slate-900/90 border border-slate-800 p-1.5 rounded-xl shadow-inner">
+                {questions.map((q, qIdx) => {
+                  const isAns = responses[q.id] !== undefined;
+                  const isCurr = qIdx === currentIndex;
+                  return (
+                    <button
+                      key={qIdx}
+                      onClick={() => setCurrentIndex(qIdx)}
+                      className={`w-7 h-7 rounded-lg text-xs font-black transition-all flex items-center justify-center ${
+                        isCurr
+                          ? 'bg-blue-600 text-white ring-2 ring-blue-400 shadow-xs'
+                          : isAns
+                          ? 'bg-emerald-600 text-white font-bold'
+                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                      }`}
+                      title={`Go to Problem ${qIdx + 1}`}
+                    >
+                      {qIdx + 1}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Anti-cheating Counter */}
               {tabSwitchCount > 0 && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold animate-pulse">
                   <ShieldAlert className="w-4 h-4 text-rose-400" />
-                  <span>Security Audit: {tabSwitchCount} Focus Event(s)</span>
+                  <span>Security Audit: {tabSwitchCount}</span>
                 </div>
               )}
 
               {/* Live Timer */}
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 font-mono text-sm font-black shadow-inner">
-                <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
+              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 font-mono text-xs font-black shadow-inner">
+                <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                 <span>{formatTime(timeLeft)}</span>
               </div>
             </>
@@ -527,13 +566,13 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
 
           <button
             onClick={() => {
-              if (!result && answeredCount > 0) {
+              if (isSetupCompleted && !result && answeredCount > 0) {
                 setShowExitConfirm(true);
               } else {
                 onClose();
               }
             }}
-            className="p-2.5 rounded-xl bg-white/10 hover:bg-rose-600/30 border border-white/20 text-slate-300 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-white/10 hover:bg-rose-600/30 border border-white/20 text-slate-300 hover:text-white transition-colors"
             title="Exit Examination"
           >
             <X className="w-5 h-5" />
@@ -541,9 +580,110 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
         </div>
       </div>
 
-      {/* ── 2. Main Examination Body ── */}
-      {result ? (
-        /* ── RESULT SCREEN (Shows full tags & analysis breakdown) ── */
+      {/* ── 2. Setup Configuration Screen ── */}
+      {!isSetupCompleted ? (
+        <div className="flex-1 bg-slate-900 flex items-center justify-center p-6 overflow-y-auto">
+          <div className="max-w-xl w-full bg-white border border-slate-200 rounded-3xl p-8 shadow-2xl space-y-6">
+            <div className="text-center space-y-2">
+              <div className="p-3 rounded-2xl bg-blue-50 text-blue-900 w-12 h-12 mx-auto flex items-center justify-center border border-blue-200">
+                <SlidersHorizontal className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-black text-slate-900">Configure Examination Parameters</h3>
+              <p className="text-xs text-slate-600 font-medium">
+                Select your target examination mode aligned with official MoSPI DIID assessment protocols.
+              </p>
+            </div>
+
+            {/* Mode Selection Toggle */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => {
+                  setExamMode('STANDARD');
+                  setTargetCount(10);
+                  setTargetDurationMins(30);
+                }}
+                className={`p-4 rounded-2xl border text-left transition-all ${
+                  examMode === 'STANDARD'
+                    ? 'bg-blue-50 border-blue-900 ring-2 ring-blue-600/20 text-blue-950 font-bold'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="text-xs font-black uppercase text-blue-900 mb-1">Standard Official Exam</div>
+                <div className="text-sm font-extrabold text-slate-900">10 Case Studies / 30 Mins</div>
+                <div className="text-[11px] text-slate-500 font-medium mt-1">Recommended for Official Competency Registry</div>
+              </button>
+
+              <button
+                onClick={() => setExamMode('CUSTOM')}
+                className={`p-4 rounded-2xl border text-left transition-all ${
+                  examMode === 'CUSTOM'
+                    ? 'bg-blue-50 border-blue-900 ring-2 ring-blue-600/20 text-blue-950 font-bold'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="text-xs font-black uppercase text-blue-900 mb-1">Custom Practice Mode</div>
+                <div className="text-sm font-extrabold text-slate-900">Flexible Questions & Timer</div>
+                <div className="text-[11px] text-slate-500 font-medium mt-1">Configure practice session limits</div>
+              </button>
+            </div>
+
+            {/* Custom Mode Controls */}
+            {examMode === 'CUSTOM' && (
+              <div className="space-y-4 pt-2 border-t border-slate-100">
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
+                    Number of Case-Study Problems:
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[5, 10, 15].map((cnt) => (
+                      <button
+                        key={cnt}
+                        onClick={() => setTargetCount(cnt)}
+                        className={`py-2 rounded-xl text-xs font-black transition-all border ${
+                          targetCount === cnt
+                            ? 'bg-blue-900 text-white border-blue-900'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {cnt} Problems
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
+                    Examination Duration (Minutes):
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[15, 30, 45].map((mins) => (
+                      <button
+                        key={mins}
+                        onClick={() => setTargetDurationMins(mins)}
+                        className={`py-2 rounded-xl text-xs font-black transition-all border ${
+                          targetDurationMins === mins
+                            ? 'bg-blue-900 text-white border-blue-900'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {mins} Minutes
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={handleStartExam}
+              className="w-full py-3.5 rounded-2xl bg-blue-900 hover:bg-slate-900 text-white font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-2"
+            >
+              <Play className="w-4 h-4 text-blue-300" /> Start Official Examination
+            </button>
+          </div>
+        </div>
+      ) : result ? (
+        /* ── 3. RESULT SCREEN ── */
         <div className="flex-1 bg-slate-50 p-6 md:p-10 overflow-y-auto space-y-6">
           <div className="max-w-5xl mx-auto space-y-6">
             <div className="text-center bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
@@ -627,7 +767,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
           </div>
         </div>
       ) : (
-        /* ── DEDICATED FULL-SCREEN QUESTION PLAYER SCREEN (Clean Codeforces Style) ── */
+        /* ── 4. DEDICATED FULL-SCREEN QUESTION PLAYER SCREEN ── */
         <div className="flex-1 bg-slate-50 flex flex-col md:flex-row overflow-hidden">
           
           {/* ── Left Column: Clean Codeforces-Style Problem Specification ── */}
@@ -650,41 +790,10 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
             )}
           </div>
 
-          {/* ── Right Column: 10 Question Navigation Grid & Options Area ── */}
+          {/* ── Right Column: Options & Action Area ── */}
           <div className="w-full md:w-1/2 flex flex-col justify-between bg-slate-50/70 p-6 md:p-8 overflow-y-auto">
             <div className="space-y-6">
               
-              {/* 10 Question Navigation Grid (Q1 to Q10) */}
-              <div className="bg-white border border-slate-200 p-4 rounded-2xl space-y-2.5 shadow-xs">
-                <div className="flex items-center justify-between text-xs font-extrabold text-slate-700">
-                  <span>10-Item Official Exam Grid</span>
-                  <span className="text-blue-900 font-black">Answered: {answeredCount} / {questions.length}</span>
-                </div>
-                
-                {/* 10 Clickable Grid Pills */}
-                <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
-                  {questions.map((q, qIdx) => {
-                    const isAns = responses[q.id] !== undefined;
-                    const isCurr = qIdx === currentIndex;
-                    return (
-                      <button
-                        key={qIdx}
-                        onClick={() => setCurrentIndex(qIdx)}
-                        className={`py-2 rounded-xl text-xs font-extrabold transition-all border ${
-                          isCurr
-                            ? 'bg-blue-900 text-white border-blue-900 ring-2 ring-blue-500/20 shadow-xs'
-                            : isAns
-                            ? 'bg-emerald-50 text-emerald-900 border-emerald-300 font-black'
-                            : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                        }`}
-                      >
-                        Q{qIdx + 1}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
               {/* 4 Multi-Sentence Distractor Options */}
               <div className="space-y-3">
                 <div className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
@@ -786,7 +895,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
         </div>
       )}
 
-      {/* ── 3. Exit Confirmation Modal ── */}
+      {/* ── 5. Exit Confirmation Modal ── */}
       {showExitConfirm && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-3xl p-8 max-w-md w-full space-y-5 shadow-2xl text-center">
