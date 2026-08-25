@@ -18,6 +18,8 @@ import retrievalRouter from "./retrieval.route.js";
 import questionGenerationRouter from "./questionGeneration.route.js";
 import igotRouter from "./igot.route.js";
 import nsstaRouter from "./nssta.route.js";
+import attemptRouter from "./attempt.route.js";
+import reviewRouter from "./review.route.js";
 
 const router = Router();
 
@@ -40,5 +42,7 @@ router.use("/retrieval", retrievalRouter);
 router.use("/questions", questionGenerationRouter);
 router.use("/igot", igotRouter);
 router.use("/nssta", nsstaRouter);
+router.use("/attempts", attemptRouter);
+router.use("/review", reviewRouter);
 
 export default router;
