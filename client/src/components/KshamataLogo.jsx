@@ -23,12 +23,9 @@ export default function KshamataLogo({
   if (collapsed) {
     return (
       <div className={`inline-flex items-center justify-center select-none ${className}`}>
-        <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-slate-950 via-indigo-950 to-blue-900 shadow-md ring-1 ring-blue-500/30 group hover:scale-105 transition-transform">
-          <span className="font-black text-xl tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-white">
-            K
-          </span>
-          <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-blue-500 ring-2 ring-white"></span>
-        </div>
+        <span className="font-black text-3xl tracking-tighter bg-gradient-to-br from-[#020617] via-[#1E3A8A] to-[#0F172A] bg-clip-text text-transparent drop-shadow-xs hover:scale-110 transition-transform">
+          K
+        </span>
       </div>
     );
   }
