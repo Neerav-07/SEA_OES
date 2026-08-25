@@ -9,6 +9,7 @@ import {
   Target,
   Maximize2,
   Minimize2,
+  GripHorizontal,
 } from 'lucide-react';
 import api from '../../services/api';
 
@@ -26,6 +27,11 @@ export default function AIVirtualAssistant() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
+  // Dragging state
+  const [position, setPosition] = useState(null); // { x, y }
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({ startX: 0, startY: 0, initialX: 0, initialY: 0 });
+
   useEffect(() => {
     if (isOpen) {
       scrollToBottom();
@@ -35,6 +41,45 @@ export default function AIVirtualAssistant() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Drag handlers
+  const handleMouseDown = (e) => {
+    // Only drag when clicking header area
+    if (e.target.closest('button')) return;
+    setIsDragging(true);
+    const rect = e.currentTarget.getBoundingClientRect();
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: rect.left,
+      initialY: rect.top,
+    };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - dragRef.current.startX;
+      const dy = e.clientY - dragRef.current.startY;
+      setPosition({
+        x: Math.max(10, Math.min(window.innerWidth - 380, dragRef.current.initialX + dx)),
+        y: Math.max(10, Math.min(window.innerHeight - 500, dragRef.current.initialY + dy)),
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   const handleSendMessage = async (customText = null) => {
     const textToSend = customText || inputMsg;
@@ -74,54 +119,71 @@ export default function AIVirtualAssistant() {
     { label: 'Recommend iGOT courses', icon: BookOpen, text: 'Recommend the best iGOT courses for my role.' },
   ];
 
+  // Sleek Circular Corner Launcher Button when Closed
   if (!isOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 px-4 py-3.5 rounded-full bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white font-bold shadow-2xl hover:scale-105 transition-all flex items-center gap-3 ring-2 ring-blue-500/30 group"
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-tr from-slate-950 via-slate-900 to-blue-950 text-white shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center ring-2 ring-blue-500/30 group"
+        title="Open Kshamata AI Assistant"
       >
-        <div className="relative">
-          <Bot className="w-5 h-5 text-blue-400" />
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping"></span>
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full"></span>
+        <div className="relative flex items-center justify-center">
+          <Bot className="w-6 h-6 text-blue-400 group-hover:scale-110 transition-transform" />
+          <span className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 rounded-full animate-ping"></span>
+          <span className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 rounded-full ring-2 ring-slate-900"></span>
         </div>
-        <span className="text-xs font-black tracking-tight pr-1 hidden sm:inline">Kshamata AI Assistant</span>
       </button>
     );
   }
 
+  const windowStyle = position
+    ? { left: `${position.x}px`, top: `${position.y}px`, bottom: 'auto', right: 'auto' }
+    : {};
+
   return (
     <div
-      className={`fixed bottom-6 right-6 z-50 bg-white border border-slate-200/90 rounded-2xl shadow-2xl transition-all duration-300 flex flex-col overflow-hidden ${
+      style={windowStyle}
+      className={`fixed z-50 bg-white border border-slate-200/90 rounded-2xl shadow-2xl transition-shadow duration-200 flex flex-col overflow-hidden ${
+        position ? '' : 'bottom-6 right-6'
+      } ${
         isMinimized
           ? 'w-80 h-16'
           : 'w-full max-w-sm sm:max-w-md h-[560px] max-h-[85vh]'
       }`}
     >
-      {/* Drawer Header */}
-      <div className="px-4 py-3.5 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 border-b border-slate-800 flex items-center justify-between">
+      {/* Draggable Header */}
+      <div
+        onMouseDown={handleMouseDown}
+        className="px-4 py-3.5 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 border-b border-slate-800 flex items-center justify-between cursor-grab active:cursor-grabbing select-none"
+      >
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-400/30">
-            <Sparkles className="w-4 h-4 animate-pulse text-blue-400" />
+          <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-400/30">
+            <Bot className="w-4 h-4 text-blue-400" />
           </div>
           <div>
             <h3 className="text-xs font-black text-white flex items-center gap-1.5 tracking-tight">
               Kshamata AI Assistant
             </h3>
-            <p className="text-[10px] text-slate-300 font-semibold">MoSPI Competency Guidance</p>
+            <p className="text-[10px] text-slate-300 font-semibold">MoSPI Competency Intelligence</p>
           </div>
         </div>
 
         <div className="flex items-center gap-1 text-slate-300">
+          <GripHorizontal className="w-4 h-4 text-slate-500 mr-1 hidden sm:block" />
           <button
             onClick={() => setIsMinimized(!isMinimized)}
             className="p-1.5 hover:bg-white/10 rounded-lg hover:text-white transition-colors"
+            title={isMinimized ? 'Expand' : 'Minimize'}
           >
             {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
           </button>
           <button
-            onClick={() => setIsOpen(false)}
+            onClick={() => {
+              setIsOpen(false);
+              setPosition(null); // Reset drag position on close
+            }}
             className="p-1.5 hover:bg-white/10 rounded-lg hover:text-white transition-colors"
+            title="Close"
           >
             <X className="w-4 h-4" />
           </button>
@@ -143,7 +205,7 @@ export default function AIVirtualAssistant() {
                   </div>
                 )}
                 <div
-                  className={`max-w-[82%] p-3.5 rounded-2xl text-xs leading-relaxed font-semibold shadow-xs ${
+                  className={`max-w-[84%] p-3.5 rounded-2xl text-xs leading-relaxed font-semibold shadow-xs ${
                     msg.role === 'user'
                       ? 'bg-blue-600 text-white rounded-tr-none'
                       : 'bg-white border border-slate-200/90 text-slate-800 rounded-tl-none'
@@ -153,6 +215,32 @@ export default function AIVirtualAssistant() {
                 </div>
               </div>
             ))}
+
+            {/* Quick Action Options List (Clean vertical stack inside chat flow) */}
+            {messages.length === 1 && (
+              <div className="pt-2 space-y-2">
+                <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-1">
+                  Suggested Prompts
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  {quickPrompts.map((qp, i) => {
+                    const IconComp = qp.icon;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => handleSendMessage(qp.text)}
+                        className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-blue-50/80 border border-slate-200 hover:border-blue-300 text-xs font-bold text-slate-700 hover:text-blue-900 flex items-center gap-2.5 transition-all shadow-xs group"
+                      >
+                        <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                          <IconComp className="w-3.5 h-3.5" />
+                        </div>
+                        <span>{qp.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {loading && (
               <div className="flex justify-start items-center gap-2.5 text-slate-500 text-xs py-2">
@@ -169,24 +257,7 @@ export default function AIVirtualAssistant() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Action Chips */}
-          <div className="px-3 py-2 bg-white border-t border-slate-100 flex items-center gap-2 overflow-x-auto no-scrollbar">
-            {quickPrompts.map((qp, i) => {
-              const IconComp = qp.icon;
-              return (
-                <button
-                  key={i}
-                  onClick={() => handleSendMessage(qp.text)}
-                  className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 border border-slate-200 text-[11px] font-extrabold text-slate-700 hover:text-blue-900 flex items-center gap-1.5 transition-colors flex-shrink-0"
-                >
-                  <IconComp className="w-3 h-3 text-blue-600" />
-                  {qp.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Input Box */}
+          {/* Clean Input Box */}
           <div className="p-3 bg-white border-t border-slate-200/80 flex items-center gap-2">
             <input
               type="text"
