@@ -53,7 +53,8 @@ export async function listSkillGaps({
 
   const targetOfficialId = officialId || official.id;
   const conditions = [eq(skillGaps.officialId, targetOfficialId)];
-  if (category) conditions.push(eq(skillGaps.category, category));
+  if (category && category !== 'all') conditions.push(eq(skillGaps.category, category));
+  const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
 
   const priorityColumn =
     priority === "assessment"
@@ -86,7 +87,7 @@ export async function listSkillGaps({
       competencyEstimates,
       eq(skillGaps.estimateId, competencyEstimates.id),
     )
-    .where(and(...conditions))
+    .where(whereClause)
     .orderBy(
       desc(priorityColumn),
       desc(skillGaps.gapSeverity),
@@ -123,7 +124,7 @@ export async function listSkillGaps({
           competencyEstimates,
           eq(skillGaps.estimateId, competencyEstimates.id),
         )
-        .where(and(...conditions))
+        .where(whereClause)
         .orderBy(
           desc(priorityColumn),
           desc(skillGaps.gapSeverity),
