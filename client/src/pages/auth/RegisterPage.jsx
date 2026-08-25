@@ -82,9 +82,9 @@ export default function RegisterPage() {
         className="grid w-full max-w-6xl overflow-hidden rounded-[2.5rem] border border-(--app-color-border)/40 backdrop-blur-md lg:grid-cols-[1.1fr_0.9fr]"
         style={{ backgroundColor: 'var(--app-color-surface-glass)', boxShadow: 'var(--app-shadow-elevated)' }}
       >
-          {/* ── Left branding panel ── */}
+          {/* ── Left branding panel (hidden on mobile, visible on lg screens) ── */}
           <section
-            className="relative flex flex-col items-center justify-center overflow-hidden p-8 text-center text-white lg:p-12"
+            className="hidden lg:flex relative flex-col items-center justify-center overflow-hidden p-8 text-center text-white lg:p-12"
             style={{ background: 'var(--app-gradient-auth-login)' }}
           >
             <div className="noise-overlay pointer-events-none opacity-20" />
@@ -115,12 +115,15 @@ export default function RegisterPage() {
             </div>
           </section>
 
-          {/* ── Right form panel ── */}
+          {/* ── Right form panel (full width on mobile) ── */}
           <section
-            className="auth-form-slide flex flex-col justify-center p-8 lg:p-10"
+            className="auth-form-slide flex flex-col justify-center p-6 sm:p-8 lg:p-10 w-full"
             style={{ backgroundColor: 'var(--app-color-surface-glass)' }}
           >
             <div className="mx-auto w-full max-w-sm">
+              <div className="lg:hidden flex justify-center mb-6">
+                <KshamataLogo size="md" className="bg-white p-3 rounded-xl shadow-md border border-slate-200" />
+              </div>
               <div className="mb-6 text-center lg:text-left">
                 <h2 className="text-2xl font-bold tracking-tight text-(--app-color-text)">Register Official Account</h2>
                 <p className="mt-0.5 text-xs text-(--app-color-text-muted)">Enter your details for competency tracking</p>
