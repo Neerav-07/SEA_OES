@@ -12,12 +12,22 @@ const TABLE_QUERIES = [
     password_hash text NOT NULL,
     refresh_token_hash text,
     plan text DEFAULT 'free' NOT NULL,
+    platform_role text DEFAULT 'EMPLOYEE' NOT NULL,
+    designation text,
+    department text,
+    cadre text,
     last_login_at timestamp with time zone,
     notify_on_high_priority boolean DEFAULT true NOT NULL,
     notify_digest boolean DEFAULT false NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
   );`,
+
+  // V2: safely add new columns to existing users table (idempotent)
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS platform_role text DEFAULT 'EMPLOYEE' NOT NULL;`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS designation text;`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS department text;`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS cadre text;`,
 
   `CREATE TABLE IF NOT EXISTS roles (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -389,6 +399,128 @@ const TABLE_QUERIES = [
     question_id uuid NOT NULL REFERENCES questions(id) ON DELETE RESTRICT,
     question_version_id uuid NOT NULL REFERENCES question_versions(id) ON DELETE CASCADE,
     position integer NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  // V2: FRAC — add competency_type and frac_source to competencies
+  `ALTER TABLE competencies ADD COLUMN IF NOT EXISTS competency_type text DEFAULT 'DOMAIN' NOT NULL;`,
+  `ALTER TABLE competencies ADD COLUMN IF NOT EXISTS frac_source text DEFAULT 'MoSPI_FRAC_2024';`,
+
+  // V2: FRAC Activities (Role -> Activities -> Competencies)
+  `CREATE TABLE IF NOT EXISTS activities (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    role_id uuid NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    code text NOT NULL,
+    title text NOT NULL,
+    description text,
+    sequence integer DEFAULT 1 NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS activities_role_code_idx ON activities (role_id, code);`,
+
+  // V2: NSSTA TPAC Programmes
+  `CREATE TABLE IF NOT EXISTS nssta_programmes (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    code text NOT NULL UNIQUE,
+    title text NOT NULL,
+    description text,
+    target_audience jsonb DEFAULT '[]'::jsonb NOT NULL,
+    duration_days integer DEFAULT 3,
+    mode text DEFAULT 'Online',
+    schedule_dates jsonb DEFAULT '[]'::jsonb,
+    capacity integer,
+    nomination_url text,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL,
+    updated_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS nssta_competency_map (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    programme_id uuid NOT NULL REFERENCES nssta_programmes(id) ON DELETE CASCADE,
+    competency_id uuid NOT NULL REFERENCES competencies(id) ON DELETE CASCADE,
+    relevance_level text DEFAULT 'PRIMARY' NOT NULL
+  );`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS nssta_comp_map_uidx ON nssta_competency_map (programme_id, competency_id);`,
+
+  // V2: iGOT Courses (Sunbird-compatible mirror)
+  `CREATE TABLE IF NOT EXISTS igot_courses (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    igot_identifier text NOT NULL UNIQUE,
+    name text NOT NULL,
+    description text,
+    content_type text DEFAULT 'Course',
+    subject jsonb DEFAULT '[]'::jsonb,
+    language jsonb DEFAULT '[]'::jsonb,
+    duration_seconds integer,
+    organisation text,
+    app_icon_url text,
+    status text DEFAULT 'Live',
+    pkg_version integer DEFAULT 1,
+    last_synced_at timestamp DEFAULT now() NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS igot_competency_map (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    igot_course_id uuid NOT NULL REFERENCES igot_courses(id) ON DELETE CASCADE,
+    competency_id uuid NOT NULL REFERENCES competencies(id) ON DELETE CASCADE,
+    learning_objective_id uuid REFERENCES learning_objectives(id) ON DELETE SET NULL,
+    relevance_score real DEFAULT 0.8
+  );`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS igot_comp_map_uidx ON igot_competency_map (igot_course_id, competency_id);`,
+
+  // V2: iGOT Enrolments
+  `CREATE TABLE IF NOT EXISTS igot_enrolments (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    official_id uuid NOT NULL REFERENCES officials(id) ON DELETE CASCADE,
+    igot_course_id uuid NOT NULL REFERENCES igot_courses(id) ON DELETE CASCADE,
+    igot_batch_id text,
+    enrolled_at timestamp DEFAULT now() NOT NULL,
+    completion_percentage integer DEFAULT 0,
+    status text DEFAULT 'ENROLLED',
+    completed_at timestamp,
+    last_synced_at timestamp DEFAULT now() NOT NULL,
+    evidence_created boolean DEFAULT false NOT NULL
+  );`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS igot_enrolment_official_course_idx ON igot_enrolments (official_id, igot_course_id);`,
+
+  // V2: Full Assessment Attempts (delivery + recovery)
+  `CREATE TABLE IF NOT EXISTS assessment_attempts (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    assessment_id uuid NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+    official_id uuid NOT NULL REFERENCES officials(id) ON DELETE CASCADE,
+    status text DEFAULT 'IN_PROGRESS' NOT NULL,
+    started_at timestamp DEFAULT now() NOT NULL,
+    submitted_at timestamp,
+    time_limit_seconds integer,
+    current_question_index integer DEFAULT 0 NOT NULL,
+    responses jsonb DEFAULT '[]'::jsonb NOT NULL,
+    score real,
+    max_score real,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  // V2: AI Assistant Conversations
+  `CREATE TABLE IF NOT EXISTS assistant_conversations (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    official_id uuid NOT NULL REFERENCES officials(id) ON DELETE CASCADE,
+    messages jsonb DEFAULT '[]'::jsonb NOT NULL,
+    context_snapshot jsonb,
+    created_at timestamp DEFAULT now() NOT NULL,
+    updated_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  // V2: Admin Question Review Queue
+  `CREATE TABLE IF NOT EXISTS question_review_queue (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    question_version_id uuid NOT NULL REFERENCES question_versions(id) ON DELETE CASCADE,
+    status text DEFAULT 'PENDING' NOT NULL,
+    reviewer_id uuid REFERENCES users(id) ON DELETE SET NULL,
+    reviewer_comment text,
+    reviewed_at timestamp,
+    auto_validation_score real,
+    auto_validation_report jsonb,
     created_at timestamp DEFAULT now() NOT NULL
   );`,
 ];
