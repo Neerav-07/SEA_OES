@@ -251,15 +251,22 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
 
-  // Anti-cheating tab switch listener
+  // Anti-cheating tab switch listener (with deduplication guard)
   useEffect(() => {
     if (result || loading) return;
 
+    let lastFired = 0;
+
     const handleVisibilityChange = () => {
       if (document.hidden) {
+        const now = Date.now();
+        if (now - lastFired < 1000) return; // Prevent duplicate rapid events
+        lastFired = now;
+
         setTabSwitchCount((prev) => {
           const next = prev + 1;
           toast.error(`⚠️ Security Warning: Tab switch recorded (Violation #${next})`, {
+            id: 'anti-cheating-toast', // Ensures single toast instance only
             duration: 4000,
             style: {
               background: '#7f1d1d',
