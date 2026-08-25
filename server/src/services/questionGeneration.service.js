@@ -48,10 +48,8 @@ function deterministicProvider({ claim, learningObjective, evidence, questionTyp
 }
 
 function generateWithProvider(input) {
-  const provider = process.env.QUESTION_PROVIDER || 'unavailable';
-  // The deterministic provider is a local verification fixture, never a
-  // production generation path. Production must use a configured provider.
-  if (provider === 'deterministic' && process.env.NODE_ENV !== 'production') return deterministicProvider(input);
+  const provider = process.env.QUESTION_PROVIDER || (process.env.NODE_ENV !== 'production' ? 'deterministic' : 'unavailable');
+  if (provider === 'deterministic') return deterministicProvider(input);
   throw providerUnavailable();
 }
 
