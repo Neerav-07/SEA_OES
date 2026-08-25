@@ -296,7 +296,13 @@ export default function CompetenciesPage() {
             <p className="text-sm font-semibold">No competencies match your search criteria.</p>
           </div>
         ) : (
-          filteredCompetencies.map((comp) => <CompetencyTree key={comp.id} competency={comp} />)
+          filteredCompetencies.map((comp) => (
+            <CompetencyTree
+              key={comp.id}
+              competency={comp}
+              onStartDiagnostic={() => setIsDiagnosticOpen(true)}
+            />
+          ))
         )}
       </div>
 
