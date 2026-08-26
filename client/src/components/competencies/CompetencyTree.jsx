@@ -84,10 +84,16 @@ function formatSubFracCode(code) {
   return `FRAC-SUB-${clean}`;
 }
 
-export default function CompetencyTree({ competency, onStartDiagnostic }) {
+import useAuthStore from '../../store/auth.store.js';
+import toast from 'react-hot-toast';
+
+export default function CompetencyTree({ competency, onStartDiagnostic, onAuditEvidence }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedSubs, setExpandedSubs] = useState({});
   const navigate = useNavigate();
+
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.platformRole === 'ADMIN';
 
   const toggleSub = (subId) => {
     setExpandedSubs((prev) => ({ ...prev, [subId]: !prev[subId] }));
@@ -172,26 +178,50 @@ export default function CompetencyTree({ competency, onStartDiagnostic }) {
         <div className="flex flex-wrap md:flex-col items-start md:items-end gap-2.5 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
           <CompetencyLevelBadge level={estimatedLevel} />
 
-          <div className="flex items-center gap-2 mt-1">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onStartDiagnostic) onStartDiagnostic(competency);
-              }}
-              className="px-3 py-1.5 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
-            >
-              <PlayCircle size={13} className="text-blue-200" /> Assess Proficiency
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate('/dashboard/learning-paths');
-              }}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-blue-900 font-bold text-xs flex items-center gap-1.5 transition-colors"
-            >
-              <BookOpen size={13} className="text-slate-500" /> View iGOT Courses
-            </button>
-          </div>
+          {isAdmin ? (
+            <div className="flex items-center gap-2 mt-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onAuditEvidence) onAuditEvidence(competency);
+                  else if (onStartDiagnostic) onStartDiagnostic(competency);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+              >
+                <ShieldCheck size={13} className="text-blue-200" /> Audit Evidence Chain
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toast.success(`Assigned TPAC Pathway for ${competency.name} to Dr. Rajesh Kumar!`);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[#1E3A8A] font-bold text-xs flex items-center gap-1.5 transition-colors"
+              >
+                <BookOpen size={13} className="text-[#1E3A8A]" /> Mandate iGOT Course
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 mt-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onStartDiagnostic) onStartDiagnostic(competency);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+              >
+                <PlayCircle size={13} className="text-blue-200" /> Assess Proficiency
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/dashboard/learning-paths');
+                }}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-blue-900 font-bold text-xs flex items-center gap-1.5 transition-colors"
+              >
+                <BookOpen size={13} className="text-slate-500" /> View iGOT Courses
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
