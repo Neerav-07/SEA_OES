@@ -536,23 +536,43 @@ const TABLE_QUERIES = [
   );`,
 ];
 
+let isInitialized = false;
+
 export async function ensureDatabaseTablesCreated(url) {
+  if (isInitialized) return;
   try {
     const isNeon = url.includes("neon.tech");
-    if (isNeon) {
-      const sql = neon(url);
-      for (const query of TABLE_QUERIES) {
-        await sql(query);
+    const sql = isNeon ? neon(url) : null;
+
+    let hasUsers = false;
+    try {
+      if (isNeon) {
+        const rows = await sql`SELECT count(*) FROM users`;
+        if (Number(rows?.[0]?.count) > 0) hasUsers = true;
       }
-    } else {
-      const pool = new Pool({ connectionString: url });
-      for (const query of TABLE_QUERIES) {
-        await pool.query(query);
-      }
-      await pool.end();
+    } catch {
+      hasUsers = false;
     }
-    console.log("✅ Database tables verified/created");
-    await seedDatabase();
+
+    if (!hasUsers) {
+      console.log("🌱 First-time initialization: creating database tables & seeding baseline data...");
+      if (isNeon) {
+        for (const query of TABLE_QUERIES) {
+          await sql(query);
+        }
+      } else {
+        const pool = new Pool({ connectionString: url });
+        for (const query of TABLE_QUERIES) {
+          await pool.query(query);
+        }
+        await pool.end();
+      }
+      console.log("✅ Database tables created");
+      await seedDatabase();
+    } else {
+      console.log("✅ Database tables & seeded data verified");
+    }
+    isInitialized = true;
   } catch (error) {
     console.warn("⚠️ Auto DB initialization warning:", error.message);
   }

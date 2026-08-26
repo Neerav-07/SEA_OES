@@ -19,6 +19,7 @@ import { seedMoSPICompetencies } from './seed/mospi-competencies.seed.js';
 import { seedFracRoles } from './seed/frac-roles.seed.js';
 import { seedNsstaProgrammes } from './seed/nssta-programmes.seed.js';
 import { getAllMockCourses } from '../services/igot.service.js';
+import { recalculateSkillGaps } from '../services/skillGap.service.js';
 
 export async function seedDatabase() {
   console.log('\n🌱 ════════════════════════════════════════════════════');
@@ -46,6 +47,18 @@ export async function seedDatabase() {
 
     // ── Step 7: Demo Evidence ───────────────────────────────────────────────
     await seedDemoEvidence(officials_, competencyRows);
+
+    // ── Step 8: Calculate & Seed Initial Skill Gaps ────────────────────────
+    console.log('🌱 Calculating initial skill gaps for demo officials...');
+    for (const off of officials_) {
+      const [u] = await db.select({ userId: officials.userId }).from(officials).where(eq(officials.id, off.id));
+      if (u?.userId) {
+        await recalculateSkillGaps({ userId: u.userId, officialId: off.id, roleId: off.roleId }).catch((err) => {
+          console.warn(`  ⚠️ Could not calculate initial skill gaps for official ${off.id}:`, err.message);
+        });
+      }
+    }
+    console.log('✅ Initial skill gaps calculated for demo officials.');
 
     console.log('\n🎉 ════════════════════════════════════════════════════');
     console.log('🎉  V2 Database seeding complete!');
@@ -214,7 +227,14 @@ async function seedDemoOfficials(employeeUsers, roleRows, competencyRows) {
 
   const inserted = [];
   for (const off of officialDefs) {
-    const [row] = await db.insert(officials).values(off).onConflictDoNothing().returning();
+    const [existing] = await db.select().from(officials).where(eq(officials.userId, off.userId));
+    let row = null;
+    if (existing) {
+      await db.update(officials).set(off).where(eq(officials.id, existing.id));
+      row = { ...existing, ...off };
+    } else {
+      [row] = await db.insert(officials).values(off).returning();
+    }
     if (row) inserted.push(row);
   }
 
@@ -233,16 +253,53 @@ async function seedDemoEvidence(officialRows, competencyRows) {
 
   const evidenceDefs = [];
 
-  // Official 1: Rajesh (ISS SO) — good stats, gap in Python/ML
+  // Official 1: Rajesh (ISS SO) — good stats, critical gaps in Python/ML & Metadata
   if (off1) {
     const comps = [
-      { code: 'SAMPLING_METHODS', type: 'KNOWLEDGE', score: 3.8, max: 5, weight: 0.4, conf: 0.88, prov: 'NSSTA Diagnostic Assessment 2025 (Batch #45)' },
-      { code: 'SAMPLING_METHODS', type: 'APPLICATION', score: 3.5, max: 5, weight: 0.35, conf: 0.82, prov: 'Scenario Assessment: NSS 78th Round — Stratified Sampling Design' },
-      { code: 'SURVEY_DESIGN', type: 'KNOWLEDGE', score: 4.0, max: 5, weight: 0.4, conf: 0.90, prov: 'NSSTA Diagnostic Assessment 2025' },
-      { code: 'NATIONAL_ACCOUNTS', type: 'KNOWLEDGE', score: 2.8, max: 5, weight: 0.3, conf: 0.75, prov: 'Self-Assessment Quiz — NAS Module' },
-      { code: 'PYTHON_ANALYTICS', type: 'KNOWLEDGE', score: 1.5, max: 5, weight: 0.3, conf: 0.60, prov: 'NSSTA Diagnostic Assessment 2025 — Python Module' },
-      { code: 'DATA_QUALITY', type: 'APPLICATION', score: 3.2, max: 5, weight: 0.35, conf: 0.80, prov: 'SQAF Self-Assessment Audit 2025' },
-      { code: 'ETHICS_INTEGRITY', type: 'KNOWLEDGE', score: 4.5, max: 5, weight: 0.4, conf: 0.95, prov: 'DoPT Ethics Course Completion — iGOT 2024' },
+      // SAMPLING_METHODS -> No gap (req 4.0, est 4.2)
+      { code: 'SAMPLING_METHODS', type: 'KNOWLEDGE', score: 4.2, max: 5, weight: 0.4, conf: 0.90, prov: 'NSSTA Diagnostic Assessment 2025 (Batch #45)' },
+      { code: 'SAMPLING_METHODS', type: 'APPLICATION', score: 4.2, max: 5, weight: 0.35, conf: 0.85, prov: 'Scenario Assessment: NSS 78th Round — Stratified Sampling Design' },
+
+      // SURVEY_DESIGN -> No gap / Met (req 4.0, est 4.0)
+      { code: 'SURVEY_DESIGN', type: 'KNOWLEDGE', score: 4.0, max: 5, weight: 0.4, conf: 0.90, prov: 'NSSTA Diagnostic Assessment 2025 — Survey Design' },
+      { code: 'SURVEY_DESIGN', type: 'APPLICATION', score: 4.0, max: 5, weight: 0.35, conf: 0.88, prov: 'CAPI Field Questionnaire Validation Workshop 2024' },
+
+      // ETHICS_INTEGRITY -> No gap (req 4.0, est 4.8)
+      { code: 'ETHICS_INTEGRITY', type: 'KNOWLEDGE', score: 4.8, max: 5, weight: 0.4, conf: 0.95, prov: 'DoPT Ethics Course Completion — iGOT 2024' },
+      { code: 'ETHICS_INTEGRITY', type: 'APPLICATION', score: 4.8, max: 5, weight: 0.35, conf: 0.92, prov: 'Official Statistics Code of Conduct Audit 2025' },
+
+      // PYTHON_ANALYTICS -> CRITICAL GAP (req 4.0, est 1.4, severity 2.6)
+      { code: 'PYTHON_ANALYTICS', type: 'KNOWLEDGE', score: 1.5, max: 5, weight: 0.4, conf: 0.80, prov: 'NSSTA Diagnostic Assessment 2025 — Python Module' },
+      { code: 'PYTHON_ANALYTICS', type: 'APPLICATION', score: 1.2, max: 5, weight: 0.35, conf: 0.75, prov: 'Hands-on Virtual Lab: Pandas Data Cleaning Exercise' },
+
+      // METADATA_STANDARDS -> CRITICAL GAP (req 4.0, est 1.6, severity 2.4)
+      { code: 'METADATA_STANDARDS', type: 'KNOWLEDGE', score: 1.8, max: 5, weight: 0.4, conf: 0.82, prov: 'SDMX & Metadata Standards Self-Assessment 2025' },
+      { code: 'METADATA_STANDARDS', type: 'APPLICATION', score: 1.4, max: 5, weight: 0.35, conf: 0.78, prov: 'National Data Warehouse Metadata Cataloguing Workshop' },
+
+      // SQL_DATABASE -> HIGH GAP (req 4.0, est 2.2, severity 1.8)
+      { code: 'SQL_DATABASE', type: 'KNOWLEDGE', score: 2.4, max: 5, weight: 0.4, conf: 0.80, prov: 'Database Queries Self-Assessment 2025' },
+      { code: 'SQL_DATABASE', type: 'APPLICATION', score: 2.0, max: 5, weight: 0.35, conf: 0.75, prov: 'PostgreSQL Relational Queries Lab — NSS Raw Data' },
+
+      // STATA_SPSS -> HIGH GAP (req 3.0, est 1.8, severity 1.2)
+      { code: 'STATA_SPSS', type: 'KNOWLEDGE', score: 2.0, max: 5, weight: 0.4, conf: 0.80, prov: 'Stata Syntax & Tabulation Quiz 2025' },
+      { code: 'STATA_SPSS', type: 'APPLICATION', score: 1.6, max: 5, weight: 0.35, conf: 0.75, prov: 'PLFS Microdata Processing Exercise in Stata' },
+
+      // SDG_INDICATORS -> HIGH GAP (req 3.0, est 1.9, severity 1.1)
+      { code: 'SDG_INDICATORS', type: 'KNOWLEDGE', score: 2.0, max: 5, weight: 0.4, conf: 0.82, prov: 'MoSPI National Indicator Framework (NIF) Quiz 2025' },
+      { code: 'SDG_INDICATORS', type: 'APPLICATION', score: 1.8, max: 5, weight: 0.35, conf: 0.78, prov: 'SDG Goal 8 Labour Data Mapping Workshop' },
+
+      // NATIONAL_ACCOUNTS -> MEDIUM GAP (req 3.0, est 2.4, severity 0.6)
+      { code: 'NATIONAL_ACCOUNTS', type: 'KNOWLEDGE', score: 2.6, max: 5, weight: 0.4, conf: 0.80, prov: 'Self-Assessment Quiz — NAS Module 2025' },
+      { code: 'NATIONAL_ACCOUNTS', type: 'APPLICATION', score: 2.2, max: 5, weight: 0.35, conf: 0.75, prov: 'Sectoral GVA Deflation Workshop — NAD MoSPI' },
+
+      // COMMUNICATION -> LOW GAP (req 3.0, est 2.6, severity 0.4)
+      { code: 'COMMUNICATION', type: 'KNOWLEDGE', score: 2.6, max: 5, weight: 0.4, conf: 0.80, prov: 'NSSTA Data Storytelling Assessment 2025' },
+
+      // DATA_QUALITY -> Need Assessment / Insufficient Evidence (1 item)
+      { code: 'DATA_QUALITY', type: 'APPLICATION', score: 3.2, max: 5, weight: 0.35, conf: 0.50, prov: 'SQAF Self-Assessment Audit 2025' },
+
+      // DATA_VISUALIZATION -> Need Assessment / Insufficient Evidence (1 item)
+      { code: 'DATA_VISUALIZATION', type: 'KNOWLEDGE', score: 2.8, max: 5, weight: 0.3, conf: 0.45, prov: 'PowerBI Dashboards Introductory Quiz' },
     ];
     for (const c of comps) {
       const comp = findComp(c.code);
