@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Users,
   TrendingUp,
@@ -14,12 +14,14 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock,
+  ExternalLink,
+  ChevronRight,
 } from 'lucide-react';
 
 import useAuthStore from '../../../store/auth.store.js';
+import { useReportStore } from '../../../store/report.store.js';
 import StatCard from '../../../components/StatCard.jsx';
 import PageHeader from '../../../components/PageHeader.jsx';
-import Button from '../../../components/Button.jsx';
 
 const LEARNER_STATS = [
   { label: 'Assessed Competencies', value: '14 / 18', change: '84% Conf', trend: 'up' },
@@ -34,24 +36,32 @@ const LEARNER_ACTIVITY = [
     label: 'Diagnostic Assessment completed: Survey Sampling & Bias Evaluation (Scored 85%)',
     time: '10 mins ago',
     status: 'done',
+    actionText: 'View Evidence Profile',
+    route: '/dashboard/competencies',
   },
   {
     id: 2,
     label: 'Enrolled in iGOT Course: Python Data Analytics & Automated Processing (14 Hours)',
     time: '1 hr ago',
     status: 'active',
+    actionText: 'Continue Course',
+    route: '/dashboard/learning-paths',
   },
   {
     id: 3,
     label: 'Competency Level Updated: Statistical Analysis & Inference (L3.2 → L3.6)',
     time: 'Yesterday',
     status: 'done',
+    actionText: 'Inspect Skill Gaps',
+    route: '/dashboard/skill-gaps',
   },
   {
     id: 4,
     label: 'Ingested Training Manual: NSS Household Survey Manual 2026 (94% Match Score)',
     time: '2 days ago',
     status: 'done',
+    actionText: 'Explore Pathways',
+    route: '/dashboard/learning-paths',
   },
 ];
 
@@ -68,24 +78,32 @@ const ADMIN_ACTIVITY = [
     label: 'Dr. Rajesh Kumar (SSO, DIID) completed Diagnostic Assessment: Survey Sampling (Score: 85%)',
     time: '10 mins ago',
     status: 'done',
+    actionText: 'Audit Evidence',
+    route: '/dashboard/competencies',
   },
   {
     id: 2,
     label: '15 Grounded MCQs generated for Python Microdata Blueprint by AI Engine',
     time: '1 hr ago',
     status: 'pending',
+    actionText: 'Review Questions →',
+    route: '/dashboard/admin/review-queue',
   },
   {
     id: 3,
     label: 'Annual Capacity Building Plan (ACBP 2026-27) Report Generated for Ministry Leadership',
     time: '3 hrs ago',
     status: 'done',
+    actionText: 'Generate / View ACBP →',
+    actionType: 'ACBP_REPORT',
   },
   {
     id: 4,
     label: 'Priya Sharma (AD, NSSO) enrolled in iGOT Course: National Accounts Statistics & GVA Deflation',
     time: 'Yesterday',
     status: 'active',
+    actionText: 'Inspect Cadre Analytics',
+    route: '/dashboard/analytics',
   },
 ];
 
@@ -96,11 +114,22 @@ const STATUS_STYLES = {
 };
 
 export default function DashboardHomePage() {
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.platformRole === 'ADMIN';
 
+  const startReportGen = useReportStore((s) => s.startGeneration);
+
   const stats = isAdmin ? ADMIN_STATS : LEARNER_STATS;
   const activity = isAdmin ? ADMIN_ACTIVITY : LEARNER_ACTIVITY;
+
+  const handleActivityClick = (item) => {
+    if (item.actionType === 'ACBP_REPORT') {
+      startReportGen();
+    } else if (item.route) {
+      navigate(item.route);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -175,30 +204,47 @@ export default function DashboardHomePage() {
         </div>
       )}
 
-      {/* ── Recent Activity Feed ── */}
+      {/* ── Interactive Recent Activity & Telemetry Stream ── */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
             <Clock size={16} className="text-[#1E3A8A]" />
             {isAdmin ? 'MoSPI Workforce Activity & Audit Telemetry' : 'My Recent Competency & Learning Activity'}
           </h3>
-          <span className="text-xs font-semibold text-slate-500">Real-Time Event Stream</span>
+          <span className="text-xs font-semibold text-slate-500">Interactive Action Stream</span>
         </div>
 
-        <ul className="divide-y divide-slate-100">
+        <ul className="space-y-2">
           {activity.map((item) => (
-            <li key={item.id} className="flex items-center justify-between py-3.5">
-              <div>
-                <p className="text-xs font-bold text-slate-900">{item.label}</p>
-                <p className="text-[11px] text-slate-500 font-medium mt-0.5">{item.time}</p>
+            <li
+              key={item.id}
+              onClick={() => handleActivityClick(item)}
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-blue-50/60 hover:border-blue-200 transition-all cursor-pointer group"
+            >
+              <div className="space-y-0.5">
+                <p className="text-xs font-bold text-slate-900 group-hover:text-[#1E3A8A] transition-colors flex items-center gap-2">
+                  {item.label}
+                </p>
+                <p className="text-[11px] text-slate-500 font-medium flex items-center gap-2">
+                  <span>{item.time}</span>
+                  <span>•</span>
+                  <span className="text-slate-600 font-semibold">{item.actionText}</span>
+                </p>
               </div>
-              <span
-                className={`rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider ${
-                  STATUS_STYLES[item.status] || STATUS_STYLES.done
-                }`}
-              >
-                {item.status === 'pending' ? 'Needs Review' : item.status === 'active' ? 'In Progress' : 'Verified'}
-              </span>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span
+                  className={`rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider ${
+                    STATUS_STYLES[item.status] || STATUS_STYLES.done
+                  }`}
+                >
+                  {item.status === 'pending' ? 'Needs Review' : item.status === 'active' ? 'In Progress' : 'Verified'}
+                </span>
+
+                <div className="p-1.5 rounded-xl bg-white border border-slate-200 text-slate-400 group-hover:text-[#1E3A8A] group-hover:border-blue-300 transition-all">
+                  <ChevronRight size={14} />
+                </div>
+              </div>
             </li>
           ))}
         </ul>
