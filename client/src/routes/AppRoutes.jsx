@@ -22,6 +22,7 @@ import SourcesPage from '../pages/dashboard/sources/SourcesPage.jsx';
 import ReviewQueuePage from '../pages/dashboard/admin/ReviewQueuePage.jsx';
 import PredictiveAnalyticsPage from '../pages/dashboard/admin/PredictiveAnalyticsPage.jsx';
 import ACBPReportPage from '../pages/dashboard/admin/ACBPReportPage.jsx';
+import SettingsPage from '../pages/dashboard/settings/SettingsPage.jsx';
 
 import useAuthStore from '../store/auth.store.js';
 
@@ -69,6 +70,7 @@ export default function AppRoutes() {
             <Route path="/dashboard/assessments" element={<AssessmentsPage />} />
             <Route path="/dashboard/analytics" element={<AnalyticsPage />} />
             <Route path="/dashboard/sources" element={<SourcesPage />} />
+            <Route path="/dashboard/settings" element={<SettingsPage />} />
             <Route path="/dashboard/admin/review-queue" element={<ReviewQueuePage />} />
             <Route path="/dashboard/admin/predictions" element={<PredictiveAnalyticsPage />} />
             <Route path="/dashboard/admin/acbp-report" element={<ACBPReportPage />} />

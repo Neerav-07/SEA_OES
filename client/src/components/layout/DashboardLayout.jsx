@@ -19,6 +19,7 @@ import {
   FileText,
   PanelLeftClose,
   PanelLeftOpen,
+  Settings,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -33,6 +34,7 @@ const learnerItems = [
   { label: 'Competency Profiles', path: '/dashboard/competencies', icon: Award },
   { label: 'Skill Gap Analysis', path: '/dashboard/skill-gaps', icon: TrendingDown },
   { label: 'iGOT & NSSTA Pathways', path: '/dashboard/learning-paths', icon: GraduationCap },
+  { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ];
 
 const adminItems = [
@@ -42,6 +44,7 @@ const adminItems = [
   { label: 'ACBP Report Export', path: '/dashboard/admin/acbp-report', icon: FileText },
   { label: 'Source Library', path: '/dashboard/sources', icon: Database },
   { label: 'Workforce Analytics', path: '/dashboard/analytics', icon: BarChart3 },
+  { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ];
 
 export default function DashboardLayout() {
