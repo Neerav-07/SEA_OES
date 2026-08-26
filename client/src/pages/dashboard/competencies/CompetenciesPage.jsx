@@ -11,6 +11,8 @@ import EvidenceProvenanceDrawer from '../../../components/evidence/EvidenceProve
 import { COMPETENCY_LEVELS } from '../../../utils/constants.js';
 import api from '../../../services/api.js';
 
+import useAuthStore from '../../../store/auth.store.js';
+
 const FALLBACK_OFFICIAL = {
   id: 'off-01',
   userName: 'Dr. Rajesh Kumar',
@@ -132,6 +134,9 @@ const FALLBACK_ROLES = [
 ];
 
 export default function CompetenciesPage() {
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.platformRole === 'ADMIN';
+
   const [official, setOfficial] = useState(FALLBACK_OFFICIAL);
   const [competencies, setCompetencies] = useState(FALLBACK_COMPETENCIES);
   const [roles, setRoles] = useState(FALLBACK_ROLES);
@@ -210,8 +215,12 @@ export default function CompetenciesPage() {
     <div className="space-y-8">
       {/* ── Page Header ── */}
       <PageHeader
-        title="Official Competency Profiles & Evidence Engine"
-        subtitle="Authoritative role competency requirements, diagnostic evidence fusion, and confidence scoring for India's Official Statistical System (MoSPI DIID)."
+        title={isAdmin ? "Workforce Competency Audit & Evidence Verification Engine" : "Official Competency Profiles & Evidence Engine"}
+        subtitle={
+          isAdmin
+            ? "Inspect MoSPI cadre competency baselines, diagnostic evidence trails, and FRAC benchmark alignment for academic governance."
+            : "Authoritative role competency requirements, diagnostic evidence fusion, and confidence scoring for India's Official Statistical System (MoSPI DIID)."
+        }
       />
 
       {/* ── Official Profile Banner ── */}
@@ -229,6 +238,11 @@ export default function CompetenciesPage() {
                   {official.cadre}
                 </span>
                 <span className="text-xs text-slate-500 font-semibold">{official.department}</span>
+                {isAdmin && (
+                  <span className="rounded-md bg-amber-50 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-800 border border-amber-200 uppercase tracking-wider">
+                    Auditing Official Profile
+                  </span>
+                )}
               </div>
               <h3 className="text-xl font-bold text-slate-900">{official.userName}</h3>
               <p className="text-xs text-slate-600 font-medium">
@@ -237,27 +251,53 @@ export default function CompetenciesPage() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
-            <div>
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Target FRAC Benchmark</span>
-              <span className="text-sm font-bold text-[#1E3A8A] flex items-center gap-1.5 mt-0.5">
-                <Briefcase size={14} /> {official.roleTitle}
-              </span>
+          {isAdmin ? (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-blue-50/60 p-4 rounded-2xl border border-blue-200">
+              <div>
+                <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#1E3A8A]">
+                  🛡️ Target FRAC Benchmark
+                </span>
+                <span className="text-sm font-bold text-slate-900 flex items-center gap-1.5 mt-0.5">
+                  <Briefcase size={14} className="text-[#1E3A8A]" /> {official.roleTitle}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={() => setIsRoleDrawerOpen(true)} className="text-xs">
+                  <RefreshCw size={14} className="mr-1" /> Change Benchmark
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setIsDiagnosticOpen(true)}
+                  className="text-xs !text-white"
+                >
+                  <ShieldCheck size={14} className="mr-1 !text-white" /> Test Diagnostic Audit
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="secondary" size="sm" onClick={() => setIsRoleDrawerOpen(true)} className="text-xs">
-                <RefreshCw size={14} className="mr-1" /> Select Target Role
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setIsDiagnosticOpen(true)}
-                className="text-xs !text-white"
-              >
-                <FileCheck size={14} className="mr-1 !text-white" /> Start Diagnostic
-              </Button>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+              <div>
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Target FRAC Benchmark</span>
+                <span className="text-sm font-bold text-[#1E3A8A] flex items-center gap-1.5 mt-0.5">
+                  <Briefcase size={14} /> {official.roleTitle}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={() => setIsRoleDrawerOpen(true)} className="text-xs">
+                  <RefreshCw size={14} className="mr-1" /> Select Target Role
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setIsDiagnosticOpen(true)}
+                  className="text-xs !text-white"
+                >
+                  <FileCheck size={14} className="mr-1 !text-white" /> Start Diagnostic
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
