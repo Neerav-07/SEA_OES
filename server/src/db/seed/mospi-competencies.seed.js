@@ -315,6 +315,89 @@ async function seedKeyLearningObjectives(competencyRows) {
     );
   }
 
+  const gisComp = findComp('GIS_VISUALIZATION');
+  if (gisComp) {
+    loDefs.push(
+      { competencyId: gisComp.id, code: 'GIS_LO_01', title: 'Map survey unit data using GIS spatial layers, shapefiles, and administrative boundary data', targetLevel: 3, status: 'ACTIVE', isActive: true },
+      { competencyId: gisComp.id, code: 'GIS_LO_02', title: 'Design interactive choropleth maps and thematic statistical charts for public web dissemination', targetLevel: 4, status: 'ACTIVE', isActive: true },
+    );
+  }
+
+  const metaComp = findComp('METADATA_STANDARDS');
+  if (metaComp) {
+    loDefs.push(
+      { competencyId: metaComp.id, code: 'META_LO_01', title: 'Structure statistical metadata using SDMX (Statistical Data and Metadata eXchange) standards', targetLevel: 3, status: 'ACTIVE', isActive: true },
+      { competencyId: metaComp.id, code: 'META_LO_02', title: 'Create and publish DDI-compliant microdata documentation for survey releases', targetLevel: 4, status: 'ACTIVE', isActive: true },
+    );
+  }
+
+  const stataComp = findComp('STATA_SPSS');
+  if (stataComp) {
+    loDefs.push(
+      { competencyId: stataComp.id, code: 'STATA_LO_01', title: 'Write automated Stata do-files and SPSS syntax for complex multi-stage survey weight application', targetLevel: 3, status: 'ACTIVE', isActive: true },
+      { competencyId: stataComp.id, code: 'STATA_LO_02', title: 'Perform cross-tabulations, sampling variance estimation, and regression diagnostics in Stata', targetLevel: 3, status: 'ACTIVE', isActive: true },
+    );
+  }
+
+  const rComp = findComp('R_PROGRAMMING');
+  if (rComp) {
+    loDefs.push(
+      { competencyId: rComp.id, code: 'R_LO_01', title: 'Process large microdata files using R data.table and survey package for variance estimation', targetLevel: 3, status: 'ACTIVE', isActive: true },
+      { competencyId: rComp.id, code: 'R_LO_02', title: 'Build automated statistical reports using R Markdown and ggplot2', targetLevel: 3, status: 'ACTIVE', isActive: true },
+    );
+  }
+
+  const aimlComp = findComp('AI_ML_FUNDAMENTALS');
+  if (aimlComp) {
+    loDefs.push(
+      { competencyId: aimlComp.id, code: 'AIML_LO_01', title: 'Apply machine learning models (Random Forest, XGBoost) for automated survey non-response imputation', targetLevel: 3, status: 'ACTIVE', isActive: true },
+      { competencyId: aimlComp.id, code: 'AIML_LO_02', title: 'Evaluate model accuracy and non-response bias in statistical production pipelines', targetLevel: 4, status: 'ACTIVE', isActive: true },
+    );
+  }
+
+  const cloudComp = findComp('CLOUD_COMPUTING');
+  if (cloudComp) {
+    loDefs.push(
+      { competencyId: cloudComp.id, code: 'CLOUD_LO_01', title: 'Deploy scalable data ingestion pipelines on MeghRaj Government Cloud infrastructure', targetLevel: 3, status: 'ACTIVE', isActive: true },
+    );
+  }
+
+  const apiComp = findComp('APIS_OPEN_DATA');
+  if (apiComp) {
+    loDefs.push(
+      { competencyId: apiComp.id, code: 'API_LO_01', title: 'Design RESTful APIs for Open Government Data Portal (data.gov.in) statistical publishing', targetLevel: 3, status: 'ACTIVE', isActive: true },
+    );
+  }
+
+  const labourComp = findComp('LABOUR_STATISTICS');
+  if (labourComp) {
+    loDefs.push(
+      { competencyId: labourComp.id, code: 'LAB_LO_01', title: 'Compute Worker Population Ratio (WPR) and Labour Force Participation Rate (LFPR) from PLFS microdata', targetLevel: 3, status: 'ACTIVE', isActive: true },
+      { competencyId: labourComp.id, code: 'LAB_LO_02', title: 'Classify activity status under Current Weekly Status (CWS) vs Usual Status (PS+SS)', targetLevel: 4, status: 'ACTIVE', isActive: true },
+    );
+  }
+
+  const agriComp = findComp('AGRI_STATISTICS');
+  if (agriComp) {
+    loDefs.push(
+      { competencyId: agriComp.id, code: 'AGRI_LO_01', title: 'Calculate crop production estimates using Crop Cutting Experiment (CCE) sampling design', targetLevel: 3, status: 'ACTIVE', isActive: true },
+    );
+  }
+
+  const indComp = findComp('INDUSTRIAL_STATISTICS');
+  if (indComp) {
+    loDefs.push(
+      { competencyId: indComp.id, code: 'IND_LO_01', title: 'Compute Index of Industrial Production (IIP) and compile ASI enterprise schedules', targetLevel: 3, status: 'ACTIVE', isActive: true },
+    );
+  }
+
+  const projComp = findComp('PROJECT_MANAGEMENT');
+  if (projComp) {
+    loDefs.push(
+      { competencyId: projComp.id, code: 'PROJ_LO_01', title: 'Manage national survey field operation logistics, timelines, and quality control checkpoints', targetLevel: 3, status: 'ACTIVE', isActive: true },
+    );
+  }
+
   if (loDefs.length > 0) {
     await db.insert(learningObjectives).values(loDefs).onConflictDoNothing();
     console.log(`✅ Seeded ${loDefs.length} learning objectives for key competencies`);
