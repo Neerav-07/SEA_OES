@@ -8,7 +8,6 @@ import CompetencyTree from '../../../components/competencies/CompetencyTree.jsx'
 import OfficialRoleDrawer from '../../../components/competencies/OfficialRoleDrawer.jsx';
 import DiagnosticQuizModal from '../../../components/evidence/DiagnosticQuizModal.jsx';
 import EvidenceProvenanceDrawer from '../../../components/evidence/EvidenceProvenanceDrawer.jsx';
-import AssessmentHistoryCard from '../../../components/evidence/AssessmentHistoryCard.jsx';
 import { COMPETENCY_LEVELS } from '../../../utils/constants.js';
 import api from '../../../services/api.js';
 
