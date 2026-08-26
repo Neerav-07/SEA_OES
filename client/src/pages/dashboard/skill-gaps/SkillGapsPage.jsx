@@ -206,57 +206,7 @@ export default function SkillGapsPage() {
         subtitle="Auditable evidence-driven skill gap identification with confidence metrics and role benchmark projection."
       />
 
-      {/* ── Official Role Governance & Benchmark Simulator Header Bar ── */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#1E3A8A] border border-blue-100 shrink-0">
-              <Award size={24} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-900">Official Assigned Designation:</span>
-                <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-extrabold text-slate-700 border border-slate-200">
-                  <Lock size={11} className="text-slate-500" /> Senior Statistical Officer (SSO)
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium">(Cadre Admin Locked)</span>
-              </div>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Department: Data Informatics & Innovation Division (DIID) • Cadre: Indian Statistical Service (ISS)
-              </p>
-            </div>
-          </div>
 
-          {/* Role Benchmark Projection Simulator */}
-          <div className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
-            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5 pl-1">
-              <Sparkles size={14} className="text-[#1E3A8A]" /> Career Progression Benchmark Projection:
-            </span>
-            <select
-              value={selectedRoleKey}
-              onChange={(e) => handleRoleChange(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-900 focus:border-[#1E3A8A] focus:outline-none shadow-2xs cursor-pointer"
-            >
-              <option value="SSO">Assigned Role: Senior Statistical Officer (SSO) • Level 4.0 Benchmark</option>
-              <option value="SO">Junior Role: Statistical Officer (SO) • Level 3.0 Benchmark</option>
-              <option value="AD">Promotion Target: Assistant Director (Data Analytics) • Level 4.5 Benchmark</option>
-              <option value="DIRECTOR">Cadre Target: Director (National Accounts) • Level 5.0 Benchmark</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Dynamic Benchmark Alert */}
-        <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
-          <span className="flex items-center gap-1.5">
-            <CheckCircle2 size={14} className="text-emerald-600" />
-            Currently Evaluating Gaps Against Benchmark Role:{' '}
-            <strong className="text-[#1E3A8A]">{currentBenchmark.roleTitle}</strong>
-          </span>
-          <span className="text-[11px] text-slate-400 font-mono">
-            {isReevaluating ? '⚡ Recomputing FRAC Metrics...' : 'FRAC Matrix Synchronized'}
-          </span>
-        </div>
-      </div>
 
       {error && (
         <Alert

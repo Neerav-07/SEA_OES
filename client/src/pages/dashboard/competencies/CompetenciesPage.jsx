@@ -239,14 +239,14 @@ export default function CompetenciesPage() {
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
             <div>
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Assigned Role</span>
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Target FRAC Benchmark</span>
               <span className="text-sm font-bold text-[#1E3A8A] flex items-center gap-1.5 mt-0.5">
                 <Briefcase size={14} /> {official.roleTitle}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => setIsRoleDrawerOpen(true)} className="text-xs">
-                <RefreshCw size={14} className="mr-1" /> Change Role
+                <RefreshCw size={14} className="mr-1" /> Select Target Role
               </Button>
               <Button
                 variant="primary"
