@@ -61,6 +61,20 @@ export default function SettingsPage() {
   const [autoReviewThreshold, setAutoReviewThreshold] = useState('0.90');
   const [ssoEnabled, setSsoEnabled] = useState(true);
 
+  // Digital Signature State
+  const [digitalSignName, setDigitalSignName] = useState(
+    () => localStorage.getItem('kshamata_dsig_name') || 'Dr. Sunita Rao'
+  );
+  const [digitalSignTitle, setDigitalSignTitle] = useState(
+    () => localStorage.getItem('kshamata_dsig_title') || 'Director (Capacity Building), NSSTA'
+  );
+  const [embedDigitalSeal, setEmbedDigitalSeal] = useState(
+    () => localStorage.getItem('kshamata_dsig_seal') !== 'false'
+  );
+  const [dsigHash, setDsigHash] = useState(
+    () => localStorage.getItem('kshamata_dsig_hash') || 'DSC-NIC-8F9A2B1C4E7D'
+  );
+
   const handleSaveSettings = () => {
     localStorage.setItem('kshamata_ai_provider', aiProvider);
     localStorage.setItem('kshamata_ai_key', apiKey);
@@ -70,8 +84,12 @@ export default function SettingsPage() {
     localStorage.setItem('kshamata_chunk_size', chunkSize);
     localStorage.setItem('kshamata_lang', language);
     localStorage.setItem('kshamata_igot_freq', igotSyncFreq);
+    localStorage.setItem('kshamata_dsig_name', digitalSignName);
+    localStorage.setItem('kshamata_dsig_title', digitalSignTitle);
+    localStorage.setItem('kshamata_dsig_seal', String(embedDigitalSeal));
+    localStorage.setItem('kshamata_dsig_hash', dsigHash);
 
-    toast.success('Settings & AI Anti-Hallucination parameters saved successfully!', {
+    toast.success('Settings & Digital Signature parameters saved successfully!', {
       id: 'settings-save-toast',
       duration: 3500,
     });
@@ -132,6 +150,17 @@ export default function SettingsPage() {
           }`}
         >
           <ShieldCheck size={16} /> Governance & Security Audit
+        </button>
+
+        <button
+          onClick={() => setActiveTab('DIGITAL_SIGN')}
+          className={`flex items-center gap-2 border-b-2 px-5 py-3 text-xs font-bold transition-all ${
+            activeTab === 'DIGITAL_SIGN'
+              ? 'border-[#1E3A8A] text-[#1E3A8A]'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          <Lock size={16} /> Digital Signature & e-Sign
         </button>
       </div>
 
@@ -469,6 +498,113 @@ export default function SettingsPage() {
             >
               <Download size={14} className="text-[#1E3A8A]" /> Export Audit Log (.JSON)
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Tab 4: Digital Signature & e-Sign Governance ── */}
+      {activeTab === 'DIGITAL_SIGN' && (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Lock size={18} className="text-[#1E3A8A]" /> Government Digital Signature & e-Sign Governance
+            </h3>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Manage digital signatures and NIC e-Sign certificate stamps embedded on official ACBP reports and capacity certificates.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  Digital Signatory Full Name
+                </label>
+                <input
+                  type="text"
+                  value={digitalSignName}
+                  onChange={(e) => setDigitalSignName(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 p-3 text-xs font-bold text-slate-900 focus:border-[#1E3A8A] focus:outline-none"
+                  placeholder="e.g. Dr. Sunita Rao"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  Official Designation & Authority
+                </label>
+                <input
+                  type="text"
+                  value={digitalSignTitle}
+                  onChange={(e) => setDigitalSignTitle(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 p-3 text-xs font-bold text-slate-900 focus:border-[#1E3A8A] focus:outline-none"
+                  placeholder="e.g. Director (Capacity Building), NSSTA"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  NIC e-Sign DSC Hash Identifier
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={dsigHash}
+                    onChange={(e) => setDsigHash(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 p-3 text-xs font-mono font-bold text-slate-700 bg-slate-50 focus:border-[#1E3A8A] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newHash = 'DSC-NIC-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+                      setDsigHash(newHash);
+                      toast.success('Generated fresh NIC e-Sign Certificate Hash!');
+                    }}
+                    className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-bold"
+                    title="Regenerate Hash"
+                  >
+                    <RefreshCw size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Signature Preview Card */}
+            <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-6 space-y-4 flex flex-col justify-between">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1E3A8A] block mb-2">
+                  Live Digital Signature Preview (ACBP Document Output)
+                </span>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-200 text-center space-y-2 shadow-2xs">
+                  <div className="font-serif italic text-xl font-bold text-[#1E3A8A] tracking-wide py-1 select-none">
+                    {digitalSignName || 'Dr. Sunita Rao'}
+                  </div>
+                  <div className="text-[9px] font-mono text-emerald-700 font-bold bg-emerald-50 py-0.5 px-2 rounded border border-emerald-200 inline-block">
+                    ✓ DIGITALLY SIGNED VIA NIC e-SIGN [{dsigHash}]
+                  </div>
+                  <div className="border-t border-slate-200 pt-2 text-[10px] text-slate-700 font-bold">
+                    {digitalSignName}
+                  </div>
+                  <div className="text-[9px] text-slate-500 font-medium">
+                    {digitalSignTitle}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="embedSeal"
+                  checked={embedDigitalSeal}
+                  onChange={(e) => setEmbedDigitalSeal(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-[#1E3A8A] focus:ring-[#1E3A8A]"
+                />
+                <label htmlFor="embedSeal" className="text-xs font-bold text-slate-800 cursor-pointer">
+                  Embed NIC e-Sign DSC Stamp on Official ACBP Reports
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       )}
