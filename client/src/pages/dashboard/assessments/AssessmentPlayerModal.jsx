@@ -288,19 +288,19 @@ Which system architecture and API standard ensures seamless machine-to-machine d
   },
 ];
 
-export default function AssessmentPlayerModal({ assessmentId, onClose, onComplete }) {
+export default function AssessmentPlayerModal({ assessmentId, onClose, onComplete, initialConfig }) {
   const [loading, setLoading] = useState(true);
-  const [isSetupCompleted, setIsSetupCompleted] = useState(false);
-  const [examMode, setExamMode] = useState('STANDARD'); // 'STANDARD' | 'CUSTOM'
-  const [targetCount, setTargetCount] = useState(10);
-  const [targetDurationMins, setTargetDurationMins] = useState(30);
+  const [isSetupCompleted, setIsSetupCompleted] = useState(Boolean(initialConfig));
+  const [examMode, setExamMode] = useState(initialConfig ? 'CUSTOM' : 'STANDARD');
+  const [targetCount, setTargetCount] = useState(initialConfig?.questionCount || 10);
+  const [targetDurationMins, setTargetDurationMins] = useState(initialConfig?.timeLimitMins || 15);
 
   const [attempt, setAttempt] = useState(null);
   const [assessment, setAssessment] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [responses, setResponses] = useState({}); // { questionId: selectedOptionIndex }
-  const [timeLeft, setTimeLeft] = useState(1800); // in seconds
+  const [timeLeft, setTimeLeft] = useState((initialConfig?.timeLimitMins || 15) * 60);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
   const [instantFeedback, setInstantFeedback] = useState(false);
@@ -356,7 +356,8 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
         
         const fetchedQs = data.questions || [];
         const activePool = fetchedQs.length >= 5 ? fetchedQs : DEFAULT_CASE_STUDIES;
-        setQuestions(activePool.slice(0, targetCount));
+        const countToUse = initialConfig?.questionCount || targetCount;
+        setQuestions(activePool.slice(0, countToUse));
 
         if (data.attempt?.responses) {
           const restored = {};
@@ -372,14 +373,15 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
         }
       } catch (err) {
         console.error('Failed to start assessment attempt, loading MoSPI case studies:', err);
-        setQuestions(DEFAULT_CASE_STUDIES.slice(0, targetCount));
+        const countToUse = initialConfig?.questionCount || targetCount;
+        setQuestions(DEFAULT_CASE_STUDIES.slice(0, countToUse));
       } finally {
         setLoading(false);
       }
     }
 
     if (assessmentId) initAttempt();
-  }, [assessmentId, targetCount]);
+  }, [assessmentId, targetCount, initialConfig]);
 
   // Update questions pool when setup mode changes
   const handleStartExam = () => {
