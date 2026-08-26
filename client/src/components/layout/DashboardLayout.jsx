@@ -19,6 +19,7 @@ import {
   FileText,
   PanelLeftClose,
   PanelLeftOpen,
+  Settings,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -27,21 +28,29 @@ import useAuthStore from '../../store/auth.store.js';
 
 import KshamataLogo from '../KshamataLogo';
 import AIVirtualAssistant from '../assistant/AIVirtualAssistant.jsx';
+import GlobalReportModal from '../report/GlobalReportModal.jsx';
+
+import { History } from 'lucide-react';
 
 const learnerItems = [
   { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
   { label: 'Competency Profiles', path: '/dashboard/competencies', icon: Award },
   { label: 'Skill Gap Analysis', path: '/dashboard/skill-gaps', icon: TrendingDown },
   { label: 'iGOT & NSSTA Pathways', path: '/dashboard/learning-paths', icon: GraduationCap },
-  { label: 'Assessment Engine', path: '/dashboard/assessments', icon: FileCheck },
+  { label: 'Assessment History', path: '/dashboard/assessment-history', icon: History },
+  { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ];
 
 const adminItems = [
+  { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
+  { label: 'Workforce Analytics', path: '/dashboard/analytics', icon: BarChart3 },
+  { label: 'Assessment Studio', path: '/dashboard/assessments', icon: FileCheck },
   { label: 'Question Review Queue', path: '/dashboard/admin/review-queue', icon: ShieldCheck },
   { label: 'Predictive Analytics', path: '/dashboard/admin/predictions', icon: TrendingUp },
   { label: 'ACBP Report Export', path: '/dashboard/admin/acbp-report', icon: FileText },
   { label: 'Source Library', path: '/dashboard/sources', icon: Database },
-  { label: 'Workforce Analytics', path: '/dashboard/analytics', icon: BarChart3 },
+  { label: 'Assessment History', path: '/dashboard/assessment-history', icon: History },
+  { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ];
 
 export default function DashboardLayout() {
@@ -118,9 +127,9 @@ export default function DashboardLayout() {
 
         {/* Nav items */}
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
-          {/* Core Official Navigation */}
+          {/* Navigation Items (Role-Segregated) */}
           <div className="space-y-1">
-            {learnerItems.map(({ label, path, icon: Icon }) => {
+            {(isAdmin ? adminItems : learnerItems).map(({ label, path, icon: Icon }) => {
               const active = location.pathname === path;
               return (
                 <Link
@@ -141,41 +150,6 @@ export default function DashboardLayout() {
               );
             })}
           </div>
-
-          {/* Governance & Admin (Only visible to ADMIN role) */}
-          {isAdmin && (
-            <div className="pt-2 border-t border-slate-100">
-              {!isCollapsed ? (
-                <div className="px-3 mb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                  Governance & Admin
-                </div>
-              ) : (
-                <div className="my-1 border-t border-slate-100" />
-              )}
-              <div className="space-y-1">
-                {adminItems.map(({ label, path, icon: Icon }) => {
-                  const active = location.pathname === path;
-                  return (
-                    <Link
-                      key={path}
-                      to={path}
-                      title={isCollapsed ? label : undefined}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all ${
-                        isCollapsed ? 'justify-center' : ''
-                      } ${
-                        active
-                          ? 'bg-blue-50 text-blue-700 shadow-xs font-bold ring-1 ring-blue-500/20'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                      }`}
-                    >
-                      <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-blue-600' : 'text-slate-500'}`} />
-                      {!isCollapsed && <span>{label}</span>}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </nav>
 
         {/* User / logout footer */}
@@ -228,6 +202,9 @@ export default function DashboardLayout() {
 
       {/* ── AI Virtual Assistant Floating Widget ── */}
       <AIVirtualAssistant />
+
+      {/* ── Global Background Report Generator & Viewer Modal ── */}
+      <GlobalReportModal />
     </div>
   );
 }

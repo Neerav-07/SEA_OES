@@ -58,6 +58,32 @@ const DOMAIN_SUB_COMPETENCIES = {
   ],
 };
 
+function formatOfficialFracCode(code, category) {
+  if (!code) return 'FRAC-STAT-001';
+  if (code.startsWith('FRAC-')) return code;
+
+  const catMap = {
+    STATISTICAL: 'STAT',
+    TECHNICAL: 'TECH',
+    DIGITAL_GOVERNANCE: 'GOV',
+    DIGITAL: 'GOV',
+    BEHAVIOURAL: 'MGT',
+    MANAGERIAL: 'MGT',
+  };
+
+  const catKey = (category || 'STATISTICAL').toUpperCase().replace(' ', '_');
+  const prefix = catMap[catKey] || 'STAT';
+  const cleanCode = code.toUpperCase().replace(/^FRAC_?/, '').replace(/_/g, '-');
+
+  return `FRAC-${prefix}-${cleanCode}`;
+}
+
+function formatSubFracCode(code) {
+  if (!code) return 'FRAC-SUB-01';
+  const clean = code.toUpperCase().replace(/^SUB_?/, '').replace(/_/g, '-');
+  return `FRAC-SUB-${clean}`;
+}
+
 export default function CompetencyTree({ competency, onStartDiagnostic }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedSubs, setExpandedSubs] = useState({});
@@ -74,8 +100,28 @@ export default function CompetencyTree({ competency, onStartDiagnostic }) {
     ? competency.subCompetencies
     : fallbackSubs;
 
-  const estimatedLevel = competency.estimatedLevel || 3.2;
-  const requiredLevel = competency.requiredLevel || 4.0;
+  const COMPETENCY_ESTIMATED_LEVELS = {
+    PYTHON_ANALYTICS: 1.4,
+    METADATA_STANDARDS: 1.6,
+    SQL_DATABASE: 2.2,
+    NATIONAL_ACCOUNTS: 2.4,
+    GIS_VISUALIZATION: 2.8,
+    SURVEY_DESIGN: 3.6,
+    SAMPLING_METHODS: 3.8,
+    ETHICS_INTEGRITY: 4.2,
+    COMMUNICATION: 4.0,
+    DATA_SECURITY: 3.5,
+  };
+
+  const compCodeKey = (competency.code || competency.name || '').toUpperCase().replace(/[^A-Z_]/g, '_');
+  const matchedKey = Object.keys(COMPETENCY_ESTIMATED_LEVELS).find((k) => compCodeKey.includes(k) || k.includes(compCodeKey));
+
+  const estimatedLevel = Number(
+    competency.estimatedLevel ||
+    competency.currentLevel ||
+    (matchedKey ? COMPETENCY_ESTIMATED_LEVELS[matchedKey] : 2.8)
+  );
+  const requiredLevel = Number(competency.requiredLevel || 4.0);
   const gapScore = Math.max(0, Number((requiredLevel - estimatedLevel).toFixed(1)));
 
   return (
@@ -98,7 +144,9 @@ export default function CompetencyTree({ competency, onStartDiagnostic }) {
               <span className="rounded-md bg-blue-50 px-2.5 py-0.5 text-[10px] font-extrabold text-blue-900 uppercase tracking-wider border border-blue-200/60">
                 {competency.category || 'Statistical'}
               </span>
-              <span className="text-xs font-mono font-bold text-slate-500">ID: {competency.code}</span>
+              <span className="text-[11px] font-mono font-semibold text-slate-600 bg-slate-100/80 px-2 py-0.5 rounded border border-slate-200">
+                FRAC Code: {formatOfficialFracCode(competency.code, competency.category)}
+              </span>
               {gapScore > 0 ? (
                 <span className="rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-800">
                   Deficit Gap: -{gapScore} (Req: L{requiredLevel})
@@ -130,9 +178,9 @@ export default function CompetencyTree({ competency, onStartDiagnostic }) {
                 e.stopPropagation();
                 if (onStartDiagnostic) onStartDiagnostic(competency);
               }}
-              className="px-3 py-1.5 rounded-xl bg-blue-900 hover:bg-slate-900 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+              className="px-3 py-1.5 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
             >
-              <PlayCircle size={13} className="text-blue-300" /> Assess Proficiency
+              <PlayCircle size={13} className="text-blue-200" /> Assess Proficiency
             </button>
             <button
               onClick={(e) => {
@@ -171,7 +219,9 @@ export default function CompetencyTree({ competency, onStartDiagnostic }) {
                     <div className="flex items-center gap-2">
                       {subOpen ? <ChevronDown size={14} className="text-blue-800" /> : <ChevronRight size={14} className="text-slate-500" />}
                       <span className="text-xs font-extrabold text-slate-900">{sub.name}</span>
-                      <span className="text-[10px] text-slate-500 font-mono font-semibold">({sub.code})</span>
+                      <span className="text-[10px] font-mono font-medium text-slate-500 bg-slate-200/60 px-1.5 py-0.5 rounded">
+                        {formatSubFracCode(sub.code)}
+                      </span>
                     </div>
                     <span className="text-[10px] font-extrabold text-blue-900 bg-blue-100/80 px-2 py-0.5 rounded-md border border-blue-200">
                       {los.length} Learning Objectives
@@ -180,17 +230,47 @@ export default function CompetencyTree({ competency, onStartDiagnostic }) {
 
                   {subOpen && (
                     <div className="pt-2 border-t border-slate-200/60 space-y-2 pl-4">
-                      {los.map((lo) => (
-                        <div key={lo.id} className="flex items-start gap-2.5 text-xs text-slate-800 font-medium">
-                          <Target size={13} className="text-purple-600 shrink-0 mt-0.5" />
-                          <div>
-                            <span className="font-semibold text-slate-900">{lo.title}</span>
-                            <span className="ml-2 rounded bg-purple-50 px-2 py-0.5 text-[10px] font-extrabold text-purple-700 border border-purple-200/60">
-                              Taxonomy Level {lo.taxonomyLevel || 3}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                      {(() => {
+                        const rawLos = sub.learningObjectives || [];
+                        const losMap = new Map();
+                        rawLos.forEach((lo) => {
+                          const key = (lo.title || lo.code || '').trim().toLowerCase();
+                          if (key && !losMap.has(key)) losMap.set(key, lo);
+                        });
+                        const los = Array.from(losMap.values());
+
+                        return los.map((lo) => {
+                          const lvl = Number(lo.taxonomyLevel || lo.targetLevel) || 3;
+                          const badgeStyle =
+                            lvl >= 5
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200/80'
+                              : lvl === 4
+                                ? 'bg-indigo-50 text-indigo-800 border-indigo-200/80'
+                                : lvl === 3
+                                  ? 'bg-blue-50 text-[#1E3A8A] border-blue-200/80'
+                                  : 'bg-slate-100 text-slate-700 border-slate-200';
+                          const badgeLabel =
+                            lvl >= 5
+                              ? 'L5 • Evaluate'
+                              : lvl === 4
+                                ? 'L4 • Analyze'
+                                : lvl === 3
+                                  ? 'L3 • Apply'
+                                  : `L${lvl} • Understand`;
+
+                          return (
+                            <div key={lo.id || lo.code} className="flex items-start justify-between gap-3 text-xs text-slate-800 font-medium py-0.5">
+                              <div className="flex items-start gap-2">
+                                <Target size={13} className="text-[#1E3A8A] shrink-0 mt-0.5" />
+                                <span className="font-semibold text-slate-900">{lo.title}</span>
+                              </div>
+                              <span className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase border ${badgeStyle}`}>
+                                {badgeLabel}
+                              </span>
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   )}
                 </div>

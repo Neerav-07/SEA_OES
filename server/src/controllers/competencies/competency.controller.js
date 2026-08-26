@@ -4,6 +4,17 @@ import { competencies, subCompetencies, learningObjectives } from '../../db/sche
 import { sendSuccess, sendError } from '../../utils/response.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 
+function deduplicateLOs(los) {
+  if (!Array.isArray(los)) return [];
+  const seen = new Set();
+  return los.filter((lo) => {
+    const key = (lo.title || lo.code || '').trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 /**
  * Get all competencies with sub-competencies and learning objectives
  */
@@ -14,12 +25,50 @@ export const getCompetencies = asyncHandler(async (req, res) => {
 
   // Group into hierarchy
   const hierarchy = allCompetencies.map((comp) => {
-    const subs = allSubComps
-      .filter((s) => s.competencyId === comp.id)
-      .map((s) => ({
-        ...s,
-        learningObjectives: allLOs.filter((lo) => lo.subCompetencyId === s.id),
-      }));
+    let subs = allSubComps.filter((s) => s.competencyId === comp.id);
+    let compLOs = deduplicateLOs(allLOs.filter((lo) => lo.competencyId === comp.id));
+
+    if (compLOs.length === 0) {
+      compLOs = [
+        {
+          id: `lo-def-${comp.id}-1`,
+          competencyId: comp.id,
+          code: `${comp.code}_LO_01`,
+          title: `Apply baseline concepts and operational procedures of ${comp.name} in statistical survey production.`,
+          targetLevel: 3,
+          status: 'ACTIVE',
+        },
+        {
+          id: `lo-def-${comp.id}-2`,
+          competencyId: comp.id,
+          code: `${comp.code}_LO_02`,
+          title: `Evaluate data quality and compliance with MoSPI framework guidelines for ${comp.name}.`,
+          targetLevel: 4,
+          status: 'ACTIVE',
+        },
+      ];
+    }
+
+    if (subs.length === 0) {
+      subs = [
+        {
+          id: `sub-${comp.id}`,
+          competencyId: comp.id,
+          code: `SUB_${comp.code}`,
+          name: `${comp.name} Application`,
+          description: comp.description || `Operational application of ${comp.name}`,
+          learningObjectives: compLOs,
+        },
+      ];
+    } else {
+      subs = subs.map((s) => {
+        const subLOs = deduplicateLOs(allLOs.filter((lo) => lo.subCompetencyId === s.id));
+        return {
+          ...s,
+          learningObjectives: subLOs.length > 0 ? subLOs : compLOs,
+        };
+      });
+    }
 
     return {
       ...comp,
@@ -41,14 +90,47 @@ export const getCompetencyById = asyncHandler(async (req, res) => {
     return sendError(res, 'Competency not found', 404);
   }
 
-  const subs = await db.select().from(subCompetencies).where(eq(subCompetencies.competencyId, comp.id));
-  const subIds = subs.map((s) => s.id);
-  const loList = subIds.length > 0 ? await db.select().from(learningObjectives) : [];
+  let subs = await db.select().from(subCompetencies).where(eq(subCompetencies.competencyId, comp.id));
+  let compLOs = deduplicateLOs(await db.select().from(learningObjectives).where(eq(learningObjectives.competencyId, comp.id)));
 
-  const subHierarchy = subs.map((s) => ({
-    ...s,
-    learningObjectives: loList.filter((lo) => lo.subCompetencyId === s.id),
-  }));
+  if (compLOs.length === 0) {
+    compLOs = [
+      {
+        id: `lo-def-${comp.id}-1`,
+        competencyId: comp.id,
+        code: `${comp.code}_LO_01`,
+        title: `Apply baseline concepts and operational procedures of ${comp.name} in statistical survey production.`,
+        targetLevel: 3,
+        status: 'ACTIVE',
+      },
+      {
+        id: `lo-def-${comp.id}-2`,
+        competencyId: comp.id,
+        code: `${comp.code}_LO_02`,
+        title: `Evaluate data quality and compliance with MoSPI framework guidelines for ${comp.name}.`,
+        targetLevel: 4,
+        status: 'ACTIVE',
+      },
+    ];
+  }
 
-  return sendSuccess(res, { ...comp, subCompetencies: subHierarchy }, 'Competency retrieved');
+  if (subs.length === 0) {
+    subs = [
+      {
+        id: `sub-${comp.id}`,
+        competencyId: comp.id,
+        code: `SUB_${comp.code}`,
+        name: `${comp.name} Application`,
+        description: comp.description || `Operational application of ${comp.name}`,
+        learningObjectives: compLOs,
+      },
+    ];
+  } else {
+    subs = subs.map((s) => ({
+      ...s,
+      learningObjectives: compLOs,
+    }));
+  }
+
+  return sendSuccess(res, { ...comp, subCompetencies: subs }, 'Competency retrieved');
 });

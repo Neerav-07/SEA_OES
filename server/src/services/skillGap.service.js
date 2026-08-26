@@ -6,6 +6,7 @@ import {
   competencyRequirements,
   evidence,
   officials,
+  roles,
   roleCompetencies,
   skillGaps,
   learningObjectives,
@@ -34,6 +35,25 @@ function badRequest(message) {
   const error = new Error(message);
   error.statusCode = 400;
   return error;
+}
+
+async function attachEstimatesToGaps(db, officialId, gaps) {
+  if (!gaps || gaps.length === 0) return [];
+  const estimates = await db
+    .select()
+    .from(competencyEstimates)
+    .where(eq(competencyEstimates.officialId, officialId));
+  const estMap = new Map(estimates.map((e) => [e.competencyId, e]));
+
+  return gaps.map((g) => {
+    const est = estMap.get(g.competencyId);
+    return {
+      ...g,
+      evidenceSufficiency: est?.evidenceSufficiency ?? 0,
+      sufficiencyBreakdown: est?.sufficiencyBreakdown ?? null,
+      evidenceSnapshot: est?.evidenceSnapshot ?? null,
+    };
+  });
 }
 
 export async function listSkillGaps({
@@ -77,7 +97,7 @@ export async function listSkillGaps({
       ? skillGaps.assessmentPriority
       : skillGaps.learningPriority;
 
-  let gaps = await db
+  let rawGaps = await db
     .select({
       id: skillGaps.id,
       officialId: skillGaps.officialId,
@@ -91,18 +111,11 @@ export async function listSkillGaps({
       learningPriority: skillGaps.learningPriority,
       assessmentPriority: skillGaps.assessmentPriority,
       reasons: skillGaps.reasons,
-      evidenceSufficiency: competencyEstimates.evidenceSufficiency,
-      sufficiencyBreakdown: competencyEstimates.sufficiencyBreakdown,
-      evidenceSnapshot: competencyEstimates.evidenceSnapshot,
       calculatedAt: skillGaps.calculatedAt,
     })
     .from(skillGaps)
     .innerJoin(officials, eq(skillGaps.officialId, officials.id))
     .innerJoin(competencies, eq(skillGaps.competencyId, competencies.id))
-    .leftJoin(
-      competencyEstimates,
-      eq(skillGaps.estimateId, competencyEstimates.id),
-    )
     .where(whereClause)
     .orderBy(
       desc(priorityColumn),
@@ -110,61 +123,14 @@ export async function listSkillGaps({
       desc(skillGaps.assessmentPriority),
     );
 
-  // If no skill gaps exist yet, auto-recalculate or auto-seed them on the fly for this official
-  if (gaps.length === 0 && official) {
+  if (rawGaps.length === 0 && official) {
     try {
       await recalculateSkillGaps({ userId, officialId: official.id, roleId: official.roleId });
     } catch (err) {
       console.warn('Auto-calculation fallback warning:', err.message);
     }
 
-    // Direct fallback provision if recalculation didn't populate gaps
-    let reCheckGaps = await db
-      .select({ id: skillGaps.id })
-      .from(skillGaps)
-      .where(eq(skillGaps.officialId, official.id));
-
-    if (reCheckGaps.length === 0) {
-      const allComps = await db.select().from(competencies).limit(6);
-      const now = new Date();
-      for (const comp of allComps) {
-        let [reqRow] = await db
-          .select()
-          .from(competencyRequirements)
-          .where(and(eq(competencyRequirements.roleId, official.roleId), eq(competencyRequirements.competencyId, comp.id)));
-        
-        if (!reqRow) {
-          [reqRow] = await db.insert(competencyRequirements).values({
-            roleId: official.roleId,
-            competencyId: comp.id,
-            requiredLevel: 4.0,
-            priority: 5,
-            urgency: 5,
-            mandatory: true,
-            frameworkVersion: 'v1',
-          }).returning();
-        }
-
-        if (reqRow) {
-          await db.insert(skillGaps).values({
-            officialId: official.id,
-            competencyId: comp.id,
-            requirementId: reqRow.id,
-            requiredLevel: 4.0,
-            estimatedLevel: 2.8,
-            gapSeverity: 1.2,
-            learningPriority: 4.5,
-            assessmentPriority: 4.0,
-            category: 'HIGH',
-            reasons: ['Baseline FRAC role competency requirement.'],
-            calculatedAt: now,
-            updatedAt: now,
-          }).onConflictDoNothing();
-        }
-      }
-    }
-
-    gaps = await db
+    rawGaps = await db
       .select({
         id: skillGaps.id,
         officialId: skillGaps.officialId,
@@ -178,18 +144,11 @@ export async function listSkillGaps({
         learningPriority: skillGaps.learningPriority,
         assessmentPriority: skillGaps.assessmentPriority,
         reasons: skillGaps.reasons,
-        evidenceSufficiency: competencyEstimates.evidenceSufficiency,
-        sufficiencyBreakdown: competencyEstimates.sufficiencyBreakdown,
-        evidenceSnapshot: competencyEstimates.evidenceSnapshot,
         calculatedAt: skillGaps.calculatedAt,
       })
       .from(skillGaps)
       .innerJoin(officials, eq(skillGaps.officialId, officials.id))
       .innerJoin(competencies, eq(skillGaps.competencyId, competencies.id))
-      .leftJoin(
-        competencyEstimates,
-        eq(skillGaps.estimateId, competencyEstimates.id),
-      )
       .where(whereClause)
       .orderBy(
         desc(priorityColumn),
@@ -198,7 +157,7 @@ export async function listSkillGaps({
       );
   }
 
-  return gaps;
+  return attachEstimatesToGaps(db, targetOfficialId, rawGaps);
 }
 
 export async function getSkillGapById({ userId, gapId }) {
@@ -217,68 +176,65 @@ export async function getSkillGapById({ userId, gapId }) {
       learningPriority: skillGaps.learningPriority,
       assessmentPriority: skillGaps.assessmentPriority,
       reasons: skillGaps.reasons,
-      evidenceSufficiency: competencyEstimates.evidenceSufficiency,
-      sufficiencyBreakdown: competencyEstimates.sufficiencyBreakdown,
-      evidenceSnapshot: competencyEstimates.evidenceSnapshot,
       calculatedAt: skillGaps.calculatedAt,
     })
     .from(skillGaps)
     .innerJoin(officials, eq(skillGaps.officialId, officials.id))
     .innerJoin(competencies, eq(skillGaps.competencyId, competencies.id))
-    .leftJoin(
-      competencyEstimates,
-      eq(skillGaps.estimateId, competencyEstimates.id),
-    )
     .where(and(eq(skillGaps.id, gapId), eq(officials.userId, userId)));
+
   if (!gap) throw notFound();
 
-  const hierarchyRows = await db
-    .select({
-      subCompetencyId: subCompetencies.id,
-      subCompetencyCode: subCompetencies.code,
-      subCompetencyName: subCompetencies.name,
-      learningObjectiveId: learningObjectives.id,
-      learningObjectiveCode: learningObjectives.code,
-      learningObjectiveTitle: learningObjectives.title,
-      subEstimatedLevel: subCompetencyEstimates.proficiencyLevel,
-      subEvidenceSufficiency: subCompetencyEstimates.evidenceSufficiency,
-    })
-    .from(subCompetencies)
-    .leftJoin(
-      learningObjectives,
-      eq(learningObjectives.subCompetencyId, subCompetencies.id),
-    )
-    .leftJoin(
-      subCompetencyEstimates,
+  const [estimate] = await db
+    .select()
+    .from(competencyEstimates)
+    .where(
       and(
-        eq(subCompetencyEstimates.subCompetencyId, subCompetencies.id),
-        eq(subCompetencyEstimates.officialId, gap.officialId),
+        eq(competencyEstimates.officialId, gap.officialId),
+        eq(competencyEstimates.competencyId, gap.competencyId),
       ),
-    )
+    );
+
+  const subCompRows = await db
+    .select()
+    .from(subCompetencies)
     .where(eq(subCompetencies.competencyId, gap.competencyId));
 
-  const subCompetencyMap = new Map();
-  for (const row of hierarchyRows) {
-    if (!subCompetencyMap.has(row.subCompetencyId)) {
-      subCompetencyMap.set(row.subCompetencyId, {
-        id: row.subCompetencyId,
-        code: row.subCompetencyCode,
-        name: row.subCompetencyName,
-        estimatedLevel: row.subEstimatedLevel,
-        evidenceSufficiency: row.subEvidenceSufficiency,
-        learningObjectives: [],
-      });
-    }
-    if (row.learningObjectiveId) {
-      subCompetencyMap.get(row.subCompetencyId).learningObjectives.push({
-        id: row.learningObjectiveId,
-        code: row.learningObjectiveCode,
-        title: row.learningObjectiveTitle,
-      });
-    }
-  }
+  const objectRows = await db
+    .select()
+    .from(learningObjectives)
+    .where(eq(learningObjectives.competencyId, gap.competencyId));
 
-  return { ...gap, subCompetencies: [...subCompetencyMap.values()] };
+  const subEstimates = await db
+    .select()
+    .from(subCompetencyEstimates)
+    .where(eq(subCompetencyEstimates.officialId, gap.officialId));
+
+  const subEstimateMap = new Map(subEstimates.map((s) => [s.subCompetencyId, s]));
+
+  const subCompetenciesList = subCompRows.map((sub) => {
+    const subEst = subEstimateMap.get(sub.id);
+    return {
+      id: sub.id,
+      code: sub.code,
+      name: sub.name,
+      estimatedLevel: subEst?.proficiencyLevel ?? null,
+      evidenceSufficiency: subEst?.evidenceSufficiency ?? null,
+      learningObjectives: objectRows.map((lo) => ({
+        id: lo.id,
+        code: lo.code,
+        title: lo.title,
+      })),
+    };
+  });
+
+  return {
+    ...gap,
+    evidenceSufficiency: estimate?.evidenceSufficiency ?? 0,
+    sufficiencyBreakdown: estimate?.sufficiencyBreakdown ?? null,
+    evidenceSnapshot: estimate?.evidenceSnapshot ?? null,
+    subCompetencies: subCompetenciesList,
+  };
 }
 
 export async function recalculateSkillGaps({ userId, officialId, roleId }) {
@@ -298,16 +254,7 @@ export async function recalculateSkillGaps({ userId, officialId, roleId }) {
   let requirements = await db
     .select()
     .from(competencyRequirements)
-    .where(
-      and(
-        eq(competencyRequirements.roleId, resolvedRoleId),
-        lte(competencyRequirements.effectiveFrom, now),
-        or(
-          isNull(competencyRequirements.effectiveTo),
-          gt(competencyRequirements.effectiveTo, now),
-        ),
-      ),
-    );
+    .where(eq(competencyRequirements.roleId, resolvedRoleId));
   if (requirements.length === 0) {
     const roleRequirements = await db
       .select()

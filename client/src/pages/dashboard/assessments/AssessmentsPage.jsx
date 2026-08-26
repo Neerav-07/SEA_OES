@@ -21,6 +21,7 @@ import {
   validateAssessmentBlueprint,
 } from '../../../services/assessmentBlueprint.api.js';
 import { assembleAssessment, generateQuestion, getAssessment, reviewQuestion, reviseQuestion, validateAssessment, validateQuestion } from '../../../services/source.api.js';
+import AssessmentHistoryCard from '../../../components/evidence/AssessmentHistoryCard.jsx';
 
 const COGNITIVE_LEVELS = ['REMEMBER', 'UNDERSTAND', 'APPLY', 'ANALYZE', 'EVALUATE'];
 const QUESTION_TYPES = ['MCQ', 'SCENARIO'];
@@ -393,7 +394,7 @@ export default function AssessmentsPage() {
           disabled={loadingBlueprint}
           className="sm:min-w-[24rem]"
         />
-        <Button variant="secondary" onClick={handleNew} disabled={loadingBlueprint}>
+        <Button variant="secondary" onClick={handleNew} disabled={loadingBlueprint} className="whitespace-nowrap shrink-0 flex items-center gap-1.5 font-bold text-xs">
           <Plus className="h-4 w-4" /> New blueprint
         </Button>
       </div>
@@ -410,41 +411,51 @@ export default function AssessmentsPage() {
             {competencies.length === 0 && <EmptyState icon={ClipboardList} title="No competencies available" message="The authenticated account has no persisted competency records to configure." />}
           </Card>
 
-          <div className="grid gap-6 xl:grid-cols-2">
-            <Card title="Competency claims" subtitle="Select the claims this blueprint should assess and allocate questions.">
-              {loadingLookups ? <Spinner label="Loading claims..." /> : claims.length === 0 ? <EmptyState icon={FileText} title={form.competencyId ? 'No active claims' : 'Select a competency first'} message={form.competencyId ? 'This competency has no active claims available for selection.' : 'Claims will appear after a competency is selected.'} /> : (
-                <div className="space-y-3">
-                  {claims.map((claim, index) => {
-                    const mapping = form.claims.find((item) => item.claimId === claim.id);
-                    return <div key={claim.id} className="rounded-lg border border-(--app-color-border) p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <Checkbox id={`claim-${claim.id}`} checked={claimIds.has(claim.id)} onChange={(event) => toggleMapping('claims', 'claimId', claim.id, event.target.checked)} label={`${claim.code} · ${claim.statement}`} disabled={!isEditable} />
-                        {mapping && <Input aria-label={`Questions for claim ${claim.code}`} type="number" min="0" step="1" value={mapping.questionCount} onChange={(event) => updateMappingCount('claims', 'claimId', claim.id, event.target.value)} className="w-24" disabled={!isEditable} />}
-                      </div>
-                      <p className="mt-2 pl-8 text-xs text-(--app-color-text-muted)">Claim {index + 1} · {claim.status}</p>
-                    </div>;
-                  })}
-                </div>
-              )}
-            </Card>
-
-            <Card title="Learning objectives" subtitle="Select the objectives this blueprint should cover and allocate questions.">
-              {loadingLookups ? <Spinner label="Loading learning objectives..." /> : learningObjectives.length === 0 ? <EmptyState icon={FileText} title={form.competencyId ? 'No active learning objectives' : 'Select a competency first'} message={form.competencyId ? 'This competency has no active learning objectives available.' : 'Learning objectives will appear after a competency is selected.'} /> : (
-                <div className="space-y-3">
-                  {learningObjectives.map((objective, index) => {
-                    const mapping = form.learningObjectives.find((item) => item.learningObjectiveId === objective.id);
-                    return <div key={objective.id} className="rounded-lg border border-(--app-color-border) p-3">
-                      <div className="flex items-start justify-between gap-3">
+          {/* ── Learning Objectives Section (Full Width First) ── */}
+          <Card title="Learning objectives" subtitle="Select the taxonomy learning objectives this blueprint should cover and allocate questions across full width.">
+            {loadingLookups ? <Spinner label="Loading learning objectives..." /> : learningObjectives.length === 0 ? <EmptyState icon={FileText} title={form.competencyId ? 'No active learning objectives' : 'Select a competency first'} message={form.competencyId ? 'This competency has no active learning objectives available.' : 'Learning objectives will appear after a competency is selected.'} /> : (
+              <div className="space-y-3">
+                {learningObjectives.map((objective, index) => {
+                  const mapping = form.learningObjectives.find((item) => item.learningObjectiveId === objective.id);
+                  return <div key={objective.id} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 hover:bg-blue-50/40 hover:border-blue-200 transition-all">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
                         <Checkbox id={`objective-${objective.id}`} checked={objectiveIds.has(objective.id)} onChange={(event) => toggleMapping('learningObjectives', 'learningObjectiveId', objective.id, event.target.checked)} label={`${objective.code} · ${objective.title}`} disabled={!isEditable} />
-                        {mapping && <Input aria-label={`Questions for objective ${objective.code}`} type="number" min="0" step="1" value={mapping.questionCount} onChange={(event) => updateMappingCount('learningObjectives', 'learningObjectiveId', objective.id, event.target.value)} className="w-24" disabled={!isEditable} />}
+                        <p className="mt-1.5 pl-7 text-xs text-slate-500 font-medium">{objective.description || 'No description provided.'} · Status: <span className="font-bold text-slate-700">{objective.status}</span></p>
                       </div>
-                      <p className="mt-2 pl-8 text-xs text-(--app-color-text-muted)">{objective.description || 'No description provided.'} · {objective.status}</p>
-                    </div>;
-                  })}
-                </div>
-              )}
-            </Card>
-          </div>
+                      {mapping && <div className="flex items-center gap-2 shrink-0 bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
+                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Allocated Qs:</span>
+                        <Input aria-label={`Questions for objective ${objective.code}`} type="number" min="0" step="1" value={mapping.questionCount} onChange={(event) => updateMappingCount('learningObjectives', 'learningObjectiveId', objective.id, event.target.value)} className="w-20 font-bold" disabled={!isEditable} />
+                      </div>}
+                    </div>
+                  </div>;
+                })}
+              </div>
+            )}
+          </Card>
+
+          {/* ── Competency Claims Section (Full Width Stacked Underneath) ── */}
+          <Card title="Competency claims" subtitle="Select specific evidence claims this blueprint should assess and allocate questions.">
+            {loadingLookups ? <Spinner label="Loading claims..." /> : claims.length === 0 ? <EmptyState icon={FileText} title={form.competencyId ? 'No active claims' : 'Select a competency first'} message={form.competencyId ? 'This competency has no active claims available for selection.' : 'Claims will appear after a competency is selected.'} /> : (
+              <div className="space-y-3">
+                {claims.map((claim, index) => {
+                  const mapping = form.claims.find((item) => item.claimId === claim.id);
+                  return <div key={claim.id} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 hover:bg-blue-50/40 hover:border-blue-200 transition-all">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <Checkbox id={`claim-${claim.id}`} checked={claimIds.has(claim.id)} onChange={(event) => toggleMapping('claims', 'claimId', claim.id, event.target.checked)} label={`${claim.code} · ${claim.statement}`} disabled={!isEditable} />
+                        <p className="mt-1.5 pl-7 text-xs text-slate-500 font-medium">Claim {index + 1} · Status: <span className="font-bold text-slate-700">{claim.status}</span></p>
+                      </div>
+                      {mapping && <div className="flex items-center gap-2 shrink-0 bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
+                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Allocated Qs:</span>
+                        <Input aria-label={`Questions for claim ${claim.code}`} type="number" min="0" step="1" value={mapping.questionCount} onChange={(event) => updateMappingCount('claims', 'claimId', claim.id, event.target.value)} className="w-20 font-bold" disabled={!isEditable} />
+                      </div>}
+                    </div>
+                  </div>;
+                })}
+              </div>
+            )}
+          </Card>
 
           <div className="grid gap-6 xl:grid-cols-2">
             <Card title="Cognitive distribution" subtitle="Allocations must total the configured question count.">
