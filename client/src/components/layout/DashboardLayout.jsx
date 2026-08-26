@@ -36,8 +36,8 @@ const learnerItems = [
   { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
   { label: 'Competency Profiles', path: '/dashboard/competencies', icon: Award },
   { label: 'Skill Gap Analysis', path: '/dashboard/skill-gaps', icon: TrendingDown },
-  { label: 'Assessment History', path: '/dashboard/assessment-history', icon: History },
   { label: 'iGOT & NSSTA Pathways', path: '/dashboard/learning-paths', icon: GraduationCap },
+  { label: 'Assessment History', path: '/dashboard/assessment-history', icon: History },
   { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ];
 
@@ -45,11 +45,11 @@ const adminItems = [
   { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
   { label: 'Workforce Analytics', path: '/dashboard/analytics', icon: BarChart3 },
   { label: 'Assessment Studio', path: '/dashboard/assessments', icon: FileCheck },
-  { label: 'Assessment History', path: '/dashboard/assessment-history', icon: History },
   { label: 'Question Review Queue', path: '/dashboard/admin/review-queue', icon: ShieldCheck },
   { label: 'Predictive Analytics', path: '/dashboard/admin/predictions', icon: TrendingUp },
   { label: 'ACBP Report Export', path: '/dashboard/admin/acbp-report', icon: FileText },
   { label: 'Source Library', path: '/dashboard/sources', icon: Database },
+  { label: 'Assessment History', path: '/dashboard/assessment-history', icon: History },
   { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ];
 
