@@ -180,17 +180,47 @@ export default function CompetencyTree({ competency, onStartDiagnostic }) {
 
                   {subOpen && (
                     <div className="pt-2 border-t border-slate-200/60 space-y-2 pl-4">
-                      {los.map((lo) => (
-                        <div key={lo.id} className="flex items-start gap-2.5 text-xs text-slate-800 font-medium">
-                          <Target size={13} className="text-purple-600 shrink-0 mt-0.5" />
-                          <div>
-                            <span className="font-semibold text-slate-900">{lo.title}</span>
-                            <span className="ml-2 rounded bg-purple-50 px-2 py-0.5 text-[10px] font-extrabold text-purple-700 border border-purple-200/60">
-                              Taxonomy Level {lo.taxonomyLevel || 3}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                      {(() => {
+                        const rawLos = sub.learningObjectives || [];
+                        const losMap = new Map();
+                        rawLos.forEach((lo) => {
+                          const key = (lo.title || lo.code || '').trim().toLowerCase();
+                          if (key && !losMap.has(key)) losMap.set(key, lo);
+                        });
+                        const los = Array.from(losMap.values());
+
+                        return los.map((lo) => {
+                          const lvl = Number(lo.taxonomyLevel || lo.targetLevel) || 3;
+                          const badgeStyle =
+                            lvl >= 5
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200/80'
+                              : lvl === 4
+                                ? 'bg-indigo-50 text-indigo-800 border-indigo-200/80'
+                                : lvl === 3
+                                  ? 'bg-blue-50 text-[#1E3A8A] border-blue-200/80'
+                                  : 'bg-slate-100 text-slate-700 border-slate-200';
+                          const badgeLabel =
+                            lvl >= 5
+                              ? 'L5 • Evaluate'
+                              : lvl === 4
+                                ? 'L4 • Analyze'
+                                : lvl === 3
+                                  ? 'L3 • Apply'
+                                  : `L${lvl} • Understand`;
+
+                          return (
+                            <div key={lo.id || lo.code} className="flex items-start justify-between gap-3 text-xs text-slate-800 font-medium py-0.5">
+                              <div className="flex items-start gap-2">
+                                <Target size={13} className="text-[#1E3A8A] shrink-0 mt-0.5" />
+                                <span className="font-semibold text-slate-900">{lo.title}</span>
+                              </div>
+                              <span className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase border ${badgeStyle}`}>
+                                {badgeLabel}
+                              </span>
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   )}
                 </div>

@@ -4,6 +4,17 @@ import { competencies, subCompetencies, learningObjectives } from '../../db/sche
 import { sendSuccess, sendError } from '../../utils/response.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 
+function deduplicateLOs(los) {
+  if (!Array.isArray(los)) return [];
+  const seen = new Set();
+  return los.filter((lo) => {
+    const key = (lo.title || lo.code || '').trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 /**
  * Get all competencies with sub-competencies and learning objectives
  */
@@ -15,7 +26,7 @@ export const getCompetencies = asyncHandler(async (req, res) => {
   // Group into hierarchy
   const hierarchy = allCompetencies.map((comp) => {
     let subs = allSubComps.filter((s) => s.competencyId === comp.id);
-    let compLOs = allLOs.filter((lo) => lo.competencyId === comp.id);
+    let compLOs = deduplicateLOs(allLOs.filter((lo) => lo.competencyId === comp.id));
 
     if (compLOs.length === 0) {
       compLOs = [
@@ -51,7 +62,7 @@ export const getCompetencies = asyncHandler(async (req, res) => {
       ];
     } else {
       subs = subs.map((s) => {
-        const subLOs = allLOs.filter((lo) => lo.subCompetencyId === s.id);
+        const subLOs = deduplicateLOs(allLOs.filter((lo) => lo.subCompetencyId === s.id));
         return {
           ...s,
           learningObjectives: subLOs.length > 0 ? subLOs : compLOs,
@@ -80,7 +91,7 @@ export const getCompetencyById = asyncHandler(async (req, res) => {
   }
 
   let subs = await db.select().from(subCompetencies).where(eq(subCompetencies.competencyId, comp.id));
-  let compLOs = await db.select().from(learningObjectives).where(eq(learningObjectives.competencyId, comp.id));
+  let compLOs = deduplicateLOs(await db.select().from(learningObjectives).where(eq(learningObjectives.competencyId, comp.id)));
 
   if (compLOs.length === 0) {
     compLOs = [
