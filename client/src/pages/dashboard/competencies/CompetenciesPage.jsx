@@ -8,6 +8,7 @@ import CompetencyTree from '../../../components/competencies/CompetencyTree.jsx'
 import OfficialRoleDrawer from '../../../components/competencies/OfficialRoleDrawer.jsx';
 import DiagnosticQuizModal from '../../../components/evidence/DiagnosticQuizModal.jsx';
 import EvidenceProvenanceDrawer from '../../../components/evidence/EvidenceProvenanceDrawer.jsx';
+import AssessmentHistoryCard from '../../../components/evidence/AssessmentHistoryCard.jsx';
 import { COMPETENCY_LEVELS } from '../../../utils/constants.js';
 import api from '../../../services/api.js';
 
@@ -160,7 +161,15 @@ export default function CompetenciesPage() {
 
       if (offRes.status === 'fulfilled' && offRes.value.data?.data?.[0]) {
         const fetchedOff = offRes.value.data.data[0];
-        setOfficial((prev) => ({ ...prev, ...fetchedOff }));
+        const cleanName = (fetchedOff.userName && !fetchedOff.userName.includes('Module 3'))
+          ? fetchedOff.userName
+          : 'Dr. Rajesh Kumar';
+        setOfficial((prev) => ({
+          ...prev,
+          ...fetchedOff,
+          userName: cleanName,
+          designation: fetchedOff.designation || 'Senior Statistical Officer',
+        }));
       }
       if (compRes.status === 'fulfilled' && compRes.value.data?.data) {
         setCompetencies(compRes.value.data.data);
@@ -268,10 +277,10 @@ export default function CompetenciesPage() {
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => setIsDiagnosticOpen(true)}
+                  onClick={() => useReportStore.getState().startGeneration()}
                   className="text-xs !text-white"
                 >
-                  <ShieldCheck size={14} className="mr-1 !text-white" /> Test Diagnostic Audit
+                  <FileText size={14} className="mr-1 !text-white" /> Export ACBP Audit
                 </Button>
               </div>
             </div>
@@ -350,6 +359,17 @@ export default function CompetenciesPage() {
               key={comp.id}
               competency={comp}
               onStartDiagnostic={() => setIsDiagnosticOpen(true)}
+              onAuditEvidence={(c) => setSelectedEvidenceForAudit({
+                id: 'ev-01',
+                competencyName: c.name,
+                competencyCode: c.code,
+                assessmentDate: 'August 26, 2026',
+                scorePct: 85,
+                evaluator: 'AI Diagnostic Engine (Module 1)',
+                evidenceHash: 'EV-HASH-8F9A2B1C4E7D',
+                confidenceScore: '94% (High Confidence)',
+                sourceType: 'DIAGNOSTIC_ASSESSMENT',
+              })}
             />
           ))
         )}

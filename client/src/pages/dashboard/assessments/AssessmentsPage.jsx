@@ -21,6 +21,7 @@ import {
   validateAssessmentBlueprint,
 } from '../../../services/assessmentBlueprint.api.js';
 import { assembleAssessment, generateQuestion, getAssessment, reviewQuestion, reviseQuestion, validateAssessment, validateQuestion } from '../../../services/source.api.js';
+import AssessmentHistoryCard from '../../../components/evidence/AssessmentHistoryCard.jsx';
 
 const COGNITIVE_LEVELS = ['REMEMBER', 'UNDERSTAND', 'APPLY', 'ANALYZE', 'EVALUATE'];
 const QUESTION_TYPES = ['MCQ', 'SCENARIO'];
