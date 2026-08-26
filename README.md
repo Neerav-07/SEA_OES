@@ -96,7 +96,7 @@ Kshamata transforms government workforce development from a reactive, certificat
 
 ### 👥 Dual-Role Governance (RBAC)
 - **Learner Mode (`EMPLOYEE`)**: Overview, Competency Profiles, Skill Gap Analysis, iGOT Pathways, Assessment History, Settings.
-- **Admin Mode (`ADMIN`)**: Executive Telemetry, Workforce Analytics, Assessment Studio, Review Queue, Predictive Analytics, ACBP Export, Source Library, Assessment History, Settings.
+- **Admin Mode (`ADMIN`)**: Executive Telemetry, Workforce Analytics, Assessment Studio, Review Queue, Predictive Analytics, ACBP Export, Source Library, Settings.
 
 ---
 

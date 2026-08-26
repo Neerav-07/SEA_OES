@@ -7,6 +7,8 @@ import Button from '../../components/Button';
 import Container from '../../components/Container';
 import Input from '../../components/Input';
 import KshamataLogo from '../../components/KshamataLogo';
+import ServerStatusIndicator from '../../components/ServerStatusIndicator';
+import useServerWarmup from '../../hooks/useServerWarmup';
 import api from '../../services/api.js';
 import useAuthStore from '../../store/auth.store.js';
 import { validateRegisterForm } from '../../utils/validators.js';
@@ -26,6 +28,7 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
   const setTransitioning = useAuthStore((s) => s.setTransitioning);
+  const { servers, isWakingUp, readyCount, allReady } = useServerWarmup();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -171,11 +174,29 @@ export default function RegisterPage() {
                   />
                 </div>
                 <div className="pt-1">
-                  <Button type="submit" variant="primary" className="h-10 w-full rounded-xl text-xs font-bold shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99] bg-[#1E3A8A] text-white hover:bg-[#172554]" loading={isSubmitting} disabled={isSubmitting}>
-                    Create Account
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="h-10 w-full rounded-xl text-xs font-bold shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99] bg-[#1E3A8A] text-white hover:bg-[#172554]"
+                    loading={isSubmitting || isWakingUp}
+                    disabled={isSubmitting || isWakingUp}
+                  >
+                    {isWakingUp
+                      ? `Starting production servers (${readyCount}/3)...`
+                      : isSubmitting
+                      ? 'Creating account...'
+                      : 'Create Account'}
                   </Button>
                 </div>
-                <p className="mt-6 text-center text-[11px] text-(--app-color-text-muted)">
+
+                <ServerStatusIndicator
+                  servers={servers}
+                  isWakingUp={isWakingUp}
+                  readyCount={readyCount}
+                  allReady={allReady}
+                />
+
+                <p className="mt-5 text-center text-[11px] text-(--app-color-text-muted)">
                   Already have an account?{' '}
                   <Link to="/login" className="font-black text-[#1E3A8A] hover:underline">Sign in</Link>
                 </p>

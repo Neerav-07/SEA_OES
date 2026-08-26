@@ -49,7 +49,6 @@ const adminItems = [
   { label: 'Predictive Analytics', path: '/dashboard/admin/predictions', icon: TrendingUp },
   { label: 'ACBP Report Export', path: '/dashboard/admin/acbp-report', icon: FileText },
   { label: 'Source Library', path: '/dashboard/sources', icon: Database },
-  { label: 'Assessment History', path: '/dashboard/assessment-history', icon: History },
   { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ];
 
