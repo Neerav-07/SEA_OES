@@ -33,10 +33,10 @@ const learnerItems = [
   { label: 'Competency Profiles', path: '/dashboard/competencies', icon: Award },
   { label: 'Skill Gap Analysis', path: '/dashboard/skill-gaps', icon: TrendingDown },
   { label: 'iGOT & NSSTA Pathways', path: '/dashboard/learning-paths', icon: GraduationCap },
-  { label: 'Assessment Engine', path: '/dashboard/assessments', icon: FileCheck },
 ];
 
 const adminItems = [
+  { label: 'Assessment Studio (Blueprints)', path: '/dashboard/assessments', icon: FileCheck },
   { label: 'Question Review Queue', path: '/dashboard/admin/review-queue', icon: ShieldCheck },
   { label: 'Predictive Analytics', path: '/dashboard/admin/predictions', icon: TrendingUp },
   { label: 'ACBP Report Export', path: '/dashboard/admin/acbp-report', icon: FileText },
