@@ -36,133 +36,147 @@ export default function GlobalReportModal() {
 
   if (!isGenerating && !isReportViewerOpen) return null;
 
-  // ── Direct File Downloader (No Print Dialog Triggered) ──────────────────────
+  // ── Bulletproof Isolated A4 PDF Downloader ────────────────────────────────
   const downloadDirectFile = () => {
-    const reportHtml = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>MoSPI_ACBP_Executive_Report_2026-27</title>
-    <style>
-      @page { size: A4 portrait; margin: 12mm 15mm; }
-      * { box-sizing: border-box; }
-      body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 24px; background: #ffffff; color: #0f172a; line-height: 1.5; }
-      .gov-header { border-bottom: 2.5px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-start; }
-      .emblem-title { font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #1e3a8a; text-transform: uppercase; }
-      .ministry-title { font-size: 16px; font-weight: 900; color: #0f172a; margin: 2px 0 0 0; text-transform: uppercase; }
-      .academy-title { font-size: 11px; font-weight: 800; color: #1e3a8a; margin: 2px 0 0 0; text-transform: uppercase; }
-      .doc-meta { text-align: right; font-family: monospace; font-size: 9.5px; color: #475569; }
-      .badge-restricted { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; }
-      .report-title-box { bg-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 16px; }
-      .grid-chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; text-align: center; }
-      .chip { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; }
-      .chip-val { font-size: 15px; font-weight: 900; color: #0f172a; margin-top: 2px; }
-      table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 11px; }
-      th { background: #f1f5f9; text-align: left; padding: 8px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; }
-      td { padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: 600; }
-      .sig-block { margin-top: 30px; border-top: 1px solid #cbd5e1; padding-top: 16px; display: flex; justify-content: space-between; align-items: center; text-align: center; font-size: 10px; }
-      .sig-box { width: 180px; border-top: 1px solid #94a3b8; padding-top: 4px; }
-      .seal-stamp { border: 1px dashed #1e3a8a; background: #eff6ff; color: #1e3a8a; padding: 6px 12px; border-radius: 8px; font-weight: 800; text-transform: uppercase; font-size: 9px; }
-    </style>
-  </head>
-  <body>
-    <div className="gov-header">
-      <div>
-        <div class="emblem-title">🏛️ सत्यमेव जयते • GOVERNMENT OF INDIA • भारत सरकार</div>
-        <div class="ministry-title">MINISTRY OF STATISTICS & PROGRAMME IMPLEMENTATION</div>
-        <div class="academy-title">NATIONAL STATISTICAL SYSTEMS TRAINING ACADEMY (NSSTA)</div>
-        <div style="font-size: 9.5px; color: #64748b; margin-top: 2px;">Plot No. 22, Knowledge Park II, Greater Noida, Uttar Pradesh 201310</div>
-      </div>
-      <div class="doc-meta">
-        <div style="font-weight: 800; color: #0f172a;">DOC NO: MoSPI/DIID/ACBP/2026-27/004</div>
-        <div>DATE: August 26, 2026</div>
-        <div class="badge-restricted">CONFIDENTIAL • OFFICIAL GOVT RECORD</div>
-      </div>
-    </div>
+    const dsigName = localStorage.getItem('kshamata_dsig_name') || 'Dr. Sunita Rao';
+    const dsigTitle = localStorage.getItem('kshamata_dsig_title') || 'Director (Capacity Building), NSSTA';
+    const dsigSeal = localStorage.getItem('kshamata_dsig_seal') !== 'false';
+    const dsigHash = localStorage.getItem('kshamata_dsig_hash') || 'DSC-NIC-8F9A2B1C4E7D';
 
-    <div class="report-title-box">
-      <div style="font-size: 13px; font-weight: 900; color: #1e3a8a; letter-spacing: 0.5px; text-transform: uppercase;">ANNUAL CAPACITY BUILDING PLAN (ACBP) 2026–2027 • EXECUTIVE REPORT</div>
-      <div style="font-size: 10.5px; color: #475569; font-weight: 600; margin-top: 2px;">Evidence-Driven FRAC Framework Allocation for Indian Statistical Service (ISS) & SSS Cadres</div>
-    </div>
+    const printWindow = window.open('', '_blank', 'width=920,height=1200');
+    if (!printWindow) {
+      toast.error('Pop-up blocked. Please allow pop-ups to download PDF.');
+      return;
+    }
 
-    <div class="grid-chips">
-      <div class="chip"><div style="font-size:9px; font-weight:700; color:#64748b;">WORKFORCE COVERED</div><div class="chip-val">248 Officials</div></div>
-      <div class="chip" style="background:#eff6ff; border-color:#bfdbfe;"><div style="font-size:9px; font-weight:700; color:#1e3a8a;">FRAC COMPLIANCE</div><div class="chip-val" style="color:#1e3a8a;">94.2% Rate</div></div>
-      <div class="chip" style="background:#fffbeb; border-color:#fde68a;"><div style="font-size:9px; font-weight:700; color:#b45309;">CRITICAL DEFICITS</div><div class="chip-val" style="color:#b45309;">4 Core Areas</div></div>
-      <div class="chip" style="background:#ecfdf5; border-color:#a7f3d0;"><div style="font-size:9px; font-weight:700; color:#047857;">CAPACITY HOURS</div><div class="chip-val" style="color:#047857;">12,400 Hours</div></div>
-    </div>
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>MoSPI_ACBP_Executive_Report_2026-27.pdf</title>
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 10mm 12mm;
+            }
+            * { box-sizing: border-box; }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+              margin: 0;
+              padding: 16px;
+              background: #ffffff;
+              color: #0f172a;
+              line-height: 1.4;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .header-border { border-bottom: 2.5px solid #0f172a; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start; }
+            .title-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 14px; }
+            .grid-chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; text-align: center; }
+            .chip { padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; background: #f8fafc; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 11px; }
+            th { background: #f1f5f9; text-align: left; padding: 7px 9px; font-weight: 800; border-bottom: 1px solid #cbd5e1; text-transform: uppercase; }
+            td { padding: 7px 9px; border-bottom: 1px solid #e2e8f0; font-weight: 600; }
+            .sig-block { margin-top: 26px; border-top: 1px solid #cbd5e1; padding-top: 12px; display: flex; justify-content: space-between; align-items: center; text-align: center; font-size: 9.5px; }
+            .sig-box { width: 180px; }
+            .seal-stamp { border: 1px dashed #1e3a8a; background: #eff6ff; color: #1e3a8a; padding: 6px 12px; border-radius: 8px; font-weight: 800; text-transform: uppercase; font-size: 8.5px; }
+          </style>
+        </head>
+        <body>
+          <div class="header-border">
+            <div>
+              <div style="font-size: 9.5px; font-weight: 800; letter-spacing: 1px; color: #1e3a8a;">🏛️ सत्यमेव जयते • GOVERNMENT OF INDIA • भारत सरकार</div>
+              <h1 style="font-size: 15px; font-weight: 900; color: #0f172a; margin: 2px 0 0 0; text-transform: uppercase;">MINISTRY OF STATISTICS & PROGRAMME IMPLEMENTATION</h1>
+              <h2 style="font-size: 10.5px; font-weight: 800; color: #1e3a8a; margin: 2px 0 0 0; text-transform: uppercase;">NATIONAL STATISTICAL SYSTEMS TRAINING ACADEMY (NSSTA)</h2>
+              <div style="font-size: 9px; color: #64748b; margin-top: 2px;">Plot No. 22, Knowledge Park II, Greater Noida, Uttar Pradesh 201310</div>
+            </div>
+            <div style="text-align: right; font-family: monospace; font-size: 9px; color: #475569;">
+              <div style="font-weight: 800; color: #0f172a;">DOC NO: MoSPI/DIID/ACBP/2026-27/004</div>
+              <div>DATE: August 26, 2026</div>
+              <div style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 8.5px; font-weight: 800; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px;">CONFIDENTIAL • OFFICIAL GOVT RECORD</div>
+            </div>
+          </div>
 
-    <div style="margin-bottom: 14px;">
-      <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 6px;">Priority Skill Deficits & TPAC Allocations</div>
-      <table>
-        <thead>
-          <tr>
-            <th>Competency Domain</th>
-            <th>Category</th>
-            <th>Officers Affected</th>
-            <th style="text-align: right;">Mandated TPAC Course</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="font-weight: 800; color: #0f172a;">Python for Data Analytics (NSS Microdata)</td>
-            <td style="color: #64748b;">Technical</td>
-            <td style="font-weight: 700;">94 Officials</td>
-            <td style="text-align: right; font-family: monospace; font-weight: 800; color: #1e3a8a;">IGOT-PYTHON-302</td>
-          </tr>
-          <tr>
-            <td style="font-weight: 800; color: #0f172a;">Metadata Standards & SDMX Governance</td>
-            <td style="color: #64748b;">Digital Governance</td>
-            <td style="font-weight: 700;">88 Officials</td>
-            <td style="text-align: right; font-family: monospace; font-weight: 800; color: #1e3a8a;">NSSTA-TPAC-208</td>
-          </tr>
-          <tr>
-            <td style="font-weight: 800; color: #0f172a;">PostgreSQL Survey Data Warehousing</td>
-            <td style="color: #64748b;">Technical</td>
-            <td style="font-weight: 700;">64 Officials</td>
-            <td style="text-align: right; font-family: monospace; font-weight: 800; color: #1e3a8a;">IGOT-SQL-401</td>
-          </tr>
-          <tr>
-            <td style="font-weight: 800; color: #0f172a;">National Accounts Statistics (SNA 2008)</td>
-            <td style="color: #64748b;">Statistical</td>
-            <td style="font-weight: 700;">42 Officials</td>
-            <td style="text-align: right; font-family: monospace; font-weight: 800; color: #1e3a8a;">NSSTA-TPAC-104</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+          <div class="title-box">
+            <div style="font-size: 12.5px; font-weight: 900; color: #1e3a8a; letter-spacing: 0.5px; text-transform: uppercase;">ANNUAL CAPACITY BUILDING PLAN (ACBP) 2026–2027 • EXECUTIVE REPORT</div>
+            <div style="font-size: 10px; color: #475569; font-weight: 600; margin-top: 2px;">Evidence-Driven FRAC Framework Allocation for Indian Statistical Service (ISS) & SSS Cadres</div>
+          </div>
 
-    <div style="font-size: 10.5px; color: #334155; margin-bottom: 24px;">
-      <div style="font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 4px;">Executive Capacity Mandate:</div>
-      <ul style="margin: 0; padding-left: 16px; line-height: 1.6; font-weight: 500;">
-        <li>Mandate IGOT-PYTHON-302 completion for all 94 DIID Officials prior to NSS 80th Round survey rollout.</li>
-        <li>Organize NSSTA 5-Day Residential Workshop on SDMX Data Structure Definitions for Metadata Officers.</li>
-        <li>Sync official iGOT Karmayogi completion webhooks with MoSPI DIID Capacity Dashboard in real-time.</li>
-      </ul>
-    </div>
+          <div class="grid-chips">
+            <div class="chip"><div style="font-size:8.5px; font-weight:700; color:#64748b;">WORKFORCE COVERED</div><div style="font-size:14px; font-weight:900; color:#0f172a; margin-top:2px;">248 Officials</div></div>
+            <div class="chip" style="background:#eff6ff; border-color:#bfdbfe;"><div style="font-size:8.5px; font-weight:700; color:#1e3a8a;">FRAC COMPLIANCE</div><div style="font-size:14px; font-weight:900; color:#1e3a8a; margin-top:2px;">94.2% Rate</div></div>
+            <div class="chip" style="background:#fffbeb; border-color:#fde68a;"><div style="font-size:8.5px; font-weight:700; color:#b45309;">CRITICAL DEFICITS</div><div style="font-size:14px; font-weight:900; color:#b45309; margin-top:2px;">4 Core Areas</div></div>
+            <div class="chip" style="background:#ecfdf5; border-color:#a7f3d0;"><div style="font-size:8.5px; font-weight:700; color:#047857;">CAPACITY HOURS</div><div style="font-size:14px; font-weight:900; color:#047857; margin-top:2px;">12,400 Hours</div></div>
+          </div>
 
-    <div class="sig-block">
-      <div class="sig-box">
-        <div style="font-weight: 800; color: #0f172a;">Dr. Sunita Rao</div>
-        <div style="color: #64748b;">Director (Capacity Building), NSSTA</div>
-      </div>
-      <div class="seal-stamp">NSSTA ACADEMIC GOVERNANCE SEATED</div>
-      <div class="sig-box">
-        <div style="font-weight: 800; color: #0f172a;">Additional Director General</div>
-        <div style="color: #64748b;">DIID, MoSPI, Govt. of India</div>
-      </div>
-    </div>
-  </body>
-</html>`;
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 10.5px; font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 6px;">Priority Skill Deficits & TPAC Allocations</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Competency Domain</th>
+                  <th>Category</th>
+                  <th>Officers Affected</th>
+                  <th style="text-align: right;">Mandated TPAC Course</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="font-weight: 800; color: #0f172a;">Python for Data Analytics (NSS Microdata)</td><td style="color: #64748b;">Technical</td><td style="font-weight: 700;">94 Officials</td><td style="text-align: right; font-family: monospace; font-weight: 800; color: #1e3a8a;">IGOT-PYTHON-302</td></tr>
+                <tr><td style="font-weight: 800; color: #0f172a;">Metadata Standards & SDMX Governance</td><td style="color: #64748b;">Digital Governance</td><td style="font-weight: 700;">88 Officials</td><td style="text-align: right; font-family: monospace; font-weight: 800; color: #1e3a8a;">NSSTA-TPAC-208</td></tr>
+                <tr><td style="font-weight: 800; color: #0f172a;">PostgreSQL Survey Data Warehousing</td><td style="color: #64748b;">Technical</td><td style="font-weight: 700;">64 Officials</td><td style="text-align: right; font-family: monospace; font-weight: 800; color: #1e3a8a;">IGOT-SQL-401</td></tr>
+                <tr><td style="font-weight: 800; color: #0f172a;">National Accounts Statistics (SNA 2008)</td><td style="color: #64748b;">Statistical</td><td style="font-weight: 700;">42 Officials</td><td style="text-align: right; font-family: monospace; font-weight: 800; color: #1e3a8a;">NSSTA-TPAC-104</td></tr>
+              </tbody>
+            </table>
+          </div>
 
-    const blob = new Blob([reportHtml], { type: 'text/html' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'MoSPI_ACBP_Executive_Report_2026-27.html';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success('Downloaded official MoSPI ACBP Executive Report file!');
+          <div style="font-size: 10px; color: #334155; margin-bottom: 20px;">
+            <div style="font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 3px;">Executive Capacity Mandate:</div>
+            <ul style="margin: 0; padding-left: 14px; line-height: 1.5; font-weight: 500;">
+              <li>Mandate IGOT-PYTHON-302 completion for all 94 DIID Officials prior to NSS 80th Round CAPI survey rollout.</li>
+              <li>Organize NSSTA 5-Day Residential Workshop on SDMX Data Structure Definitions for Metadata Officers.</li>
+              <li>Sync official iGOT Karmayogi completion webhooks with MoSPI DIID Capacity Dashboard in real-time.</li>
+            </ul>
+          </div>
+
+          <div class="sig-block">
+            <div class="sig-box">
+              <div style="font-family: Georgia, serif; font-style: italic; font-size: 16px; font-weight: 800; color: #1e3a8a; margin-bottom: -2px;">${dsigName}</div>
+              ${dsigSeal ? `<div style="font-size: 7.5px; font-family: monospace; font-weight: 800; color: #065f46; background: #ecfdf5; padding: 1px 4px; border-radius: 3px; display: inline-block; margin-bottom: 2px;">✓ NIC e-SIGN [${dsigHash}]</div>` : ''}
+              <div style="border-top: 1px solid #94a3b8; pt-1px;">
+                <div style="font-weight: 800; color: #0f172a;">${dsigName}</div>
+                <div style="color: #64748b; font-size: 8.5px;">${dsigTitle}</div>
+              </div>
+            </div>
+
+            <div class="seal-stamp">
+              <div>NSSTA GOVERNANCE SEATED</div>
+              <div style="font-size: 7.5px; font-family: monospace; color: #64748b;">CERT HASH: ${dsigHash}</div>
+            </div>
+
+            <div class="sig-box">
+              <div style="font-family: Georgia, serif; font-style: italic; font-size: 16px; font-weight: 800; color: #1e3a8a; margin-bottom: -2px;">A.K. Sharma</div>
+              ${dsigSeal ? `<div style="font-size: 7.5px; font-family: monospace; font-weight: 800; color: #065f46; background: #ecfdf5; padding: 1px 4px; border-radius: 3px; display: inline-block; margin-bottom: 2px;">✓ NIC e-SIGN [DSC-NIC-77291A]</div>` : ''}
+              <div style="border-top: 1px solid #94a3b8; pt-1px;">
+                <div style="font-weight: 800; color: #0f172a;">Additional Director General</div>
+                <div style="color: #64748b; font-size: 8.5px;">DIID, MoSPI, Govt. of India</div>
+              </div>
+            </div>
+          </div>
+
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+              }, 300);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    toast.success('Opened official MoSPI A4 PDF document generator!');
   };
 
   // ── Isolated Print Engine (Only when user explicitly clicks Print) ────────
