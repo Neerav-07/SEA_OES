@@ -1,24 +1,30 @@
 import { useState, useEffect, useRef } from 'react';
 
+// In-memory module cache to ensure we never re-ping once warmed in current runtime
+let globalWarmed = false;
+try {
+  globalWarmed = sessionStorage.getItem('kshamata_servers_warmed') === 'true';
+} catch {
+  // Ignore sessionStorage errors
+}
+
 /**
- * Hook to ping and wake up all 3 production servers on Auth pages
+ * Hook to ping and wake up all 3 production servers once on initial visit:
  * 1. Express Backend Core API
  * 2. FastAPI ML Intelligence Engine
- * 3. Database / Auxiliary Sync Gateway
+ * 3. Database & Sync Gateway
  * 
- * Ensures zero request timeouts on free-tier cloud platforms (e.g. Render, Koyeb, Glitch).
+ * If already warmed during this session, avoids redundant pings and returns isWakingUp: false immediately.
  */
 export function useServerWarmup() {
-  const [servers, setServers] = useState({
-    coreApi: { label: 'Core API Server', status: 'checking' },
-    mlEngine: { label: 'ML Engine', status: 'checking' },
-    dbGateway: { label: 'DB & Sync Gateway', status: 'checking' },
-  });
-  const [isWakingUp, setIsWakingUp] = useState(true);
+  const [isWakingUp, setIsWakingUp] = useState(!globalWarmed);
   const hasPinged = useRef(false);
 
   useEffect(() => {
-    if (hasPinged.current) return;
+    if (globalWarmed || hasPinged.current) {
+      if (isWakingUp) setIsWakingUp(false);
+      return;
+    }
     hasPinged.current = true;
 
     // Resolve target server endpoints
@@ -39,7 +45,7 @@ export function useServerWarmup() {
     ).replace(/\/$/, '');
     const mlHealthUrl = `${mlBase}/health`;
 
-    // Auxiliary / DB Gateway (or resources health probe on backend)
+    // Auxiliary / DB Gateway Probe
     const auxBase = (
       import.meta.env.VITE_AUX_SERVER_URL ||
       import.meta.env.VITE_IGOT_API_URL ||
@@ -47,74 +53,63 @@ export function useServerWarmup() {
     ).replace(/\/$/, '');
     const auxHealthUrl = auxBase.includes('/resources') ? auxBase : `${auxBase}/health`;
 
-    const pingServer = async (url, key) => {
+    const pingServer = async (url) => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       try {
-        const res = await fetch(url, {
+        await fetch(url, {
           method: 'GET',
           signal: controller.signal,
           headers: { 'Accept': 'application/json, text/plain, */*' },
         });
         clearTimeout(timeoutId);
-        if (res.ok || res.status < 500) {
-          setServers((prev) => ({
-            ...prev,
-            [key]: { ...prev[key], status: 'ready' },
-          }));
-          return true;
-        }
-      } catch (err) {
+      } catch {
         clearTimeout(timeoutId);
-        // Fallback no-cors ping to ensure server wake-up pulse is sent even if CORS fails
         try {
           await fetch(url, { method: 'GET', mode: 'no-cors' });
         } catch {
           // ignore
         }
       }
-
-      // Mark ready/fallback after ping attempt so user is not permanently blocked
-      setServers((prev) => ({
-        ...prev,
-        [key]: { ...prev[key], status: 'ready' },
-      }));
-      return true;
     };
 
-    // Execute parallel pings to wake up all 3 instances
-    const warmAll = async () => {
-      setIsWakingUp(true);
+    // Parallel wake-up pings
+    const executeWarmup = async () => {
       await Promise.allSettled([
-        pingServer(apiHealthUrl, 'coreApi'),
-        pingServer(mlHealthUrl, 'mlEngine'),
-        pingServer(auxHealthUrl, 'dbGateway'),
+        pingServer(apiHealthUrl),
+        pingServer(mlHealthUrl),
+        pingServer(auxHealthUrl),
       ]);
-      // Graceful micro-delay for smooth transition
-      setTimeout(() => {
-        setIsWakingUp(false);
-      }, 600);
+
+      globalWarmed = true;
+      try {
+        sessionStorage.setItem('kshamata_servers_warmed', 'true');
+      } catch {
+        // ignore
+      }
+      setIsWakingUp(false);
     };
 
-    warmAll();
+    executeWarmup();
 
-    // Safety timeout: Never block user more than 5s under any condition
+    // Safety timeout: Maximum 4s under any slow network condition
     const safetyTimer = setTimeout(() => {
+      globalWarmed = true;
+      try {
+        sessionStorage.setItem('kshamata_servers_warmed', 'true');
+      } catch {
+        // ignore
+      }
       setIsWakingUp(false);
-    }, 5000);
+    }, 4000);
 
     return () => clearTimeout(safetyTimer);
-  }, []);
-
-  const readyCount = Object.values(servers).filter((s) => s.status === 'ready').length;
-  const allReady = readyCount === 3;
+  }, [isWakingUp]);
 
   return {
-    servers,
     isWakingUp,
-    readyCount,
-    allReady,
   };
 }
+
 export default useServerWarmup;

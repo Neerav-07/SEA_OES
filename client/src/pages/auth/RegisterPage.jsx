@@ -7,7 +7,6 @@ import Button from '../../components/Button';
 import Container from '../../components/Container';
 import Input from '../../components/Input';
 import KshamataLogo from '../../components/KshamataLogo';
-import ServerStatusIndicator from '../../components/ServerStatusIndicator';
 import useServerWarmup from '../../hooks/useServerWarmup';
 import api from '../../services/api.js';
 import useAuthStore from '../../store/auth.store.js';
@@ -28,7 +27,7 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
   const setTransitioning = useAuthStore((s) => s.setTransitioning);
-  const { servers, isWakingUp, readyCount, allReady } = useServerWarmup();
+  const { isWakingUp } = useServerWarmup();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -182,21 +181,14 @@ export default function RegisterPage() {
                     disabled={isSubmitting || isWakingUp}
                   >
                     {isWakingUp
-                      ? `Starting production servers (${readyCount}/3)...`
+                      ? 'Starting production servers...'
                       : isSubmitting
                       ? 'Creating account...'
                       : 'Create Account'}
                   </Button>
                 </div>
 
-                <ServerStatusIndicator
-                  servers={servers}
-                  isWakingUp={isWakingUp}
-                  readyCount={readyCount}
-                  allReady={allReady}
-                />
-
-                <p className="mt-5 text-center text-[11px] text-(--app-color-text-muted)">
+                <p className="mt-6 text-center text-[11px] text-(--app-color-text-muted)">
                   Already have an account?{' '}
                   <Link to="/login" className="font-black text-[#1E3A8A] hover:underline">Sign in</Link>
                 </p>
