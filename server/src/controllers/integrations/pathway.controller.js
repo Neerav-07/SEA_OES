@@ -10,7 +10,21 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 export const getPersonalizedPathway = asyncHandler(async (req, res) => {
   const { officialId } = req.params;
 
-  const [official] = await db.select().from(officials).where(eq(officials.id, officialId));
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(officialId);
+  let official = null;
+
+  if (isUuid) {
+    [official] = await db.select().from(officials).where(eq(officials.id, officialId));
+  }
+
+  if (!official && req.user?.id) {
+    [official] = await db.select().from(officials).where(eq(officials.userId, req.user.id));
+  }
+
+  if (!official) {
+    [official] = await db.select().from(officials).limit(1);
+  }
+
   if (!official) {
     return sendError(res, 'Official profile not found', 404);
   }

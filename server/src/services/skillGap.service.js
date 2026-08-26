@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNull, lte, or } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
 import { getDb } from "../db/index.js";
 import {
   competencies,
@@ -101,7 +101,10 @@ export async function listSkillGaps({
     .innerJoin(competencies, eq(skillGaps.competencyId, competencies.id))
     .leftJoin(
       competencyEstimates,
-      eq(skillGaps.estimateId, competencyEstimates.id),
+      and(
+        eq(skillGaps.officialId, competencyEstimates.officialId),
+        eq(skillGaps.competencyId, competencyEstimates.competencyId),
+      ),
     )
     .where(whereClause)
     .orderBy(
@@ -227,58 +230,48 @@ export async function getSkillGapById({ userId, gapId }) {
     .innerJoin(competencies, eq(skillGaps.competencyId, competencies.id))
     .leftJoin(
       competencyEstimates,
-      eq(skillGaps.estimateId, competencyEstimates.id),
+      and(
+        eq(skillGaps.officialId, competencyEstimates.officialId),
+        eq(skillGaps.competencyId, competencyEstimates.competencyId),
+      ),
     )
     .where(and(eq(skillGaps.id, gapId), eq(officials.userId, userId)));
   if (!gap) throw notFound();
 
-  const hierarchyRows = await db
-    .select({
-      subCompetencyId: subCompetencies.id,
-      subCompetencyCode: subCompetencies.code,
-      subCompetencyName: subCompetencies.name,
-      learningObjectiveId: learningObjectives.id,
-      learningObjectiveCode: learningObjectives.code,
-      learningObjectiveTitle: learningObjectives.title,
-      subEstimatedLevel: subCompetencyEstimates.proficiencyLevel,
-      subEvidenceSufficiency: subCompetencyEstimates.evidenceSufficiency,
-    })
+  const subCompRows = await db
+    .select()
     .from(subCompetencies)
-    .leftJoin(
-      learningObjectives,
-      eq(learningObjectives.subCompetencyId, subCompetencies.id),
-    )
-    .leftJoin(
-      subCompetencyEstimates,
-      and(
-        eq(subCompetencyEstimates.subCompetencyId, subCompetencies.id),
-        eq(subCompetencyEstimates.officialId, gap.officialId),
-      ),
-    )
     .where(eq(subCompetencies.competencyId, gap.competencyId));
 
-  const subCompetencyMap = new Map();
-  for (const row of hierarchyRows) {
-    if (!subCompetencyMap.has(row.subCompetencyId)) {
-      subCompetencyMap.set(row.subCompetencyId, {
-        id: row.subCompetencyId,
-        code: row.subCompetencyCode,
-        name: row.subCompetencyName,
-        estimatedLevel: row.subEstimatedLevel,
-        evidenceSufficiency: row.subEvidenceSufficiency,
-        learningObjectives: [],
-      });
-    }
-    if (row.learningObjectiveId) {
-      subCompetencyMap.get(row.subCompetencyId).learningObjectives.push({
-        id: row.learningObjectiveId,
-        code: row.learningObjectiveCode,
-        title: row.learningObjectiveTitle,
-      });
-    }
-  }
+  const objectRows = await db
+    .select()
+    .from(learningObjectives)
+    .where(eq(learningObjectives.competencyId, gap.competencyId));
 
-  return { ...gap, subCompetencies: [...subCompetencyMap.values()] };
+  const subEstimates = await db
+    .select()
+    .from(subCompetencyEstimates)
+    .where(eq(subCompetencyEstimates.officialId, gap.officialId));
+
+  const subEstimateMap = new Map(subEstimates.map((s) => [s.subCompetencyId, s]));
+
+  const subCompetenciesList = subCompRows.map((sub) => {
+    const subEst = subEstimateMap.get(sub.id);
+    return {
+      id: sub.id,
+      code: sub.code,
+      name: sub.name,
+      estimatedLevel: subEst?.proficiencyLevel ?? null,
+      evidenceSufficiency: subEst?.evidenceSufficiency ?? null,
+      learningObjectives: objectRows.map((lo) => ({
+        id: lo.id,
+        code: lo.code,
+        title: lo.title,
+      })),
+    };
+  });
+
+  return { ...gap, subCompetencies: subCompetenciesList };
 }
 
 export async function recalculateSkillGaps({ userId, officialId, roleId }) {
@@ -298,16 +291,7 @@ export async function recalculateSkillGaps({ userId, officialId, roleId }) {
   let requirements = await db
     .select()
     .from(competencyRequirements)
-    .where(
-      and(
-        eq(competencyRequirements.roleId, resolvedRoleId),
-        lte(competencyRequirements.effectiveFrom, now),
-        or(
-          isNull(competencyRequirements.effectiveTo),
-          gt(competencyRequirements.effectiveTo, now),
-        ),
-      ),
-    );
+    .where(eq(competencyRequirements.roleId, resolvedRoleId));
   if (requirements.length === 0) {
     const roleRequirements = await db
       .select()
