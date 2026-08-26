@@ -1,132 +1,270 @@
-# Kshamata (क्षमता)
+<div align="center">
 
-> **AI-Enabled Competency Intelligence & Assessment Platform for Official Statistics**  
-> **Smart India Hackathon (SIH) 2026 — Problem Statement ID: 26101**  
-> **Ministry / Organization:** Ministry of Statistics and Programme Implementation (MoSPI)  
-> **Department:** Data Informatics & Innovation Division (DIID) & National Statistical Systems Training Academy (NSSTA)
+# **Kshamata (क्षमता) : AI-Enabled Competency Intelligence & ACBP Platform**
+
+### **Transforming official statistical capacity building into proactive, AI-driven competency governance.**
+
+Designed for the Ministry of Statistics and Programme Implementation (MoSPI), National Statistical Systems Training Academy (NSSTA), and official statistical cadres (ISS, SSS, DIID, NAD, FOD, ESD) to assess, verify, and elevate workforce competencies with auditable cryptographic evidence chains.
+
+**[🚀 Launch Live Platform](sih-26-ga5f.vercel.app/) • [🎥 Watch System Demo](https://drive.google.com/drive/u/2/folders/1sz2b44T0nP1fDjT2AElApgrbHCMbGcdt) • [📊 View Presentation Deck](https://canva.link/eipiptzekay9eak)**
+
+<p>
+  <img src="https://img.shields.io/badge/License-MIT-black?style=flat-square" alt="License" />
+  <img src="https://img.shields.io/badge/MoSPI-SIH_2026_PS_26101-1E3A8A?style=flat-square&logo=gov.uk&logoColor=white" alt="MoSPI" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React" />
+  <img src="https://img.shields.io/badge/Vite-6-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/Node.js-Express_5-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/Python-FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/PostgreSQL-Drizzle_ORM-336791?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/iGOT-Karmayogi_Sync-FF9933?style=flat-square&logo=digitalocean&logoColor=white" alt="iGOT Karmayogi" />
+</p>
+
+[Overview](#-overview) • [Why Kshamata](#-why-kshamata) • [Features](#-features) • [Technical Architecture](#-technical-architecture) • [Technology Stack](#-technology-stack) • [Quick Start](#-quick-start) • [Environment Variables](#-environment-variables) • [Scripts](#-scripts) • [Contributing](#-contributing) • [License](#-license)
+
+</div>
 
 ---
 
-## Executive Summary
+## 🧭 Overview
 
-**Kshamata** is an enterprise-grade AI-enabled competency intelligence and capacity-building layer engineered for India's Official Statistical System. The platform assesses officials' existing capabilities, identifies explainable skill gaps against required statistical role profiles, recommends personalized learning pathways integrated with the **iGOT Karmayogi** ecosystem & **NSSTA TPAC** recommended training programmes, and automatically generates grounded multiple-choice questions (MCQs) and quizzes from official learning materials.
+In India's Official Statistical System, the traditional training paradigm often assumes that *"course attendance equals workforce competence"*. When statistical officers undergo training without continuous diagnostic assessment, actual on-ground competency gaps in critical statistical methodologies (e.g., *NSS Household Survey CAPI*, *SNA 2008 National Accounts Deflation*, *SDMX Metadata Standards*, *Microdata Data Wrangling with Python/R*) remain undetected.
+
+**Smart India Hackathon (SIH 2026) — Problem Statement ID: 26101**  
+**Ministry / Organization:** Ministry of Statistics and Programme Implementation (MoSPI)  
+**Department:** Data Informatics & Innovation Division (DIID) & National Statistical Systems Training Academy (NSSTA)
+
+**Kshamata (क्षमता)** bridges this critical governance gap with an end-to-end AI-enabled competency intelligence, diagnostic assessment, and annual capacity-building orchestration engine:
+
+1. **FRAC Competency Alignment** — Maps every official's role to granular statistical, technical, digital governance, and managerial competencies (Levels 1 to 5).
+2. **Zero-Hallucination Grounded AI Assessments** — Generates diagnostic MCQs strictly retrieved from official MoSPI survey manuals, statistical guidelines, and NSSTA video transcripts.
+3. **Evidence-Driven Skill Gap Analysis** — Fuses diagnostic test results, past attempt trajectories, and training records with verifiable cryptographic hashes (`EV-HASH-8F9A2B1C4E7D`).
+4. **Adaptive iGOT & NSSTA Pathways** — Dynamically prescribes and re-ranks personalized iGOT Karmayogi modules and NSSTA TPAC courses based on real deficit gaps.
+5. **Official ACBP Report Generation** — Compiles executive Annual Capacity Building Plans (ACBP) into high-fidelity A4 vector PDF documents with customizable official digital signatures and NIC e-Sign DSC verification stamps.
 
 ---
 
-## Core Differentiators & Product Philosophy
+## ⚡ Why Kshamata
 
-- **`Course Completion ≠ Competency`**: Learning activities generate evidence; auditable evidence supports competency estimates with explicit confidence scores and provenance tracing.
-- **Evidence-Driven Skill Gap Analysis**: Multi-layered evidence fusion across Knowledge, Application (Scenario-based), Performance (Virtual Lab), and External Training records.
-- **Grounded Assessment Generation**: Automated generation of Bloom's Taxonomy-aligned MCQs and quizzes directly grounded in uploaded documents and statistical guidelines, rejecting ungrounded LLM hallucinations.
-- **Explainable AI Recommendations**: Transparent mapping between role gaps, learning objectives, and recommended iGOT Karmayogi modules.
+Kshamata transforms government workforce development from a reactive, certificate-collecting exercise into an auditable, proactive capacity engine:
+
+- **Continuous Evidence Fusion (Course Completion ≠ Competency)** — Evaluates capabilities through multi-layered diagnostic evidence, confidence intervals (e.g., `85% Score • 94% High Confidence`), and immutable provenance logs.
+- **RAG-Grounded Question Engine** — Eliminates LLM hallucinations by enforcing strict vector grounding against ingested MoSPI manuals and NSSTA course transcripts with exact citation footnotes.
+- **On-the-Spot Slide-Over Audit Experience** — Enables ministry administrators and trainers to inspect individual officer competency radars, evidence chains, and mandate course assignments without disruptive page switching.
+- **Official Digital Signature & NIC e-Sign Governance** — Integrates configurable DSC signatory metadata, live cursive signature generation, and NIC verification stamps on government ACBP documents.
+- **Predictive Workforce Capacity Forecasting** — Uses ML time-series forecasting to predict future cadre skill deficits before quarterly survey cycles begin.
 
 ---
 
-## Technical Architecture & Stack
+## 🧩 Features
+
+### 🏆 FRAC Role Competency Framework & Profiles
+- **Granular Taxonomy Hierarchy**: Maps statistical, technical, digital governance, and managerial competencies across official MoSPI roles (SSO, JSO, Director, AD).
+- **Interactive Competency Tree**: Explores nested sub-competencies with 5-level proficiency semantics (*Level 1: Basic Awareness* to *Level 5: Master Expert*).
+- **Target Role Benchmarking**: Allows learners and administrators to assign target FRAC role benchmarks and visualize immediate gap metrics.
+
+### 📝 Assessment Studio & Blueprint Builder
+- **Full-Width Stacked Blueprint Builder**: Clean, enterprise-grade blueprint design with full-width taxonomy targets and learning objective question allocations.
+- **Cognitive-Level Distribution**: Enforces Bloom's Taxonomy allocations (*Remember, Understand, Apply, Analyze, Evaluate*) totaling the desired question count.
+- **Grounded Question Generation**: Triggers RAG-based question generation with full source chunk provenance and review status tracking.
+
+### 🛡️ Admin Question Review Queue
+- **NSSTA Quality Governance Pipeline**: Dedicated review studio for training academy administrators to inspect AI-generated question items.
+- **Review Actions**: Instant **Approve**, **Reject**, **Revise** (with reviewer rationale), and **Validate** options against source evidence chunks.
+
+### 📚 Source Library & Vector Knowledge Base
+- **Multi-Format Ingestion**: Supports official PDF government manuals (*NSS 79th Round Survey Manual*, *NAS SNA 2008 Guidelines*), NSSTA video lecture transcripts, dataset schemas, and iGOT modules.
+- **Vector Evidence Chunking**: Deterministically splits ingested materials into 1,000-character vector embeddings for grounded question generation.
+
+### 📉 Evidence-Driven Skill Gap Analysis
+- **Deficit Prioritization**: Ranks skill deficits into Critical (`-2.6`), High Priority (`-1.6`), and Moderate (`-0.4`) gaps.
+- **Explainable Evidence Drawer**: Displays cryptographic evidence hashes, evaluator models, confidence scores, and time-decay factors.
+
+### 🎓 Personalized iGOT & NSSTA Pathways
+- **Adaptive Course Prescription**: Matches identified competency deficits directly to official iGOT Karmayogi modules and NSSTA TPAC courses.
+- **Dynamic Re-Ranking**: Automatically updates course recommendations based on real-time diagnostic test scores and past attempt trajectories.
+
+### 📜 Assessment History & Attempt Ledger
+- **Permanent Evidence Log**: Dedicated `/dashboard/assessment-history` portal tracking every diagnostic attempt, score accuracy, time spent, and evidence hash.
+- **Proficiency Shift Tracking**: Visualizes historical level progression (e.g., `L3.2 ➔ L3.6`) and personalized recommendation impacts.
+
+### 📄 Annual Capacity Building Plan (ACBP) Report Generator
+- **Direct A4 Vector PDF Downloader**: Generates official MoSPI ACBP documents with government emblems, executive summaries, and division gap breakdowns.
+- **Digital Signature DSC Management**: Features custom signatory name, designation, and NIC e-Sign DSC verification stamps configured in Settings.
+
+### 🤖 Kshamata AI Copilot
+- **Always-Available Virtual Assistant**: Real-time natural language assistant that answers competency queries, explains FRAC standards, and guides officials through learning paths.
+
+### 👥 Dual-Role Governance (RBAC)
+- **Learner Mode (`EMPLOYEE`)**: Overview, Competency Profiles, Skill Gap Analysis, iGOT Pathways, Assessment History, Settings.
+- **Admin Mode (`ADMIN`)**: Executive Telemetry, Workforce Analytics, Assessment Studio, Review Queue, Predictive Analytics, ACBP Export, Source Library, Assessment History, Settings.
+
+---
+
+## 🏗️ Technical Architecture
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                      Kshamata Web Platform (React 19)                   │
+│              Kshamata Web Platform (React 19 + Vite + Tailwind)         │
+│     Learner Dashboard  •  Admin Governance  •  A4 ACBP PDF Engine       │
 └────────────────────────────────────┬────────────────────────────────────┘
-                                     │ REST / API
+                                     │ REST / JSON (JWT Session Auth)
 ┌────────────────────────────────────▼────────────────────────────────────┐
 │                    Express 5 / Node.js ESM Core API                     │
+│  Competencies  •  Evidence Fusion  •  Blueprint Studio  •  Review Queue │
 └─────────┬──────────────────────────┬──────────────────────────┬─────────┘
           │                          │                          │
 ┌─────────▼────────┐      ┌──────────▼─────────┐      ┌─────────▼─────────┐
-│ PostgreSQL 16 DB │      │ iGOT Karmayogi API │      │ LLM Assessment Engine│
-│   (Drizzle ORM)  │      │  (Course Sync)     │      │ (Grounded Generator)│
+│ PostgreSQL 16 DB │      │  FastAPI ML Engine │      │ iGOT Karmayogi API│
+│   (Drizzle ORM)  │      │  (RAG & Predictive)│      │   (TPAC Sync)     │
 └──────────────────┘      └────────────────────┘      └───────────────────┘
 ```
 
-| Layer | Technology |
-| :--- | :--- |
-| **Frontend** | React 19, Vite, TailwindCSS v4, Zustand, Lucide Icons |
-| **Backend API** | Node.js (ESM), Express 5, JWT Authentication (Access + Refresh Rotation) |
-| **Database & ORM** | PostgreSQL 16 (Local Docker / Neon Serverless), Drizzle ORM |
-| **Containerization** | Docker & Multi-stage Docker Compose Orchestration |
-| **Security & Compliance** | Helmet, CORS, Cookie Parser, Role-Based Access Control (RBAC) |
+---
+
+## 🛠️ Technology Stack
+
+- **Frontend**: React 19, Vite 6, TailwindCSS v4, Zustand, Lucide Icons, html2pdf.js / Native Print Window Engine
+- **Backend Core**: Node.js 20+ (ESM), Express 5, PostgreSQL 16, Drizzle ORM, JSON Web Tokens (Access + Refresh Cookie Rotation), Helmet, CORS
+- **ML & Recommendation Service**: Python 3.11, FastAPI, Uvicorn, Sentence-Transformers, PyTorch, Scikit-learn
+- **AI Grounding & LLM**: Gemini 1.5 Flash / Groq LLM RAG pipelines with source chunk provenance
+- **Containerization & Deployment**: Docker, Docker Compose, Vercel (Frontend), Render / Cloud Run (Backend & ML)
 
 ---
 
-## System Modules Overview
+## 🚀 Quick Start
 
-1. **Official & Role Competency Intelligence**: Profile management, designation mapping, and department-specific competency requirements across:
-   - *Statistical Competencies* (Survey Design, Sampling, National Accounts, Price Statistics, Labour Statistics, Data Quality Frameworks).
-   - *Technical Competencies* (Python, R, SQL, Stata, SPSS, GIS, Data Visualization, AI/ML, Cloud Computing).
-   - *Digital Governance* (Cybersecurity, Data Privacy, Government Cloud, Digital Signatures).
-   - *Behavioural & Managerial Competencies* (Leadership, Decision Making, Ethics, Change Management).
-2. **Diagnostic Evidence Engine**: Evidence collection, confidence calculation, recency decay, and provenance breakdown.
-3. **iGOT Karmayogi & NSSTA Integration Engine**: Personalized learning pathway prescription mapped to identified deficits.
-4. **Intelligent Assessment & Quiz Generator**: Grounded MCQ generation from uploaded learning materials with instant evaluation and feedback.
-5. **Workforce & Capacity Analytics Dashboard**: Learner progression tracking and organization-wide workforce capacity insights for administrators.
-
----
-
-## Quick Start & Development Setup
-
-### Prerequisites
-- Node.js (v20+)
-- Docker & Docker Compose
-
----
-
-### Method A: Single Command Full-Stack Docker
-
-Start PostgreSQL, Express Server, and React Client simultaneously:
-
+### 1. Clone the Repository
 ```bash
-# Build and launch all services in detached mode
-docker compose up -d --build
+git clone https://github.com/Jagdish-Padhi/SIH26.git
+cd SIH26
 ```
 
-Access services:
-- **Web App**: `http://localhost:80` (or `http://localhost:5173` if running local dev)
+### 2. Configure Environment Files
+Set up the `.env` configuration files across all directories:
+- `server/.env` (from `server/.env.example`)
+- `client/.env` (from `client/.env.example`)
+- `ml/.env` (from `ml/.env.example`)
+
+### 3. Option A: Single-Command Docker Orchestration
+```bash
+docker compose up -d --build
+```
+Access the application:
+- **Client App**: `http://localhost:5173` (or `http://localhost:80`)
 - **API Server**: `http://localhost:5000/api`
+- **ML Service**: `http://localhost:8000/docs`
 - **PostgreSQL**: `localhost:5432` (`kshamata_db`)
 
 ---
 
-### Method B: Manual Local Setup
+### 4. Option B: Local Development Setup
 
-#### 1. Start Database
-```bash
-docker compose up -d postgres
-```
-
-#### 2. Backend Server
+#### Start PostgreSQL & Run Migrations
 ```bash
 cd server
-cp .env.example .env
 npm install
 npm run db:push     # Apply Drizzle schemas to PostgreSQL
-npm run dev
+npm run dev         # Starts Express API at http://localhost:5000
 ```
 
-#### 3. Frontend Client
+#### Start FastAPI ML Service
+```bash
+cd ml
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python -m uvicorn main:app --reload --port 8000
+```
+
+#### Start React Client
 ```bash
 cd client
-cp .env.example .env
-npm install --legacy-peer-deps
-npm run dev
+npm install
+npm run dev         # Starts Vite Dev Server at http://localhost:5173
 ```
 
 ---
 
-## API Specification Summary
+## ⚙️ Environment Variables
 
-| Method | Endpoint | Auth Required | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | No | Register official account |
-| `POST` | `/api/auth/login` | No | Authenticate official & set session cookies |
-| `POST` | `/api/auth/refresh` | Cookie | Refresh JWT access token |
-| `POST` | `/api/auth/logout` | Cookie | Logout official & clear cookies |
-| `GET` | `/api/auth/me` | Bearer | Get current official profile |
-| `GET` | `/api/health` | No | Server health check endpoint |
+### Backend Server — `server/.env`
+
+| Variable | Description | Default |
+|---|---|---|
+| `PORT` | Express API listening port | `5000` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:postgres@localhost:5432/kshamata_db` |
+| `JWT_SECRET` | Secret key for signing access tokens | `your_access_token_secret` |
+| `JWT_REFRESH_SECRET` | Secret key for signing refresh tokens | `your_refresh_token_secret` |
+| `CLIENT_URL` | Client application URL for CORS | `http://localhost:5173` |
+| `ML_SERVICE_URL` | Connection URL for FastAPI ML service | `http://localhost:8000` |
+| `GEMINI_API_KEY` | Google Gemini API key for AI question generation | `your_gemini_api_key` |
+
+### ML Service — `ml/.env`
+
+| Variable | Description | Default |
+|---|---|---|
+| `PORT` | FastAPI server port | `8000` |
+| `GEMINI_API_KEY` | Gemini API key for question generation & grounding | `your_gemini_api_key` |
+| `EMBEDDING_MODEL` | HuggingFace embedding model for vector search | `all-MiniLM-L6-v2` |
+
+### Client Portal — `client/.env`
+
+| Variable | Description | Default |
+|---|---|---|
+| `VITE_API_BASE_URL` | Base API URL of Express backend | `http://localhost:5000/api` |
+| `VITE_ML_API_URL` | Base URL of FastAPI ML service | `http://localhost:8000` |
 
 ---
 
-## License & Organization
+## 📜 Scripts
 
-Built for **Smart India Hackathon (SIH) 2026** — **MoSPI DIID & NSSTA**.  
-Developed by **Team Esc(Reality);**
+### Backend Server (`server`)
+- `npm run dev`: Start Express API in development mode with nodemon.
+- `npm run start`: Run production server.
+- `npm run db:push`: Push Drizzle schema changes directly to PostgreSQL.
+- `npm run db:studio`: Launch Drizzle Studio web GUI for database inspection.
+
+### React Client (`client`)
+- `npm run dev`: Start Vite development server with hot-reload.
+- `npm run build`: Compile and build optimized static production bundle.
+- `npm run preview`: Preview the compiled production build locally.
+
+### ML Service (`ml`)
+- `python -m uvicorn main:app --reload --port 8000`: Start FastAPI server in watch mode.
+- `pytest`: Execute unit and integration tests for ML pipelines.
+
+---
+
+## 🔐 Seeded Demonstration Credentials
+
+| Role | Email | Password | Intended Workflow |
+|---|---|---|---|
+| **Official Learner** | `rajesh.kumar@mospi.gov.in` | `Test@123!` | Personal Competency Profile, Diagnostics, Skill Gaps, iGOT Pathways |
+| **Governance Admin** | `admin@nssta.gov.in` | `Admin@123!` | Workforce Analytics, Blueprint Studio, Review Queue, ACBP Export |
+
+---
+
+## 🤝 Contributing
+
+Contributions to **Kshamata** are welcome! Please review our standard pull request workflow:
+1. Fork the repository.
+2. Create your feature branch (`git checkout -b feature/amazing-feature`).
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`).
+4. Push to the branch (`git push origin feature/amazing-feature`).
+5. Open a Pull Request against `dev`.
+
+---
+
+## 📄 License
+
+Distributed under the **MIT License**. See [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+
+**Built with pride for Smart India Hackathon (SIH) 2026**  
+*Ministry of Statistics and Programme Implementation (MoSPI) • NSSTA*  
+**Developed by Team Esc(Reality);**
+
+</div>
