@@ -100,8 +100,28 @@ export default function CompetencyTree({ competency, onStartDiagnostic }) {
     ? competency.subCompetencies
     : fallbackSubs;
 
-  const estimatedLevel = competency.estimatedLevel || 3.2;
-  const requiredLevel = competency.requiredLevel || 4.0;
+  const COMPETENCY_ESTIMATED_LEVELS = {
+    PYTHON_ANALYTICS: 1.4,
+    METADATA_STANDARDS: 1.6,
+    SQL_DATABASE: 2.2,
+    NATIONAL_ACCOUNTS: 2.4,
+    GIS_VISUALIZATION: 2.8,
+    SURVEY_DESIGN: 3.6,
+    SAMPLING_METHODS: 3.8,
+    ETHICS_INTEGRITY: 4.2,
+    COMMUNICATION: 4.0,
+    DATA_SECURITY: 3.5,
+  };
+
+  const compCodeKey = (competency.code || competency.name || '').toUpperCase().replace(/[^A-Z_]/g, '_');
+  const matchedKey = Object.keys(COMPETENCY_ESTIMATED_LEVELS).find((k) => compCodeKey.includes(k) || k.includes(compCodeKey));
+
+  const estimatedLevel = Number(
+    competency.estimatedLevel ||
+    competency.currentLevel ||
+    (matchedKey ? COMPETENCY_ESTIMATED_LEVELS[matchedKey] : 2.8)
+  );
+  const requiredLevel = Number(competency.requiredLevel || 4.0);
   const gapScore = Math.max(0, Number((requiredLevel - estimatedLevel).toFixed(1)));
 
   return (

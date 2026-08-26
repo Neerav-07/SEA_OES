@@ -230,17 +230,17 @@ export default function SkillGapsPage() {
           {/* Role Benchmark Projection Simulator */}
           <div className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
             <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5 pl-1">
-              <Sparkles size={14} className="text-[#1E3A8A]" /> Simulate Target Role:
+              <Sparkles size={14} className="text-[#1E3A8A]" /> Career Progression Benchmark Projection:
             </span>
             <select
               value={selectedRoleKey}
               onChange={(e) => handleRoleChange(e.target.value)}
               className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-900 focus:border-[#1E3A8A] focus:outline-none shadow-2xs cursor-pointer"
             >
-              <option value="SO">Statistical Officer (SO) • Level 3.0 Benchmark</option>
-              <option value="SSO">Senior Statistical Officer (SSO) • Level 4.0 Benchmark</option>
-              <option value="AD">Assistant Director (Data Analytics) • Level 4.5 Benchmark</option>
-              <option value="DIRECTOR">Director (National Accounts) • Level 5.0 Benchmark</option>
+              <option value="SSO">Assigned Role: Senior Statistical Officer (SSO) • Level 4.0 Benchmark</option>
+              <option value="SO">Junior Role: Statistical Officer (SO) • Level 3.0 Benchmark</option>
+              <option value="AD">Promotion Target: Assistant Director (Data Analytics) • Level 4.5 Benchmark</option>
+              <option value="DIRECTOR">Cadre Target: Director (National Accounts) • Level 5.0 Benchmark</option>
             </select>
           </div>
         </div>

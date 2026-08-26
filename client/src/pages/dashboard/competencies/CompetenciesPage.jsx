@@ -32,9 +32,9 @@ const FALLBACK_COMPETENCIES = [
     name: 'Statistical Analysis & Inference',
     category: 'Statistical',
     description: 'Descriptive, inferential statistics, probability distributions, hypothesis testing, and regression analysis for official surveys.',
-    estimatedLevel: 3.2,
+    estimatedLevel: 3.6,
     requiredLevel: 4.0,
-    gap: 0.8,
+    gap: 0.4,
     confidencePct: 82,
     priority: 'HIGH',
     subCompetencies: [
@@ -82,14 +82,14 @@ const FALLBACK_COMPETENCIES = [
   {
     id: 'c-03',
     code: 'PYTHON_R_STATS',
-    name: 'Python & R for Data Analytics',
+    name: 'Python for Data Analytics (NSS Microdata)',
     category: 'Technical',
     description: 'Data wrangling, automated statistical modeling, pandas, numpy, statsmodels, and ggplot visualization.',
-    estimatedLevel: 3.5,
-    requiredLevel: 3.0,
-    gap: 0.0,
-    confidencePct: 90,
-    priority: 'MEDIUM',
+    estimatedLevel: 1.4,
+    requiredLevel: 4.0,
+    gap: 2.6,
+    confidencePct: 92,
+    priority: 'CRITICAL',
     subCompetencies: [
       {
         id: 'sub-04',
@@ -104,15 +104,24 @@ const FALLBACK_COMPETENCIES = [
   {
     id: 'c-04',
     code: 'DATA_QUALITY_GOV',
-    name: 'Metadata Standards & Data Governance',
+    name: 'Metadata Standards & SDMX Governance',
     category: 'Digital Governance',
     description: 'Data quality frameworks, NDSAP alignment, anonymization, privacy preservation, and GIGW compliance.',
-    estimatedLevel: 4.1,
-    requiredLevel: 3.0,
-    gap: 0.0,
-    confidencePct: 94,
-    priority: 'MEDIUM',
-    subCompetencies: [],
+    estimatedLevel: 1.6,
+    requiredLevel: 4.0,
+    gap: 2.4,
+    confidencePct: 88,
+    priority: 'CRITICAL',
+    subCompetencies: [
+      {
+        id: 'sub-05',
+        code: 'SUB_SDMX_DSD',
+        name: 'SDMX Structure Definition Registry',
+        learningObjectives: [
+          { id: 'lo-06', title: 'Define SDMX Data Structure Definitions for National Data Warehouse', taxonomyLevel: 4 },
+        ],
+      },
+    ],
   },
 ];
 
