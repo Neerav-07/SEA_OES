@@ -58,6 +58,32 @@ const DOMAIN_SUB_COMPETENCIES = {
   ],
 };
 
+function formatOfficialFracCode(code, category) {
+  if (!code) return 'FRAC-STAT-001';
+  if (code.startsWith('FRAC-')) return code;
+
+  const catMap = {
+    STATISTICAL: 'STAT',
+    TECHNICAL: 'TECH',
+    DIGITAL_GOVERNANCE: 'GOV',
+    DIGITAL: 'GOV',
+    BEHAVIOURAL: 'MGT',
+    MANAGERIAL: 'MGT',
+  };
+
+  const catKey = (category || 'STATISTICAL').toUpperCase().replace(' ', '_');
+  const prefix = catMap[catKey] || 'STAT';
+  const cleanCode = code.toUpperCase().replace(/^FRAC_?/, '').replace(/_/g, '-');
+
+  return `FRAC-${prefix}-${cleanCode}`;
+}
+
+function formatSubFracCode(code) {
+  if (!code) return 'FRAC-SUB-01';
+  const clean = code.toUpperCase().replace(/^SUB_?/, '').replace(/_/g, '-');
+  return `FRAC-SUB-${clean}`;
+}
+
 export default function CompetencyTree({ competency, onStartDiagnostic }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedSubs, setExpandedSubs] = useState({});
@@ -98,7 +124,9 @@ export default function CompetencyTree({ competency, onStartDiagnostic }) {
               <span className="rounded-md bg-blue-50 px-2.5 py-0.5 text-[10px] font-extrabold text-blue-900 uppercase tracking-wider border border-blue-200/60">
                 {competency.category || 'Statistical'}
               </span>
-              <span className="text-xs font-mono font-bold text-slate-500">ID: {competency.code}</span>
+              <span className="text-[11px] font-mono font-semibold text-slate-600 bg-slate-100/80 px-2 py-0.5 rounded border border-slate-200">
+                FRAC Code: {formatOfficialFracCode(competency.code, competency.category)}
+              </span>
               {gapScore > 0 ? (
                 <span className="rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-800">
                   Deficit Gap: -{gapScore} (Req: L{requiredLevel})
@@ -130,9 +158,9 @@ export default function CompetencyTree({ competency, onStartDiagnostic }) {
                 e.stopPropagation();
                 if (onStartDiagnostic) onStartDiagnostic(competency);
               }}
-              className="px-3 py-1.5 rounded-xl bg-blue-900 hover:bg-slate-900 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+              className="px-3 py-1.5 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
             >
-              <PlayCircle size={13} className="text-blue-300" /> Assess Proficiency
+              <PlayCircle size={13} className="text-blue-200" /> Assess Proficiency
             </button>
             <button
               onClick={(e) => {
@@ -171,7 +199,9 @@ export default function CompetencyTree({ competency, onStartDiagnostic }) {
                     <div className="flex items-center gap-2">
                       {subOpen ? <ChevronDown size={14} className="text-blue-800" /> : <ChevronRight size={14} className="text-slate-500" />}
                       <span className="text-xs font-extrabold text-slate-900">{sub.name}</span>
-                      <span className="text-[10px] text-slate-500 font-mono font-semibold">({sub.code})</span>
+                      <span className="text-[10px] font-mono font-medium text-slate-500 bg-slate-200/60 px-1.5 py-0.5 rounded">
+                        {formatSubFracCode(sub.code)}
+                      </span>
                     </div>
                     <span className="text-[10px] font-extrabold text-blue-900 bg-blue-100/80 px-2 py-0.5 rounded-md border border-blue-200">
                       {los.length} Learning Objectives
