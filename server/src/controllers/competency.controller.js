@@ -1,7 +1,12 @@
-import { db } from '../db/index.js';
-import { competencies, subCompetencies, learningObjectives } from '../db/schema/index.js';
-import { sendSuccess, sendError } from '../utils/response.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
+import { db } from "../db/index.js";
+import { eq } from "drizzle-orm";
+import {
+  competencies,
+  subCompetencies,
+  learningObjectives,
+} from "../db/schema/index.js";
+import { sendSuccess, sendError } from "../utils/response.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 /**
  * Get all competencies with sub-competencies and learning objectives
@@ -26,7 +31,11 @@ export const getCompetencies = asyncHandler(async (req, res) => {
     };
   });
 
-  return sendSuccess(res, hierarchy, 'Competency hierarchy retrieved successfully');
+  return sendSuccess(
+    res,
+    hierarchy,
+    "Competency hierarchy retrieved successfully",
+  );
 });
 
 /**
@@ -34,20 +43,31 @@ export const getCompetencies = asyncHandler(async (req, res) => {
  */
 export const getCompetencyById = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const [comp] = await db.select().from(competencies).where(competencies.id.equals(id));
-  
+  const [comp] = await db
+    .select()
+    .from(competencies)
+    .where(eq(competencies.id, id));
+
   if (!comp) {
-    return sendError(res, 'Competency not found', 404);
+    return sendError(res, "Competency not found", 404);
   }
 
-  const subs = await db.select().from(subCompetencies).where(subCompetencies.competencyId.equals(comp.id));
+  const subs = await db
+    .select()
+    .from(subCompetencies)
+    .where(eq(subCompetencies.competencyId, comp.id));
   const subIds = subs.map((s) => s.id);
-  const loList = subIds.length > 0 ? await db.select().from(learningObjectives) : [];
+  const loList =
+    subIds.length > 0 ? await db.select().from(learningObjectives) : [];
 
   const subHierarchy = subs.map((s) => ({
     ...s,
     learningObjectives: loList.filter((lo) => lo.subCompetencyId === s.id),
   }));
 
-  return sendSuccess(res, { ...comp, subCompetencies: subHierarchy }, 'Competency retrieved');
+  return sendSuccess(
+    res,
+    { ...comp, subCompetencies: subHierarchy },
+    "Competency retrieved",
+  );
 });

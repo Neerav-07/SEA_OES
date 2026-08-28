@@ -5,12 +5,13 @@ Provides AI endpoints for competency mapping, evidence gap calculation, learning
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from pipelines.skill_gap_calculator import calculate_competency_estimate
 from pipelines.competency_mapping import map_text_to_competencies
 from pipelines.recommendation_engine import generate_recommendations
 from pipelines.assessment_generator import generate_grounded_mcqs
+from pipelines.llm_client import LLMGenerationError
 
 app = FastAPI(
     title="Kshamata ML Intelligence API",
@@ -28,8 +29,10 @@ class MappingInput(BaseModel):
 
 class AssessmentInput(BaseModel):
     source_text: str
-    num_questions: Optional[int] = 5
-    bloom_level: Optional[str] = "APPLY"
+    competency_name: Optional[str] = "General Competency"
+    competency_category: Optional[str] = "Statistical"
+    bloom_distribution: Optional[Dict[str, int]] = None
+    existing_intent_hashes: Optional[List[str]] = None
 
 @app.get("/")
 def root():
@@ -50,4 +53,16 @@ def api_map_competencies(input_data: MappingInput):
 
 @app.post("/api/ml/generate-assessment")
 def api_generate_assessment(input_data: AssessmentInput):
-    return generate_grounded_mcqs(input_data.source_text, input_data.num_questions, input_data.bloom_level)
+    try:
+        questions = generate_grounded_mcqs(
+            source_text=input_data.source_text,
+            competency_name=input_data.competency_name,
+            competency_category=input_data.competency_category,
+            bloom_distribution=input_data.bloom_distribution,
+            existing_intent_hashes=input_data.existing_intent_hashes,
+        )
+        return {"questions": questions}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except LLMGenerationError as exc:
+        raise HTTPException(status_code=502, detail=f"Question generation failed: {exc}")

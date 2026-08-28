@@ -31,12 +31,29 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/kshamata_db
       JWT_SECRET: super_secret_kshamata_jwt_token_key_2026
       CLIENT_URL: http://localhost:80
+      ML_SERVICE_URL: http://ml:8000
     ports:
       - '5000:5000'
     depends_on:
       postgres:
         condition: service_healthy
+      ml:
+        condition: service_started
 
+  ml:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile
+    container_name: kshamata_ml
+    restart: unless-stopped
+    ports:
+      - '8000:8000'
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    depends_on:
+      - postgres
   client:
     build:
       context: ./client

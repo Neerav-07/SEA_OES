@@ -5,3 +5,8 @@ dist/
 *.log
 .drizzle/
 /docs/Updated_Technical_Solution_Plan_Compact.docx
+# Python
+ml/venv/
+ml/__pycache__/
+ml/pipelines/__pycache__/
+*.pyc
