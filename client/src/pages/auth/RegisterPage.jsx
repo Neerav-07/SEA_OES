@@ -80,9 +80,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <Container className="flex flex-col min-h-screen items-center justify-center py-6">
+    <Container className="flex flex-col min-h-screen items-center justify-center py-6 px-4">
       {/* ── Top Back Button ── */}
-      <div className="w-full max-w-6xl mb-4">
+      <div className="w-full max-w-7xl mb-4">
         <Link
           to="/"
           className="inline-flex items-center gap-2 rounded-xl bg-white/80 border border-slate-200 px-4 py-2 text-xs font-bold text-slate-800 shadow-xs hover:bg-white hover:border-slate-300 transition-all"
@@ -92,12 +92,12 @@ export default function RegisterPage() {
       </div>
 
       <div
-        className="grid w-full max-w-6xl overflow-hidden rounded-[2.5rem] border border-(--app-color-border)/40 backdrop-blur-md lg:grid-cols-[1.1fr_0.9fr]"
+        className="grid w-full max-w-7xl overflow-hidden rounded-[2.5rem] border border-(--app-color-border)/40 backdrop-blur-md lg:grid-cols-[0.95fr_1.05fr]"
         style={{ backgroundColor: 'var(--app-color-surface-glass)', boxShadow: 'var(--app-shadow-elevated)' }}
       >
           {/* ── Left branding panel (hidden on mobile, visible on lg screens) ── */}
           <section
-            className="hidden lg:flex relative flex-col items-center justify-center overflow-hidden p-8 text-center text-white lg:p-12"
+            className="hidden lg:flex relative flex-col items-center justify-center overflow-hidden p-8 text-center text-white lg:p-14"
             style={{ background: 'var(--app-gradient-auth-login)' }}
           >
             <div className="noise-overlay pointer-events-none opacity-20" />
@@ -107,17 +107,17 @@ export default function RegisterPage() {
                 <div className="h-[3px] w-16 rounded-full bg-[#2563EB]" />
               </div>
               <div className="mt-6">
-                <p className="mx-auto max-w-sm text-sm font-semibold leading-relaxed text-white">
+                <p className="mx-auto max-w-md text-sm font-semibold leading-relaxed text-white">
                   Register to establish your statistical competency baseline and personalized learning path (MoSPI DIID & NSSTA).
                 </p>
               </div>
-              <div className="mt-8 space-y-4 px-4 text-left">
+              <div className="mt-8 space-y-4 px-4 text-left max-w-md">
                 {ONBOARDING_STEPS.map((step, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-white text-xs font-black">
                       {i + 1}
                     </div>
-                    <p className="text-xs font-semibold text-white">{step}</p>
+                    <p className="text-xs font-semibold text-white/95 leading-relaxed">{step}</p>
                   </div>
                 ))}
               </div>
@@ -130,38 +130,41 @@ export default function RegisterPage() {
 
           {/* ── Right form panel (full width on mobile) ── */}
           <section
-            className="auth-form-slide flex flex-col justify-center p-6 sm:p-8 lg:p-10 w-full"
+            className="auth-form-slide flex flex-col justify-center p-6 sm:p-10 lg:p-12 w-full"
             style={{ backgroundColor: 'var(--app-color-surface-glass)' }}
           >
-            <div className="mx-auto w-full max-w-sm">
+            <div className="mx-auto w-full max-w-xl">
               <div className="lg:hidden flex justify-center mb-6">
                 <KshamataLogo size="md" className="bg-white p-3 rounded-xl shadow-md border border-slate-200" />
               </div>
               <div className="mb-6 text-center lg:text-left">
-                <h2 className="text-2xl font-bold tracking-tight text-(--app-color-text)">Register Official Account</h2>
-                <p className="mt-0.5 text-xs text-(--app-color-text-muted)">Enter your details for competency tracking</p>
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-(--app-color-text)">Register Official Account</h2>
+                <p className="mt-1 text-xs text-(--app-color-text-muted)">Configure your service details for automated competency tracking</p>
               </div>
-              <form className="space-y-3" onSubmit={handleSubmit} noValidate>
-                <Input
-                  label="Official Full Name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  error={errors.name}
-                  placeholder="e.g. Dr. Rajesh Kumar"
-                  className="h-10 rounded-xl text-sm"
-                />
-                <Input
-                  label="Official Work Email"
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  error={errors.email}
-                  placeholder="official@gov.in"
-                  className="h-10 rounded-xl text-sm"
-                />
-                <div className="grid grid-cols-2 gap-3">
+              <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    label="Official Full Name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    error={errors.name}
+                    placeholder="e.g. Dr. Rajesh Kumar"
+                    className="h-10.5 rounded-xl text-sm"
+                  />
+                  <Input
+                    label="Official Work Email"
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    error={errors.email}
+                    placeholder="official@mospi.gov.in"
+                    className="h-10.5 rounded-xl text-sm"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label="Password"
                     type="password"
@@ -170,29 +173,29 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     error={errors.password}
                     placeholder="••••••••"
-                    className="h-10 rounded-xl text-sm"
+                    className="h-10.5 rounded-xl text-sm"
                   />
                   <Input
-                    label="Confirm"
+                    label="Confirm Password"
                     type="password"
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     error={errors.confirmPassword}
                     placeholder="••••••••"
-                    className="h-10 rounded-xl text-sm"
+                    className="h-10.5 rounded-xl text-sm"
                   />
                 </div>
 
                 {/* Cadre & Designation Details */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Statistical Cadre</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Statistical Cadre</label>
                     <select
                       name="cadre"
                       value={formData.cadre}
                       onChange={handleChange}
-                      className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 focus:border-[#1E3A8A] focus:bg-white focus:outline-none"
+                      className="w-full h-10.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2 text-xs font-semibold text-slate-900 focus:border-[#1E3A8A] focus:bg-white focus:outline-none transition-all shadow-2xs"
                     >
                       <option value="ISS (Indian Statistical Service)">ISS (Indian Statistical Service)</option>
                       <option value="SSS (Subordinate Statistical Service)">SSS (Subordinate Statistical Service)</option>
@@ -203,12 +206,12 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Official Designation</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Official Designation</label>
                     <select
                       name="designation"
                       value={formData.designation}
                       onChange={handleChange}
-                      className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 focus:border-[#1E3A8A] focus:bg-white focus:outline-none"
+                      className="w-full h-10.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2 text-xs font-semibold text-slate-900 focus:border-[#1E3A8A] focus:bg-white focus:outline-none transition-all shadow-2xs"
                     >
                       <option value="Senior Statistical Officer (SSO)">Senior Statistical Officer (SSO)</option>
                       <option value="Junior Statistical Officer (JSO)">Junior Statistical Officer (JSO)</option>
@@ -220,14 +223,14 @@ export default function RegisterPage() {
                 </div>
 
                 {/* Division / Department & Experience */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Division / Department</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Division / Department</label>
                     <select
                       name="department"
                       value={formData.department}
                       onChange={handleChange}
-                      className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 focus:border-[#1E3A8A] focus:bg-white focus:outline-none"
+                      className="w-full h-10.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2 text-xs font-semibold text-slate-900 focus:border-[#1E3A8A] focus:bg-white focus:outline-none transition-all shadow-2xs"
                     >
                       <option value="Data Informatics & Innovation Division (DIID)">DIID (Data Informatics & Innovation)</option>
                       <option value="National Accounts Division (NAD)">NAD (National Accounts Division)</option>
@@ -246,14 +249,15 @@ export default function RegisterPage() {
                     name="experienceYears"
                     value={formData.experienceYears}
                     onChange={handleChange}
-                    className="h-10 rounded-xl text-sm"
+                    className="h-10.5 rounded-xl text-sm"
                   />
                 </div>
-                <div className="pt-1">
+
+                <div className="pt-2">
                   <Button
                     type="submit"
                     variant="primary"
-                    className="h-10 w-full rounded-xl text-xs font-bold shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99] bg-[#1E3A8A] text-white hover:bg-[#172554]"
+                    className="h-11 w-full rounded-xl text-sm font-bold shadow-md transition-all hover:scale-[1.005] active:scale-[0.99] bg-[#1E3A8A] text-white hover:bg-[#172554] cursor-pointer"
                     loading={isSubmitting || isWakingUp}
                     disabled={isSubmitting || isWakingUp}
                   >
@@ -261,18 +265,18 @@ export default function RegisterPage() {
                       ? 'Starting production servers...'
                       : isSubmitting
                       ? 'Creating account...'
-                      : 'Create Account'}
+                      : 'Create Official Account'}
                   </Button>
                 </div>
 
-                <p className="mt-6 text-center text-[11px] text-(--app-color-text-muted)">
+                <p className="mt-4 text-center text-xs text-(--app-color-text-muted)">
                   Already have an account?{' '}
-                  <Link to="/login" className="font-black text-[#1E3A8A] hover:underline">Sign in</Link>
+                  <Link to="/login" className="font-bold text-[#1E3A8A] hover:underline">Sign in</Link>
                 </p>
               </form>
             </div>
           </section>
-        </div>
+      </div>
     </Container>
   );
 }
