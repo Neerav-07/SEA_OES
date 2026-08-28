@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, ClipboardList, FileText, Plus, RefreshCw, Save, ShieldCheck, XCircle } from 'lucide-react';
+import { CheckCircle2, ClipboardList, FileText, Plus, RefreshCw, Save, ShieldCheck, Sparkles, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import Alert from '../../../components/Alert.jsx';
@@ -136,6 +136,8 @@ export default function AssessmentsPage() {
   const [validationResult, setValidationResult] = useState(null);
   const [generationResult, setGenerationResult] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const [genProgress, setGenProgress] = useState(0);
+  const [genStep, setGenStep] = useState('');
   const [questionAction, setQuestionAction] = useState(false);
   const [assemblyResult, setAssemblyResult] = useState(null);
   const [assembling, setAssembling] = useState(false);
@@ -361,8 +363,26 @@ export default function AssessmentsPage() {
       return;
     }
     setGenerating(true);
+    setGenProgress(18);
+    setGenStep('Parsing Competency Claims & Bloom Taxonomy requirements...');
     setErrors([]);
     setGenerationResult(null);
+
+    const t1 = setTimeout(() => {
+      setGenProgress(46);
+      setGenStep('Retrieving Grounded MoSPI Reference Manuals & Chunks...');
+    }, 450);
+
+    const t2 = setTimeout(() => {
+      setGenProgress(76);
+      setGenStep('AI Synthesis: Formulating scenario, distractor choices & rationale...');
+    }, 1100);
+
+    const t3 = setTimeout(() => {
+      setGenProgress(92);
+      setGenStep('Deduplication verification & provenance citation alignment...');
+    }, 1800);
+
     try {
       const result = await generateQuestion({
         blueprintId: selectedBlueprintId,
@@ -370,14 +390,24 @@ export default function AssessmentsPage() {
         learningObjectiveId: form.learningObjectives[0]?.learningObjectiveId,
         questionType: form.supportedQuestionTypes[0] || 'MCQ',
       });
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      setGenProgress(100);
+      setGenStep('Question successfully generated and grounded in source evidence!');
       setGenerationResult(result);
       toast.success('AI Question successfully generated from grounded material!');
     } catch (error) {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
       const errs = apiErrors(error);
       setErrors(errs);
       toast.error(errs[0]?.message || 'Question generation failed.');
     } finally {
-      setGenerating(false);
+      setTimeout(() => {
+        setGenerating(false);
+      }, 400);
     }
   };
 
@@ -589,10 +619,41 @@ export default function AssessmentsPage() {
             </Card>
           </div>
 
+          {generating && (
+            <div className="rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50/90 via-indigo-50/90 to-purple-50/90 p-5 shadow-sm transition-all duration-300 animate-in fade-in">
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-blue-600 animate-spin" />
+                  <span className="text-sm font-bold text-slate-800">Generating Grounded Assessment Question</span>
+                </div>
+                <span className="text-xs font-black font-mono text-blue-700 bg-blue-100/90 px-2.5 py-0.5 rounded-full border border-blue-200 shadow-xs">
+                  {genProgress}%
+                </span>
+              </div>
+              
+              <div className="w-full bg-slate-200/90 rounded-full h-2.5 overflow-hidden my-2.5">
+                <div
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2.5 rounded-full transition-all duration-300 ease-out shadow-xs"
+                  style={{ width: `${genProgress}%` }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
+                <span className="flex items-center gap-1.5 truncate">
+                  <span className="inline-block w-2 h-2 rounded-full bg-blue-600 animate-ping shrink-0" />
+                  {genStep}
+                </span>
+                <span className="text-slate-400 font-mono shrink-0 ml-2">MoSPI-AI Engine</span>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-3">
             <Button type="submit" loading={saving} disabled={!isEditable}><Save className="h-4 w-4" /> Save draft</Button>
             <Button type="button" variant="secondary" onClick={handleValidate} loading={validating} disabled={!selectedBlueprintId}><ShieldCheck className="h-4 w-4" /> Validate persisted blueprint</Button>
-            <Button type="button" variant="secondary" onClick={handleGenerate} loading={generating} disabled={!selectedBlueprintId}><FileText className="h-4 w-4" /> Generate grounded question</Button>
+            <Button type="button" variant="secondary" onClick={handleGenerate} loading={generating} disabled={!selectedBlueprintId}>
+              <FileText className="h-4 w-4" /> {generating ? `Generating (${genProgress}%)...` : 'Generate grounded question'}
+            </Button>
             <Button type="button" variant="success" onClick={handleAssembly} loading={assembling} disabled={!selectedBlueprintId}><ClipboardList className="h-4 w-4" /> Assemble assessment</Button>
           </div>
         </form>
