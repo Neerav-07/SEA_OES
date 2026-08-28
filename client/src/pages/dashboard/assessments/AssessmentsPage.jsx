@@ -33,18 +33,34 @@ const EVIDENCE_TYPES = [
   'iGOT / NSSTA Course Module Completion',
 ];
 
+export function autoBalanceCognitive(count) {
+  const total = Math.max(1, Number(count) || 5);
+  const rem = Math.max(0, Math.floor(total * 0.1));
+  const und = Math.max(0, Math.floor(total * 0.2));
+  const app = Math.max(1, Math.floor(total * 0.4));
+  const ana = Math.max(0, Math.floor(total * 0.2));
+  const eva = total - (rem + und + app + ana);
+  return {
+    REMEMBER: rem,
+    UNDERSTAND: und,
+    APPLY: app,
+    ANALYZE: ana,
+    EVALUATE: Math.max(0, eva),
+  };
+}
+
 const emptyForm = () => ({
   title: '',
   status: 'DRAFT',
   competencyId: '',
-  targetProficiency: '',
-  questionCount: '10',
-  cognitiveDistribution: { REMEMBER: 0, UNDERSTAND: 0, APPLY: 10, ANALYZE: 0, EVALUATE: 0 },
-  supportedQuestionTypes: ['MCQ'],
+  targetProficiency: '3.5',
+  questionCount: '5',
+  cognitiveDistribution: { REMEMBER: 1, UNDERSTAND: 1, APPLY: 2, ANALYZE: 1, EVALUATE: 0 },
+  supportedQuestionTypes: ['MCQ', 'SCENARIO'],
   claims: [],
   learningObjectives: [],
   sourceRestrictions: { documentIds: [], documentVersionIds: [] },
-  evidenceRequirements: { evidenceTypes: [], requireGrounding: false },
+  evidenceRequirements: { evidenceTypes: ['Knowledge Evidence (MCQ / Quiz)', 'Application Evidence (Scenario / Case Study)'], requireGrounding: true },
 });
 
 function apiErrors(error) {
@@ -261,10 +277,29 @@ export default function AssessmentsPage() {
     setErrors([]);
     setPageError('');
     setSuccessMessage('');
+
     if (!form.title.trim() || !form.competencyId || !form.targetProficiency || Number(form.questionCount) <= 0) {
-      setErrors([{ code: 'CLIENT_FORM_INCOMPLETE', field: 'form', message: 'Complete the required blueprint fields before saving.' }]);
+      const err = [{ code: 'CLIENT_FORM_INCOMPLETE', field: 'form', message: 'Complete the required blueprint fields (Title, Competency, Target Proficiency, and Question Count) before saving.' }];
+      setErrors(err);
+      toast.error('Please complete all required blueprint fields.');
       return;
     }
+
+    const qCount = Number(form.questionCount);
+    const cogSum = COGNITIVE_LEVELS.reduce((acc, lvl) => acc + (Number(form.cognitiveDistribution?.[lvl]) || 0), 0);
+    if (cogSum !== qCount) {
+      const err = [{
+        code: 'COGNITIVE_ALLOCATION_MISMATCH',
+        field: 'cognitiveDistribution',
+        message: `Cognitive allocation sum (${cogSum}) must equal question count (${qCount}). Click "⚡ Auto-Balance" on the Cognitive Distribution card.`,
+      }];
+      setErrors(err);
+      toast.error(`Cognitive allocation sum (${cogSum}) must equal Question Count (${qCount}).`);
+      const el = document.getElementById('cognitive-distribution-card');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     setSaving(true);
     try {
       const result = selectedBlueprintId
@@ -278,9 +313,12 @@ export default function AssessmentsPage() {
       await loadLookupData(refreshed.blueprint.competencyId);
       const listResponse = await listAssessmentBlueprints();
       setBlueprints(Array.isArray(listResponse?.items) ? listResponse.items : []);
-      setSuccessMessage('Blueprint draft saved.');
+      setSuccessMessage('Blueprint draft saved successfully.');
+      toast.success('Blueprint draft saved successfully!');
     } catch (error) {
-      setErrors(apiErrors(error));
+      const errs = apiErrors(error);
+      setErrors(errs);
+      toast.error(errs[0]?.message || 'Failed to save blueprint draft.');
     } finally {
       setSaving(false);
     }
@@ -288,7 +326,9 @@ export default function AssessmentsPage() {
 
   const handleValidate = async () => {
     if (!selectedBlueprintId) {
-      setErrors([{ code: 'BLUEPRINT_NOT_PERSISTED', field: 'blueprint', message: 'Save the blueprint before validating it.' }]);
+      const err = [{ code: 'BLUEPRINT_NOT_PERSISTED', field: 'blueprint', message: 'Save the blueprint draft before validating it.' }];
+      setErrors(err);
+      toast.error('Save the blueprint draft before validating.');
       return;
     }
     setValidating(true);
@@ -299,8 +339,15 @@ export default function AssessmentsPage() {
         throw new Error('Validation response returned an invalid shape.');
       }
       setValidationResult(result);
+      if (result.valid) {
+        toast.success('Validation Passed: Blueprint is 100% compliant!');
+      } else {
+        toast.error('Validation found issues: Please check highlighted warnings.');
+      }
     } catch (error) {
-      setErrors(apiErrors(error));
+      const errs = apiErrors(error);
+      setErrors(errs);
+      toast.error(errs[0]?.message || 'Validation failed.');
     } finally {
       setValidating(false);
     }
@@ -308,7 +355,9 @@ export default function AssessmentsPage() {
 
   const handleGenerate = async () => {
     if (!selectedBlueprintId) {
-      setErrors([{ code: 'BLUEPRINT_NOT_PERSISTED', field: 'blueprint', message: 'Save the blueprint before generating a question.' }]);
+      const err = [{ code: 'BLUEPRINT_NOT_PERSISTED', field: 'blueprint', message: 'Save the blueprint before generating a question.' }];
+      setErrors(err);
+      toast.error('Save the blueprint before generating questions.');
       return;
     }
     setGenerating(true);
@@ -322,8 +371,11 @@ export default function AssessmentsPage() {
         questionType: form.supportedQuestionTypes[0] || 'MCQ',
       });
       setGenerationResult(result);
+      toast.success('AI Question successfully generated from grounded material!');
     } catch (error) {
-      setErrors(apiErrors(error));
+      const errs = apiErrors(error);
+      setErrors(errs);
+      toast.error(errs[0]?.message || 'Question generation failed.');
     } finally {
       setGenerating(false);
     }
@@ -466,11 +518,53 @@ export default function AssessmentsPage() {
           </Card>
 
           <div className="grid gap-6 xl:grid-cols-2">
-            <Card title="Cognitive distribution" subtitle="Allocations must total the configured question count.">
-              <div className="grid gap-4 sm:grid-cols-2">
-                {COGNITIVE_LEVELS.map((level) => <Input key={level} label={level} type="number" min="0" step="1" value={form.cognitiveDistribution[level] ?? 0} onChange={(event) => updateForm('cognitiveDistribution', { ...form.cognitiveDistribution, [level]: event.target.value === '' ? '' : Number(event.target.value) })} disabled={!isEditable} />)}
-              </div>
-            </Card>
+            <div id="cognitive-distribution-card">
+              <Card
+                title="Cognitive distribution"
+                subtitle={
+                  <div className="flex flex-wrap items-center justify-between gap-2 mt-1">
+                    <span className="text-xs text-slate-500 font-medium">Allocations must total {form.questionCount || 0} questions.</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                        COGNITIVE_LEVELS.reduce((acc, lvl) => acc + (Number(form.cognitiveDistribution?.[lvl]) || 0), 0) === Number(form.questionCount)
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        Allocated: {COGNITIVE_LEVELS.reduce((acc, lvl) => acc + (Number(form.cognitiveDistribution?.[lvl]) || 0), 0)} / {form.questionCount || 0} Qs
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => updateForm('cognitiveDistribution', autoBalanceCognitive(form.questionCount))}
+                        className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                        title="Auto-balance Bloom taxonomy distribution according to question count"
+                      >
+                        ⚡ Auto-Balance
+                      </button>
+                    </div>
+                  </div>
+                }
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {COGNITIVE_LEVELS.map((level) => (
+                    <Input
+                      key={level}
+                      label={level}
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={form.cognitiveDistribution[level] ?? 0}
+                      onChange={(event) =>
+                        updateForm('cognitiveDistribution', {
+                          ...form.cognitiveDistribution,
+                          [level]: event.target.value === '' ? '' : Number(event.target.value),
+                        })
+                      }
+                      disabled={!isEditable}
+                    />
+                  ))}
+                </div>
+              </Card>
+            </div>
 
             <Card title="Question types" subtitle="Use only question types supported by the assessment domain.">
               <div className="space-y-3">
