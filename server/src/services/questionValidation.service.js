@@ -105,11 +105,9 @@ export async function validateQuestion(questionId) {
   const { question, version } = await loadCurrentVersion(db, questionId);
   const result = await validateQuestionData(db, question, version);
   const valid = result.errors.length === 0;
-  await db.transaction(async (tx) => {
-    await tx.insert(questionValidationResults).values({ questionVersionId: version.id, deterministicStatus: valid ? 'PASSED' : 'FAILED', groundingStatus: result.provenance.length > 0 ? 'GROUNDED' : 'FAILED', duplicateStatus: result.errors.some((item) => item.code === 'EXACT_DUPLICATE') ? 'DUPLICATE' : 'PASSED', errors: result.errors, reasons: result.warnings, validatorVersion: 'module-d-1' });
-    await tx.update(questions).set({ validationStatus: valid ? 'PASSED' : 'FAILED', reviewStatus: valid ? 'NEEDS_REVIEW' : 'REJECTED' }).where(eq(questions.id, question.id));
-    await tx.update(questionVersions).set({ validationStatus: valid ? 'PASSED' : 'FAILED', reviewStatus: valid ? 'NEEDS_REVIEW' : 'REJECTED' }).where(eq(questionVersions.id, version.id));
-  });
+  await db.insert(questionValidationResults).values({ questionVersionId: version.id, deterministicStatus: valid ? 'PASSED' : 'FAILED', groundingStatus: result.provenance.length > 0 ? 'GROUNDED' : 'FAILED', duplicateStatus: result.errors.some((item) => item.code === 'EXACT_DUPLICATE') ? 'DUPLICATE' : 'PASSED', errors: result.errors, reasons: result.warnings, validatorVersion: 'module-d-1' });
+  await db.update(questions).set({ validationStatus: valid ? 'PASSED' : 'FAILED', reviewStatus: valid ? 'NEEDS_REVIEW' : 'REJECTED' }).where(eq(questions.id, question.id));
+  await db.update(questionVersions).set({ validationStatus: valid ? 'PASSED' : 'FAILED', reviewStatus: valid ? 'NEEDS_REVIEW' : 'REJECTED' }).where(eq(questionVersions.id, version.id));
   return { valid, status: valid ? 'NEEDS_REVIEW' : 'REJECTED', errors: result.errors, warnings: result.warnings, checks: result.checks, score: result.score, questionId: question.id, versionId: version.id };
 }
 
@@ -130,13 +128,11 @@ export async function reviseQuestion(questionId, changes = {}) {
     bloomLevel: changes.cognitiveLevel || current.bloomLevel,
     targetLevel: current.targetLevel,
   };
-  return db.transaction(async (tx) => {
-    const [created] = await tx.insert(questionVersions).values({ questionId, version: nextVersion, ...next, validationStatus: 'PENDING', reviewStatus: 'DRAFT' }).returning();
-    await tx.update(questions).set({ stem: next.stem, options: next.options, questionType: next.questionType, correctAnswer: next.correctAnswer, rationale: next.rationale, bloomLevel: next.bloomLevel, validationStatus: 'PENDING', reviewStatus: 'DRAFT' }).where(eq(questions.id, questionId));
-    const previousProvenance = await tx.select().from(questionSourceProvenance).where(eq(questionSourceProvenance.questionVersionId, current.id));
-    if (previousProvenance.length) await tx.insert(questionSourceProvenance).values(previousProvenance.map(({ id, questionVersionId, ...row }) => ({ ...row, questionVersionId: created.id })));
-    return { questionId, version: created, previousVersionId: current.id, provenanceCopied: previousProvenance.length };
-  });
+  const [created] = await db.insert(questionVersions).values({ questionId, version: nextVersion, ...next, validationStatus: 'PENDING', reviewStatus: 'DRAFT' }).returning();
+  await db.update(questions).set({ stem: next.stem, options: next.options, questionType: next.questionType, correctAnswer: next.correctAnswer, rationale: next.rationale, bloomLevel: next.bloomLevel, validationStatus: 'PENDING', reviewStatus: 'DRAFT' }).where(eq(questions.id, questionId));
+  const previousProvenance = await db.select().from(questionSourceProvenance).where(eq(questionSourceProvenance.questionVersionId, current.id));
+  if (previousProvenance.length) await db.insert(questionSourceProvenance).values(previousProvenance.map(({ id, questionVersionId, ...row }) => ({ ...row, questionVersionId: created.id })));
+  return { questionId, version: created, previousVersionId: current.id, provenanceCopied: previousProvenance.length };
 }
 
 export async function reviewQuestion(questionId, action, reason = '') {

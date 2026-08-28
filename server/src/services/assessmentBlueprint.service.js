@@ -406,19 +406,17 @@ export async function createAssessmentBlueprint(input, context = {}) {
   const { input: normalizedInput, competency } = await validateConfigurationAndRelationships(input);
   const db = getDb();
 
-  return db.transaction(async (tx) => {
-    const [blueprint] = await tx
-      .insert(assessmentBlueprints)
-      .values(blueprintValues(normalizedInput))
-      .returning();
-    await persistMappings(tx, blueprint.id, normalizedInput);
-    return {
-      blueprint,
-      competency,
-      claims: normalizedInput.claims,
-      learningObjectives: normalizedInput.learningObjectives,
-    };
-  });
+  const [blueprint] = await db
+    .insert(assessmentBlueprints)
+    .values(blueprintValues(normalizedInput))
+    .returning();
+  await persistMappings(db, blueprint.id, normalizedInput);
+  return {
+    blueprint,
+    competency,
+    claims: normalizedInput.claims,
+    learningObjectives: normalizedInput.learningObjectives,
+  };
 }
 
 export async function getAssessmentBlueprintById(id, context = {}) {
@@ -472,22 +470,20 @@ export async function updateAssessmentBlueprint(id, input, context = {}) {
   };
   const { input: normalizedInput, competency } = await validateConfigurationAndRelationships(proposedInput);
 
-  return db.transaction(async (tx) => {
-    const [blueprint] = await tx
-      .update(assessmentBlueprints)
-      .set({ ...blueprintValues(normalizedInput, existing.status), updatedAt: new Date() })
-      .where(eq(assessmentBlueprints.id, id))
-      .returning();
-    await tx.delete(assessmentBlueprintClaims).where(eq(assessmentBlueprintClaims.blueprintId, id));
-    await tx.delete(assessmentBlueprintObjectives).where(eq(assessmentBlueprintObjectives.blueprintId, id));
-    await persistMappings(tx, id, normalizedInput);
-    return {
-      blueprint,
-      competency,
-      claims: normalizedInput.claims,
-      learningObjectives: normalizedInput.learningObjectives,
-    };
-  });
+  const [blueprint] = await db
+    .update(assessmentBlueprints)
+    .set({ ...blueprintValues(normalizedInput, existing.status), updatedAt: new Date() })
+    .where(eq(assessmentBlueprints.id, id))
+    .returning();
+  await db.delete(assessmentBlueprintClaims).where(eq(assessmentBlueprintClaims.blueprintId, id));
+  await db.delete(assessmentBlueprintObjectives).where(eq(assessmentBlueprintObjectives.blueprintId, id));
+  await persistMappings(db, id, normalizedInput);
+  return {
+    blueprint,
+    competency,
+    claims: normalizedInput.claims,
+    learningObjectives: normalizedInput.learningObjectives,
+  };
 }
 
 export async function validateAssessmentBlueprint(id, context = {}) {
