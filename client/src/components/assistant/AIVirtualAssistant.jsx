@@ -9,18 +9,22 @@ import {
   Target,
   Maximize2,
   Minimize2,
+  Minus,
   GripHorizontal,
 } from 'lucide-react';
 import api from '../../services/api';
 
 /**
  * Enterprise Formatted Markdown Renderer
- * Parses bold (**text**), italics (*text*), code (`code`), headers (###), bullet lists (- item), and dividers (---)
+ * Parses any heading levels (# to ######), bold (**text**), italics (*text*),
+ * code (`code`), bullet lists, sub-numbered lists, and horizontal dividers.
  */
 function FormattedMessage({ text }) {
   if (!text) return null;
 
-  const lines = text.split('\n');
+  // Pre-process inline dividers like "text --- ### heading" into clean newlines
+  const sanitizedText = text.replace(/\s+---\s+/g, '\n---\n');
+  const lines = sanitizedText.split('\n');
   const elements = [];
   let inList = false;
   let listItems = [];
@@ -31,7 +35,7 @@ function FormattedMessage({ text }) {
         <ul key={`list-${elements.length}`} className="my-2 space-y-1.5 pl-0.5">
           {listItems.map((item, idx) => (
             <li key={idx} className="flex items-start gap-2 text-xs text-slate-800 leading-relaxed">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-700 shrink-0 mt-1.5" />
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-700 shrink-0 mt-1.5 shadow-2xs" />
               <span className="flex-1">{formatInline(item)}</span>
             </li>
           ))}
@@ -50,24 +54,55 @@ function FormattedMessage({ text }) {
       return;
     }
 
-    if (line === '---' || line === '***') {
+    // Dividers (---, ***, ___)
+    if (/^([-*_]){3,}$/.test(line)) {
       flushList();
-      elements.push(<hr key={`hr-${i}`} className="my-2.5 border-slate-200" />);
-      return;
-    }
-
-    if (line.startsWith('### ') || line.startsWith('## ') || line.startsWith('# ')) {
-      flushList();
-      const headingText = line.replace(/^#+\s*/, '');
       elements.push(
-        <h4 key={`h-${i}`} className="text-xs font-bold text-slate-950 mt-3 mb-1.5 tracking-tight flex items-center gap-1.5">
-          <span className="w-1 h-3 rounded-full bg-blue-700 inline-block" />
-          {formatInline(headingText)}
-        </h4>
+        <div key={`hr-${i}`} className="my-3 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
       );
       return;
     }
 
+    // Headings (any hash level #, ##, ###, ####, #####, ######)
+    const headingMatch = line.match(/^(#{1,6})\s*(.+)$/);
+    if (headingMatch) {
+      flushList();
+      const level = headingMatch[1].length;
+      const headingContent = headingMatch[2].trim();
+
+      // Check if heading has a leading number like "1. iGOT Karmayogi Platform"
+      const numberedMatch = headingContent.match(/^(\d+)\.\s*(.+)$/);
+
+      if (numberedMatch) {
+        elements.push(
+          <div key={`h-${i}`} className="mt-3.5 mb-1.5 flex items-center gap-2 pt-1">
+            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-gradient-to-tr from-slate-950 via-blue-900 to-blue-700 text-[10px] font-black text-white shadow-xs">
+              {numberedMatch[1]}
+            </div>
+            <h4 className="text-xs font-bold text-slate-950 tracking-tight">
+              {formatInline(numberedMatch[2])}
+            </h4>
+          </div>
+        );
+      } else if (level <= 3) {
+        elements.push(
+          <h4 key={`h-${i}`} className="text-xs font-bold text-slate-950 mt-3.5 mb-1.5 tracking-tight flex items-center gap-2 border-b border-slate-100 pb-1">
+            <span className="w-1.5 h-3.5 rounded-full bg-gradient-to-b from-blue-700 to-slate-950 inline-block shrink-0" />
+            <span>{formatInline(headingContent)}</span>
+          </h4>
+        );
+      } else {
+        elements.push(
+          <h5 key={`h-${i}`} className="text-xs font-bold text-slate-900 mt-2.5 mb-1 tracking-tight flex items-center gap-1.5">
+            <span className="w-1 h-3 rounded-full bg-blue-600 inline-block shrink-0" />
+            <span>{formatInline(headingContent)}</span>
+          </h5>
+        );
+      }
+      return;
+    }
+
+    // Bullet points or numbered items
     if (line.startsWith('- ') || line.startsWith('* ') || line.startsWith('• ') || /^\d+\.\s/.test(line)) {
       inList = true;
       const cleanItem = line.replace(/^([-*•]|\d+\.)\s*/, '');
@@ -75,6 +110,7 @@ function FormattedMessage({ text }) {
       return;
     }
 
+    // Regular line
     flushList();
     elements.push(
       <p key={`p-${i}`} className="text-xs text-slate-800 leading-relaxed my-1">
@@ -101,14 +137,15 @@ function formatInline(str) {
     }
     const token = match[0];
     if (token.startsWith('**') && token.endsWith('**')) {
+      const boldText = token.slice(2, -2);
       parts.push(
         <strong key={match.index} className="font-bold text-slate-950">
-          {token.slice(2, -2)}
+          {boldText}
         </strong>
       );
     } else if (token.startsWith('`') && token.endsWith('`')) {
       parts.push(
-        <code key={match.index} className="px-1.5 py-0.5 rounded-md bg-slate-100 font-mono text-[11px] text-blue-900 border border-slate-200 font-semibold">
+        <code key={match.index} className="px-1.5 py-0.5 rounded-md bg-slate-100 font-mono text-[11px] text-blue-900 border border-slate-200 font-bold">
           {token.slice(1, -1)}
         </code>
       );
@@ -412,20 +449,31 @@ export default function AIVirtualAssistant() {
 
         <div className="flex items-center gap-1 text-slate-300">
           <GripHorizontal className="w-4 h-4 text-slate-500 mr-1 hidden sm:block opacity-60" />
+          
+          {/* Maximize / Restore Toggle (Hidden when window is minimized) */}
+          {!isMinimized && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1.5 hover:bg-white/10 rounded-lg hover:text-white transition-colors cursor-pointer"
+              title={isExpanded ? 'Restore Normal Size' : 'Maximize'}
+            >
+              {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            </button>
+          )}
+
+          {/* Minimize to Taskbar / Expand Toggle */}
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => {
+              setIsMinimized(!isMinimized);
+              if (isExpanded) setIsExpanded(false);
+            }}
             className="p-1.5 hover:bg-white/10 rounded-lg hover:text-white transition-colors cursor-pointer"
-            title={isExpanded ? 'Restore Size' : 'Expand Size'}
+            title={isMinimized ? 'Expand Window' : 'Minimize to Taskbar'}
           >
-            <Maximize2 className="w-3.5 h-3.5" />
+            {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
           </button>
-          <button
-            onClick={() => setIsMinimized(!isMinimized)}
-            className="p-1.5 hover:bg-white/10 rounded-lg hover:text-white transition-colors cursor-pointer"
-            title={isMinimized ? 'Expand' : 'Minimize'}
-          >
-            {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
-          </button>
+
+          {/* Close Window */}
           <button
             onClick={() => {
               setIsOpen(false);
