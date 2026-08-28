@@ -65,7 +65,51 @@ def _call_gemini(system_prompt: str, user_prompt: str) -> str:
 _PROVIDERS = {"openai": _call_openai, "gemini": _call_gemini}
 
 
+def _call_openai_text(system_prompt: str, user_prompt: str) -> str:
+    if not _openai_client:
+        raise RuntimeError("OPENAI_API_KEY not configured")
+    response = _openai_client.chat.completions.create(
+        model=OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.7,
+    )
+    return response.choices[0].message.content
+
+
+def _call_gemini_text(system_prompt: str, user_prompt: str) -> str:
+    if not _gemini_client:
+        raise RuntimeError("GEMINI_API_KEY not configured")
+    response = _gemini_client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=user_prompt,
+        config=genai_types.GenerateContentConfig(
+            system_instruction=system_prompt,
+        ),
+    )
+    return response.text
+
+
+_TEXT_PROVIDERS = {"openai": _call_openai_text, "gemini": _call_gemini_text}
+
 import time
+
+
+def call_llm_text(system_prompt: str, user_prompt: str) -> str:
+    """Invokes LLM for natural text responses with provider fallback."""
+    if LLM_PROVIDER not in _TEXT_PROVIDERS:
+        raise LLMGenerationError(f"LLM_PROVIDER is '{LLM_PROVIDER}'")
+
+    fallback = "gemini" if LLM_PROVIDER == "openai" else "openai"
+    for provider_name in (LLM_PROVIDER, fallback):
+        try:
+            return _TEXT_PROVIDERS[provider_name](system_prompt, user_prompt)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("LLM text provider '%s' failed: %s", provider_name, exc)
+
+    raise LLMGenerationError("All LLM text providers failed.")
 
 
 def call_llm_json(system_prompt: str, user_prompt: str) -> dict:

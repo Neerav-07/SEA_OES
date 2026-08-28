@@ -25,9 +25,12 @@ import toast from 'react-hot-toast';
 
 import PageHeader from '../../../components/PageHeader.jsx';
 import useAuthStore from '../../../store/auth.store.js';
+import api from '../../../services/api.js';
 
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const accessToken = useAuthStore((s) => s.accessToken);
   const isAdmin = user?.platformRole === 'ADMIN';
 
   const [activeTab, setActiveTab] = useState('AI_KEYS');
@@ -48,13 +51,17 @@ export default function SettingsPage() {
   const [chunkSize, setChunkSize] = useState(() => localStorage.getItem('kshamata_chunk_size') || '512');
   const [testingConnection, setTestingConnection] = useState(false);
 
-  // Profile & iGOT Preferences State
+  // Profile & Official Service Record State
   const [language, setLanguage] = useState(() => localStorage.getItem('kshamata_lang') || 'en');
   const [igotSyncFreq, setIgotSyncFreq] = useState(() => localStorage.getItem('kshamata_igot_freq') || 'DAILY');
   const [notifyEmail, setNotifyEmail] = useState(true);
   const [notifySkillGaps, setNotifySkillGaps] = useState(true);
-  const [designation, setDesignation] = useState('Senior Statistical Officer (SSO)');
-  const [department, setDepartment] = useState('Data Informatics & Innovation Division (DIID)');
+  const [designation, setDesignation] = useState(() => user?.designation || 'Senior Statistical Officer (SSO)');
+  const [department, setDepartment] = useState(() => user?.department || 'Data Informatics & Innovation Division (DIID)');
+  const [cadre, setCadre] = useState(() => user?.cadre || 'ISS (Indian Statistical Service)');
+  const [experienceYears, setExperienceYears] = useState(5);
+  const [education, setEducation] = useState('M.Sc. in Statistics / Agricultural Statistics (IASRI)');
+  const [savingProfile, setSavingProfile] = useState(false);
 
   // Admin Governance State
   const [auditLogsEnabled, setAuditLogsEnabled] = useState(true);
@@ -74,6 +81,41 @@ export default function SettingsPage() {
   const [dsigHash, setDsigHash] = useState(
     () => localStorage.getItem('kshamata_dsig_hash') || 'DSC-NIC-8F9A2B1C4E7D'
   );
+
+  const handleSaveOfficialProfile = async () => {
+    setSavingProfile(true);
+    try {
+      const res = await api.put('/officials/me', {
+        designation,
+        department,
+        cadre,
+        experienceYears: Number(experienceYears),
+        education,
+        preferredLanguage: language,
+      });
+
+      if (res?.data?.data) {
+        setAuth({
+          user: {
+            ...user,
+            designation: res.data.data.designation,
+            department: res.data.data.department,
+            cadre: res.data.data.cadre,
+          },
+          accessToken,
+        });
+      }
+
+      localStorage.setItem('kshamata_lang', language);
+      localStorage.setItem('kshamata_igot_freq', igotSyncFreq);
+
+      toast.success('Official service record & cadre profile saved to MoSPI repository!');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to save official profile.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   const handleSaveSettings = () => {
     localStorage.setItem('kshamata_ai_provider', aiProvider);
@@ -361,11 +403,27 @@ export default function SettingsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Statistical Cadre</label>
+              <select
+                value={cadre}
+                onChange={(e) => setCadre(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:border-[#1E3A8A] focus:bg-white focus:outline-none"
+              >
+                <option value="ISS (Indian Statistical Service)">ISS (Indian Statistical Service)</option>
+                <option value="SSS (Subordinate Statistical Service)">SSS (Subordinate Statistical Service)</option>
+                <option value="FOD Field Operations Cadre">FOD Field Operations Cadre</option>
+                <option value="NSSTA Training Cadre">NSSTA Training Cadre</option>
+                <option value="MoSPI General Statistical Cadre">MoSPI General Statistical Cadre</option>
+              </select>
+            </div>
+
+            <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Official Designation</label>
               <input
                 type="text"
                 value={designation}
                 onChange={(e) => setDesignation(e.target.value)}
+                placeholder="e.g. Senior Statistical Officer (SSO)"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:border-[#1E3A8A] focus:bg-white focus:outline-none"
               />
             </div>
@@ -376,6 +434,30 @@ export default function SettingsPage() {
                 type="text"
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
+                placeholder="e.g. Data Informatics & Innovation Division (DIID)"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:border-[#1E3A8A] focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Total Statistical Experience (Years)</label>
+              <input
+                type="number"
+                min="0"
+                max="45"
+                value={experienceYears}
+                onChange={(e) => setExperienceYears(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:border-[#1E3A8A] focus:outline-none"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-slate-700 mb-1">Educational Background & Technical Specialization</label>
+              <input
+                type="text"
+                value={education}
+                onChange={(e) => setEducation(e.target.value)}
+                placeholder="e.g. Ph.D. in Agricultural Statistics (IASRI) / M.Sc. Statistics"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:border-[#1E3A8A] focus:outline-none"
               />
             </div>
@@ -433,6 +515,18 @@ export default function SettingsPage() {
                 </span>
               </label>
             </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="button"
+              onClick={handleSaveOfficialProfile}
+              disabled={savingProfile}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#1E3A8A] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#172554] transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Save size={15} />
+              {savingProfile ? 'Saving Official Record...' : 'Save Official Profile'}
+            </button>
           </div>
         </div>
       )}

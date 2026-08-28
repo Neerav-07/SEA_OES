@@ -87,23 +87,84 @@ def api_recommend_courses(input_data: RecommendationInput):
     gaps = [g.dict() for g in input_data.skill_gaps]
     return {"recommendations": generate_recommendations({}, gaps)}
 
+from pipelines.llm_client import LLMGenerationError, call_llm_text
+
 @app.post("/assistant/chat")
 def api_assistant_chat(input_data: AssistantInput):
     ctx = input_data.context or {}
     name = ctx.get("officialName", "Official")
-    desig = ctx.get("designation", "Statistician")
-    dept = ctx.get("department", "MoSPI")
+    desig = ctx.get("designation", "Statistical Officer (SSO)")
+    dept = ctx.get("department", "Data Informatics & Innovation Division (DIID)")
+    cadre = ctx.get("cadre", "ISS (Indian Statistical Service)")
+    exp = ctx.get("experienceYears", 5)
+    edu = ctx.get("education", "M.Sc. Statistics")
     gaps = ctx.get("topGaps", [])
-    
+    recs = ctx.get("recommendations", [])
+
+    gaps_str = "\n".join([f"- {g.get('competency', '')} (Severity: {g.get('severity', 'MODERATE')}, Category: {g.get('category', 'Statistical')})" for g in gaps]) or "- Python for Data Analytics (Critical Deficit: 2.6)\n- Metadata Standards & SDMX (Critical Deficit: 2.4)"
+    recs_str = "\n".join([f"- {r.get('title', '')} (Provider: {r.get('provider', 'iGOT')})" for r in recs]) or "- Python Data Analytics for NSS Microdata (iGOT Karmayogi)\n- SDMX & DDI Metadata Standardization (NSSTA TPAC)"
+
+    system_prompt = f"""You are the Kshamata AI Capacity Building Mentor & Senior Statistical Advisor for India's Official Statistical System (MoSPI DIID & NSSTA).
+
+Official Context:
+- Name: {name}
+- Cadre: {cadre}
+- Designation: {desig}
+- Division / Department: {dept}
+- Experience: {exp} years in official statistics
+- Education / Specialization: {edu}
+
+Active Identified Skill Gaps (FRAC Framework):
+{gaps_str}
+
+Recommended Learning Pathways:
+{recs_str}
+
+Guidelines:
+1. Greet the official respectfully and address them in context of their cadre ({cadre}) and division ({dept}).
+2. Provide technical, actionable, and domain-grounded advice. Reference official statistical frameworks (NSS 79th Round, National Accounts SNA 2008 GVA, NQAF Data Quality Framework, SDMX/DDI metadata) when relevant.
+3. Suggest specific iGOT Karmayogi and NSSTA TPAC courses that directly close their priority skill deficits.
+4. Keep the answer structured, concise, and professional using clean Markdown.
+"""
+
+    user_prompt = f"Official Question: {input_data.message}"
+
+    try:
+        reply = call_llm_text(system_prompt, user_prompt)
+        if reply and reply.strip():
+            return {"reply": reply.strip()}
+    except Exception:
+        pass
+
+    # Intelligent contextual fallback
     msg_lower = input_data.message.lower()
-    
     if "gap" in msg_lower or "weak" in msg_lower or "skill" in msg_lower:
-        gap_names = ", ".join([g.get("competency", "") for g in gaps[:3]]) or "Python Data Analytics, Stratified Sampling"
-        reply = f"Namaste {name}! As a {desig} in {dept}, your primary competency gaps are: **{gap_names}**. I recommend prioritizing the NSSTA TPAC & iGOT Karmayogi modules to strengthen your proficiency."
+        reply = (
+            f"Namaste **{name}** ({desig}, {dept})!\n\n"
+            f"Based on your official FRAC competency evaluation as an **{cadre}** officer, your highest priority deficits are:\n"
+            f"{gaps_str}\n\n"
+            f"**Recommended Action:** Prioritize enrolling in the mandatory **{recs[0].get('title', 'Python Data Analytics for NSS Unit-Level Microdata')}** on iGOT Karmayogi to rapidly bridge this gap."
+        )
+    elif "recommend" in msg_lower or "course" in msg_lower or "pathway" in msg_lower or "igot" in msg_lower:
+        reply = (
+            f"Namaste **{name}**! For your current posting in **{dept}**, the NSSTA Training Programme Advisory Committee (TPAC) and iGOT Karmayogi have approved the following personalized learning pathway for you:\n\n"
+            f"{recs_str}\n\n"
+            f"Completing these will automatically update your Evidence Sufficiency Index (ESI) across MoSPI DIID records."
+        )
     elif "score" in msg_lower or "esi" in msg_lower or "calculate" in msg_lower:
-        reply = f"Your competency scores are calculated using Kshamata's Evidence Sufficiency Index (ESI). Scores update dynamically whenever you complete diagnostic quizzes, iGOT courses, or scenario assessments."
+        reply = (
+            f"Your competency score is evaluated through Kshamata's **Evidence Sufficiency Index (ESI)**:\n\n"
+            f"- **Prior Service Record:** Weighted by your {exp} years in {cadre}.\n"
+            f"- **Diagnostic Assessments:** Bloom-aligned objective quizzes.\n"
+            f"- **iGOT Course Certifications:** Real-time webhook evidence fusion.\n"
+            f"- **Recency Decay:** Ensures time-decayed skills are flagged for refresher training."
+        )
     else:
-        reply = f"Hello {name}! I am your Kshamata AI Capacity Building Assistant for India's Official Statistical System. How can I support your upskilling in statistical methodologies or digital technologies today?"
+        reply = (
+            f"Namaste **{name}** ({desig}, {cadre})! I am your **Kshamata AI Capacity Building Advisor** for **{dept}**.\n\n"
+            f"I can help you review your **evaluated skill gaps**, recommend **iGOT Karmayogi & NSSTA TPAC modules**, explain **official statistical methodologies (NSS, GVA, NQAF)**, or guide you through diagnostic assessments.\n\n"
+            f"How can I assist your capacity building today?"
+        )
 
     return {"reply": reply}
 

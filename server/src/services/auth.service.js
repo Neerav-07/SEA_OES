@@ -18,7 +18,8 @@ import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 
 import { getDb } from '../db/index.js';
-import { users } from '../db/schema/index.js';
+import { users, officials, roles } from '../db/schema/index.js';
+import { recalculateSkillGaps } from './skillGap.service.js';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -127,6 +128,33 @@ export async function registerUser(payload = {}) {
     .insert(users)
     .values({ name, email, passwordHash, platformRole, designation, department, cadre })
     .returning();
+
+  // If registering as official (or default employee), provision official profile
+  if (platformRole !== 'ADMIN') {
+    try {
+      const allRoles = await db.select().from(roles);
+      const defaultRole = allRoles.find(r => r.code === 'STAT_OFFICER') || allRoles[0];
+
+      const [official] = await db.insert(officials).values({
+        userId: user.id,
+        roleId: defaultRole?.id || null,
+        designation: designation || 'Senior Statistical Officer (SSO)',
+        department: department || 'Data Informatics & Innovation Division (DIID)',
+        cadre: cadre || 'ISS (Indian Statistical Service)',
+        experienceYears: Number(payload.experienceYears) || 3,
+        education: typeof payload.education === 'string' && payload.education.trim() ? payload.education.trim() : 'M.Sc. in Statistics',
+        preferredLanguage: payload.preferredLanguage || 'en',
+      }).returning();
+
+      if (official && official.roleId) {
+        await recalculateSkillGaps({ userId: user.id, officialId: official.id, roleId: official.roleId }).catch((err) => {
+          console.warn('Non-blocking initial skill gap calculation warning:', err.message);
+        });
+      }
+    } catch (officialErr) {
+      console.warn('Non-blocking official provisioning warning:', officialErr.message);
+    }
+  }
 
   const authPayload = buildAuthPayload(user);
 

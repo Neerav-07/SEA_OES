@@ -148,3 +148,44 @@ export const updateOfficialRole = asyncHandler(async (req, res) => {
     "Role updated and gaps recalculated",
   );
 });
+
+/**
+ * Update authenticated official profile (Designation, Department, Cadre, Experience, Education)
+ */
+export const updateMyProfile = asyncHandler(async (req, res) => {
+  const userId = req.auth.userId;
+  const { designation, department, cadre, experienceYears, education, preferredLanguage } = req.body;
+
+  let [off] = await db.select().from(officials).where(eq(officials.userId, userId));
+  if (!off) {
+    [off] = await db.insert(officials).values({
+      userId,
+      designation: designation || 'Senior Statistical Officer',
+      department: department || 'MoSPI DIID Headquarters',
+      cadre: cadre || 'ISS (Indian Statistical Service)',
+      experienceYears: Number(experienceYears) || 3,
+      education: education || 'M.Sc. in Statistics',
+      preferredLanguage: preferredLanguage || 'en',
+    }).returning();
+  } else {
+    [off] = await db.update(officials).set({
+      designation: designation !== undefined ? designation : off.designation,
+      department: department !== undefined ? department : off.department,
+      cadre: cadre !== undefined ? cadre : off.cadre,
+      experienceYears: experienceYears !== undefined ? Number(experienceYears) : off.experienceYears,
+      education: education !== undefined ? education : off.education,
+      preferredLanguage: preferredLanguage !== undefined ? preferredLanguage : off.preferredLanguage,
+      updatedAt: new Date(),
+    }).where(eq(officials.id, off.id)).returning();
+  }
+
+  await db.update(users).set({
+    designation: off.designation,
+    department: off.department,
+    cadre: off.cadre,
+    updatedAt: new Date(),
+  }).where(eq(users.id, userId));
+
+  return sendSuccess(res, off, 'Official service profile updated successfully');
+});
+

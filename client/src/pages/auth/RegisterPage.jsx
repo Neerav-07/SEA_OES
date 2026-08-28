@@ -12,7 +12,18 @@ import api from '../../services/api.js';
 import useAuthStore from '../../store/auth.store.js';
 import { validateRegisterForm } from '../../utils/validators.js';
 
-const initialForm = { name: '', email: '', password: '', confirmPassword: '' };
+const initialForm = {
+  name: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  platformRole: 'EMPLOYEE',
+  cadre: 'ISS (Indian Statistical Service)',
+  designation: 'Senior Statistical Officer (SSO)',
+  department: 'Data Informatics & Innovation Division (DIID)',
+  experienceYears: 5,
+  education: 'M.Sc. in Statistics',
+};
 
 const ONBOARDING_STEPS = [
   'Set up official profile, department, and designation.',
@@ -169,6 +180,72 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     error={errors.confirmPassword}
                     placeholder="••••••••"
+                    className="h-10 rounded-xl text-sm"
+                  />
+                </div>
+
+                {/* Cadre & Designation Details */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Statistical Cadre</label>
+                    <select
+                      name="cadre"
+                      value={formData.cadre}
+                      onChange={handleChange}
+                      className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 focus:border-[#1E3A8A] focus:bg-white focus:outline-none"
+                    >
+                      <option value="ISS (Indian Statistical Service)">ISS (Indian Statistical Service)</option>
+                      <option value="SSS (Subordinate Statistical Service)">SSS (Subordinate Statistical Service)</option>
+                      <option value="FOD Field Operations Cadre">FOD Field Operations Cadre</option>
+                      <option value="NSSTA Training Cadre">NSSTA Training Cadre</option>
+                      <option value="MoSPI General Statistical Cadre">MoSPI General Statistical Cadre</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Official Designation</label>
+                    <select
+                      name="designation"
+                      value={formData.designation}
+                      onChange={handleChange}
+                      className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 focus:border-[#1E3A8A] focus:bg-white focus:outline-none"
+                    >
+                      <option value="Senior Statistical Officer (SSO)">Senior Statistical Officer (SSO)</option>
+                      <option value="Junior Statistical Officer (JSO)">Junior Statistical Officer (JSO)</option>
+                      <option value="Assistant Director">Assistant Director</option>
+                      <option value="Deputy Director">Deputy Director</option>
+                      <option value="Director">Director</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Division / Department & Experience */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Division / Department</label>
+                    <select
+                      name="department"
+                      value={formData.department}
+                      onChange={handleChange}
+                      className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 focus:border-[#1E3A8A] focus:bg-white focus:outline-none"
+                    >
+                      <option value="Data Informatics & Innovation Division (DIID)">DIID (Data Informatics & Innovation)</option>
+                      <option value="National Accounts Division (NAD)">NAD (National Accounts Division)</option>
+                      <option value="Price Statistics Division (PSD)">PSD (Price Statistics / CPI / WPI)</option>
+                      <option value="Survey Design & Research Division (SDRD)">SDRD (Survey Design & Sampling)</option>
+                      <option value="Field Operations Division (FOD)">FOD (Field Operations Division)</option>
+                      <option value="Economic Statistics Division (ESD)">ESD (Economic Statistics Division)</option>
+                    </select>
+                  </div>
+
+                  <Input
+                    label="Years of Experience"
+                    type="number"
+                    min="0"
+                    max="45"
+                    name="experienceYears"
+                    value={formData.experienceYears}
+                    onChange={handleChange}
                     className="h-10 rounded-xl text-sm"
                   />
                 </div>
