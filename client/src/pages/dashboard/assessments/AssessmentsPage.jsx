@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, ClipboardList, FileText, Plus, RefreshCw, Save, ShieldCheck, XCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 import Alert from '../../../components/Alert.jsx';
 import Button from '../../../components/Button.jsx';
@@ -209,6 +210,14 @@ export default function AssessmentsPage() {
     setValidationResult(null);
     setPageError('');
     setSuccessMessage('');
+    toast.success('Started a new blueprint draft. Fill in details below.');
+    setTimeout(() => {
+      const el = document.getElementById('blueprint-title-input');
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 50);
   };
 
   const handleCompetencyChange = async (event) => {
@@ -393,7 +402,7 @@ export default function AssessmentsPage() {
           disabled={loadingBlueprint}
           className="sm:min-w-[24rem]"
         />
-        <Button variant="secondary" onClick={handleNew} disabled={loadingBlueprint} className="whitespace-nowrap shrink-0 flex items-center gap-1.5 font-bold text-xs">
+        <Button variant="primary" type="button" onClick={handleNew} disabled={loadingBlueprint} className="whitespace-nowrap shrink-0 flex items-center gap-1.5 font-bold text-xs bg-[#1E3A8A] text-white hover:bg-[#172554] cursor-pointer shadow-sm">
           <Plus className="h-4 w-4" /> New blueprint
         </Button>
       </div>
@@ -402,7 +411,7 @@ export default function AssessmentsPage() {
         <form onSubmit={handleSave} className="space-y-6">
           <Card title="Blueprint details" subtitle="Set the competency target and size of the assessment.">
             <div className="grid gap-5 md:grid-cols-2">
-              <Input label="Title" required value={form.title} onChange={(event) => updateForm('title', event.target.value)} error={errorForField(errors, 'title')} disabled={!isEditable} placeholder="e.g. Survey Sampling Diagnostic" />
+              <Input id="blueprint-title-input" label="Title" required value={form.title} onChange={(event) => updateForm('title', event.target.value)} error={errorForField(errors, 'title')} disabled={!isEditable} placeholder="e.g. Survey Sampling Diagnostic" />
               <Select label="Competency" required value={form.competencyId} onChange={handleCompetencyChange} options={competencies.map((competency) => ({ value: competency.id, label: `${competency.code} · ${competency.name}` }))} placeholder="Select a competency" error={errorForField(errors, 'competencyId')} disabled={!isEditable || loadingLookups} />
               <Input label="Target proficiency" required type="number" min="0.01" step="0.1" value={form.targetProficiency} onChange={(event) => updateForm('targetProficiency', event.target.value)} error={errorForField(errors, 'targetProficiency')} disabled={!isEditable} />
               <Input label="Question count" required type="number" min="1" step="1" value={form.questionCount} onChange={(event) => updateForm('questionCount', event.target.value)} error={errorForField(errors, 'questionCount')} disabled={!isEditable} />
