@@ -1,16 +1,26 @@
-import { db } from "../db/index.js";
 import { eq } from "drizzle-orm";
+import { db } from "../db/index.js";
 import {
   officials,
   competencies,
+  competencyRequirements,
+  evidence,
   learningMaterials,
-  recommendations,
 } from "../db/schema/index.js";
 import { sendSuccess, sendError } from "../utils/response.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { calculateWeightedEstimate } from "../utils/evidenceFusion.js";
+import { calculateSkillGaps } from "../utils/skillGapCalculator.js";
+import {
+  getCourseRecommendations,
+  mapTextToCompetencies,
+} from "../services/ml.service.js";
 
 /**
  * Get Personalized iGOT & NSSTA Learning Pathway for Official
+ * Courses are matched against the official's REAL, computed skill gaps via
+ * the ML service's recommend-courses endpoint (ml/pipelines/recommendation_engine.py),
+ * not a hardcoded list.
  */
 export const getPersonalizedPathway = asyncHandler(async (req, res) => {
   const { officialId } = req.params;
@@ -24,68 +34,88 @@ export const getPersonalizedPathway = asyncHandler(async (req, res) => {
   }
 
   const allComps = await db.select().from(competencies);
-  const materials = await db.select().from(learningMaterials);
+  const reqs = official.roleId
+    ? await db
+        .select()
+        .from(competencyRequirements)
+        .where(eq(competencyRequirements.roleId, official.roleId))
+    : [];
+  const offEvidence = await db
+    .select()
+    .from(evidence)
+    .where(eq(evidence.officialId, officialId));
 
-  // Default seed materials if empty
-  const defaultPathwayModules = [
-    {
-      step: 1,
-      courseCode: "NSSTA-TPAC-102",
-      title:
-        "Advanced Stratified Sampling & Survey Design in Official Statistics",
-      provider: "NSSTA Academy",
-      durationHours: 12,
-      targetCompetency: "Statistical Analysis & Inference",
-      gapClosurePotential: 0.8,
-      prerequisites: [],
-      matchScore: 0.94,
-      status: "RECOMMENDED",
-      reason:
-        "Recommended because you have a 0.8 gap in Statistical Analysis required for Statistical Officer role.",
-    },
-    {
-      step: 2,
-      courseCode: "IGOT-STAT-401",
-      title: "National Accounts Statistics & Sectoral GVA Deflation (SNA 2008)",
-      provider: "iGOT Karmayogi",
-      durationHours: 16,
-      targetCompetency: "National Accounts & Macroeconomic Stats",
-      gapClosurePotential: 1.6,
-      prerequisites: ["NSSTA-TPAC-102"],
-      matchScore: 0.96,
-      status: "RECOMMENDED",
-      reason:
-        "Recommended because you have a 1.6 gap in National Accounts required for Statistical Officer role.",
-    },
-    {
-      step: 3,
-      courseCode: "IGOT-PYTHON-204",
-      title:
-        "Automated Data Wrangling & Validation Scripts in Python for NSS Raw Data",
-      provider: "iGOT Karmayogi",
-      durationHours: 8,
-      targetCompetency: "Python & R for Data Analytics",
-      gapClosurePotential: 0.5,
-      prerequisites: [],
-      matchScore: 0.88,
-      status: "ENROLLED",
-      reason:
-        "Enrolled to maintain working proficiency in automated data processing.",
-    },
-  ];
+  const estimates = allComps.map((comp) => {
+    const compEv = offEvidence.filter((e) => e.competencyId === comp.id);
+    return {
+      competencyId: comp.id,
+      proficiencyLevel:
+        compEv.length > 0 ? calculateWeightedEstimate(compEv) : 1.0,
+      evidenceSufficiency:
+        compEv.length > 0 ? Math.min(1, compEv.length * 0.25) : 0,
+    };
+  });
 
-  const totalEstimatedHours = defaultPathwayModules.reduce(
-    (acc, m) => acc + m.durationHours,
+  const requirements = reqs.map((r) => ({
+    id: r.id,
+    competencyId: r.competencyId,
+    requiredLevel: r.requiredLevel,
+    priority: r.priority,
+    urgency: r.urgency,
+    mandatory: r.mandatory,
+  }));
+
+  const gaps = calculateSkillGaps({ requirements, estimates })
+    .map((g) => ({
+      ...g,
+      competency: allComps.find((c) => c.id === g.competencyId),
+    }))
+    .filter((g) => g.competency && g.gapSeverity > 0)
+    .sort((a, b) => b.learningPriority - a.learningPriority);
+
+  let pathwayModules = [];
+
+  if (gaps.length > 0) {
+    try {
+      const skillGapPayload = gaps.map((g) => ({
+        competency_code: g.competency.code,
+        competency_name: g.competency.name,
+        gap_delta: g.gapSeverity,
+      }));
+
+      const { recommendations } = await getCourseRecommendations({
+        skillGaps: skillGapPayload,
+      });
+
+      pathwayModules = (recommendations || []).map((rec, idx) => ({
+        step: idx + 1,
+        courseCode: rec.course_id,
+        title: rec.title,
+        provider: rec.provider,
+        durationHours: rec.duration_hours,
+        targetCompetency: rec.target_competency,
+        matchScore: rec.match_score,
+        status: "RECOMMENDED",
+        reason: rec.reason,
+      }));
+    } catch {
+      // ML recommendation service unreachable — return no modules rather
+      // than fabricated ones
+      pathwayModules = [];
+    }
+  }
+
+  const totalEstimatedHours = pathwayModules.reduce(
+    (acc, m) => acc + (m.durationHours || 0),
     0,
   );
 
   const pathway = {
     officialId,
     officialName: official.designation,
-    totalModules: defaultPathwayModules.length,
+    totalModules: pathwayModules.length,
     totalEstimatedHours,
-    targetRole: official.roleTitle || "Statistical Officer (SO)",
-    pathwayModules: defaultPathwayModules,
+    pathwayModules,
   };
 
   return sendSuccess(
@@ -97,6 +127,8 @@ export const getPersonalizedPathway = asyncHandler(async (req, res) => {
 
 /**
  * Ingest New Learning Material & Trigger Semantic Competency Mapping
+ * Calls the real ML mapping endpoint when rawTextContent is provided and no
+ * competencyId was given explicitly.
  */
 export const ingestLearningMaterial = asyncHandler(async (req, res) => {
   const {
@@ -116,37 +148,60 @@ export const ingestLearningMaterial = asyncHandler(async (req, res) => {
     );
   }
 
-  // Simulate semantic NLP mapping score
-  const simulatedMatchScore = Number((0.82 + Math.random() * 0.15).toFixed(2));
+  let resolvedCompetencyId = competencyId || null;
+  let mappingResult = null;
+
+  if (!resolvedCompetencyId && rawTextContent) {
+    try {
+      const matches = await mapTextToCompetencies({
+        text: rawTextContent,
+        topK: 1,
+      });
+      const topMatch = matches?.[0];
+      if (topMatch) {
+        const [matchedComp] = await db
+          .select()
+          .from(competencies)
+          .where(eq(competencies.code, topMatch.code));
+        if (matchedComp) resolvedCompetencyId = matchedComp.id;
+        mappingResult = topMatch;
+      }
+    } catch {
+      mappingResult = null;
+    }
+  }
+
+  const materialValues = {
+    materialCode,
+    title,
+    provider,
+    durationHours: Number(durationHours),
+    competencyId: resolvedCompetencyId,
+    mappedObjectives: null,
+  };
+  if (mappingResult && typeof mappingResult.match_score === "number") {
+    materialValues.matchConfidence = mappingResult.match_score;
+  }
 
   const [newMaterial] = await db
     .insert(learningMaterials)
-    .values({
-      materialCode,
-      title,
-      provider,
-      durationHours: Number(durationHours),
-      competencyId: competencyId || null,
-      matchConfidence: simulatedMatchScore,
-      mappedObjectives: [
-        "Identify probability sampling techniques",
-        "Apply deflation methods for GVA",
-      ],
-    })
+    .values(materialValues)
     .returning();
 
   return sendSuccess(
     res,
     {
       material: newMaterial,
-      semanticMappingResult: {
-        status: "MAPPED",
-        confidenceScore: simulatedMatchScore,
-        mappedCompetency: "Statistical Analysis & Inference",
-        extractedObjectivesCount: 2,
-      },
+      semanticMappingResult: mappingResult
+        ? {
+            status: "MAPPED",
+            confidenceScore: mappingResult.match_score,
+            mappedCompetencyCode: mappingResult.code,
+            mappedCompetencyName: mappingResult.name,
+          }
+        : { status: resolvedCompetencyId ? "MANUALLY_ASSIGNED" : "UNMAPPED" },
     },
-    "Learning material ingested and mapped successfully",
+    "Learning material ingested successfully",
     201,
   );
 });

@@ -19,16 +19,16 @@ _TAXONOMY_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "competen
 def _load_taxonomy():
     with open(_TAXONOMY_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
-    flat = []
-    for domain in data.get("domains", []):
-        for comp in domain.get("competencies", []):
-            flat.append({
-                "code": comp["code"],
-                "name": comp["name"],
-                "category": domain.get("name", ""),
-                "description": comp.get("description", comp["name"]),
-            })
-    return flat
+    # competencies_taxonomy.json is a flat array: [{code, name, category}, ...]
+    return [
+        {
+            "code": c["code"],
+            "name": c["name"],
+            "category": c["category"],
+            "description": c.get("description", c["name"]),
+        }
+        for c in data
+    ]
 
 
 @lru_cache(maxsize=1)

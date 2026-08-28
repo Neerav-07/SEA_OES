@@ -9,9 +9,7 @@ export async function generateAssessment({
 }) {
   const response = await fetch(`${ML_SERVICE_URL}/api/ml/generate-assessment`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       source_text: sourceText,
       competency_name: competencyName,
@@ -23,9 +21,42 @@ export async function generateAssessment({
 
   if (!response.ok) {
     const errorText = await response.text();
-
     throw new Error(
       `ML assessment generation failed (${response.status}): ${errorText}`,
+    );
+  }
+
+  return response.json();
+}
+
+export async function mapTextToCompetencies({ text, topK = 3 }) {
+  const response = await fetch(`${ML_SERVICE_URL}/api/ml/map-competencies`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, top_k: topK }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `ML competency mapping failed (${response.status}): ${errorText}`,
+    );
+  }
+
+  return response.json();
+}
+
+export async function getCourseRecommendations({ skillGaps = [] }) {
+  const response = await fetch(`${ML_SERVICE_URL}/api/ml/recommend-courses`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ skill_gaps: skillGaps }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `ML course recommendation failed (${response.status}): ${errorText}`,
     );
   }
 

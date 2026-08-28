@@ -34,6 +34,14 @@ class AssessmentInput(BaseModel):
     bloom_distribution: Optional[Dict[str, int]] = None
     existing_intent_hashes: Optional[List[str]] = None
 
+class SkillGapInput(BaseModel):
+    competency_code: str
+    competency_name: Optional[str] = None
+    gap_delta: Optional[float] = 1.0
+
+class RecommendationInput(BaseModel):
+    skill_gaps: List[SkillGapInput]
+
 @app.get("/")
 def root():
     return {"status": "online", "service": "Kshamata ML Intelligence API", "version": "1.0.0"}
@@ -66,3 +74,8 @@ def api_generate_assessment(input_data: AssessmentInput):
         raise HTTPException(status_code=400, detail=str(exc))
     except LLMGenerationError as exc:
         raise HTTPException(status_code=502, detail=f"Question generation failed: {exc}")
+
+@app.post("/api/ml/recommend-courses")
+def api_recommend_courses(input_data: RecommendationInput):
+    gaps = [g.dict() for g in input_data.skill_gaps]
+    return {"recommendations": generate_recommendations({}, gaps)}
