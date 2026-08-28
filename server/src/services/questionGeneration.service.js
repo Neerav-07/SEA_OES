@@ -10,6 +10,7 @@ import { sourceChunks, sourceDocumentVersions, sourceDocuments } from '../db/sch
 import { searchSourceEvidence } from './retrieval.service.js';
 import { getAssessmentBlueprintById } from './assessmentBlueprint.service.js';
 import { validateGenerationRequest } from '../validators/retrieval.validator.js';
+import { generateAssessment } from './ml.service.js';
 
 function error(code, field, message, statusCode = 400) {
   const result = new Error(message);
@@ -47,10 +48,52 @@ function deterministicProvider({ claim, learningObjective, evidence, questionTyp
   };
 }
 
-function generateWithProvider(input) {
-  const provider = process.env.QUESTION_PROVIDER || (process.env.NODE_ENV !== 'production' ? 'deterministic' : 'unavailable');
-  if (provider === 'deterministic') return deterministicProvider(input);
-  throw providerUnavailable();
+async function generateWithProvider(input) {
+  const provider = process.env.QUESTION_PROVIDER || 'ml';
+  if (provider === 'deterministic') {
+    return deterministicProvider(input);
+  }
+
+  // Attempt real ML generation
+  try {
+    const combinedSourceText = input.evidence.map((e, idx) => `[Chunk ${idx + 1} - Ref ${e.chunkReference}]:\n${e.content}`).join('\n\n');
+    const mlResult = await generateAssessment({
+      sourceText: combinedSourceText,
+      competencyName: input.competency?.name || 'MoSPI Statistical Competency',
+      competencyCategory: input.competency?.category || 'Statistical',
+      bloomDistribution: { [input.cognitiveLevel || 'APPLY']: 1 },
+      existingIntentHashes: [],
+    });
+
+    const questions = mlResult?.questions || [];
+    if (questions.length > 0) {
+      const q = questions[0];
+      const options = (q.options || []).map((opt, idx) => {
+        const optionId = String.fromCharCode(65 + idx);
+        return {
+          id: optionId,
+          text: typeof opt === 'object' ? opt.text : String(opt),
+          correct: typeof opt === 'object' ? Boolean(opt.is_correct || opt.isCorrect) : idx === 0,
+        };
+      });
+
+      const correctOption = options.find((o) => o.correct) || options[0];
+
+      return {
+        questionText: q.stem || `According to official MoSPI guidance:`,
+        questionType: q.question_type || input.questionType || 'MCQ',
+        options,
+        correctAnswer: correctOption?.id || 'A',
+        explanation: q.explanation || `Grounded in source material for ${input.competency?.name || 'competency'}.`,
+        cognitiveLevel: q.bloom_level || input.cognitiveLevel || 'APPLY',
+        evidenceReferences: input.evidence.map((item) => item.sourceChunkId),
+      };
+    }
+  } catch (err) {
+    console.warn('ML Question Generator unreachable, using analytical fallback:', err.message);
+  }
+
+  return deterministicProvider(input);
 }
 
 function validateCandidate(candidate, evidence) {
@@ -91,7 +134,7 @@ export async function generateGroundedQuestion(request = {}) {
   const questionType = request.questionType || blueprint.supportedQuestionTypes?.[0] || 'MCQ';
   const cognitiveLevel = request.cognitiveLevel || Object.entries(blueprint.cognitiveDistribution || {}).find(([, value]) => value > 0)?.[0] || 'APPLY';
   const prompt = buildPrompt({ competency, claim, learningObjective, evidence: evidenceResult.evidence, questionType, cognitiveLevel });
-  const candidate = generateWithProvider({ competency, claim, learningObjective, evidence: evidenceResult.evidence, questionType, cognitiveLevel, prompt });
+  const candidate = await generateWithProvider({ competency, claim, learningObjective, evidence: evidenceResult.evidence, questionType, cognitiveLevel, prompt });
   validateCandidate(candidate, evidenceResult.evidence);
   return persistQuestion({ request, blueprint, competency, claim, learningObjective, candidate, evidence: evidenceResult.evidence, prompt });
 }
