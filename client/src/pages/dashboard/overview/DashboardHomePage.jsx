@@ -84,7 +84,7 @@ const ADMIN_STATS = [
 const ADMIN_ACTIVITY = [
   {
     id: 1,
-    label: 'Dr. Rajesh Kumar (SSO, DIID) completed Diagnostic Assessment: Survey Sampling (Score: 85%)',
+    label: 'Senior Statistical Officer (SSO, DIID) completed Diagnostic Assessment: Survey Sampling (Score: 85%)',
     time: '10 mins ago',
     status: 'done',
     actionText: 'Audit Scorecard →',

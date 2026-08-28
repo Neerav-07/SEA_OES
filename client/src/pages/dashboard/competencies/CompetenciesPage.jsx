@@ -15,8 +15,8 @@ import useAuthStore from '../../../store/auth.store.js';
 
 const FALLBACK_OFFICIAL = {
   id: 'off-01',
-  userName: 'Dr. Rajesh Kumar',
-  userEmail: 'rajesh.kumar@mospi.gov.in',
+  userName: 'Official Profile',
+  userEmail: 'official@mospi.gov.in',
   designation: 'Senior Statistical Officer',
   department: 'MoSPI DIID Headquarters',
   cadre: 'ISS (Indian Statistical Service)',

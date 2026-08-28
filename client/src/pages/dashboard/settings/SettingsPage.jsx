@@ -60,8 +60,28 @@ export default function SettingsPage() {
   const [department, setDepartment] = useState(() => user?.department || 'Data Informatics & Innovation Division (DIID)');
   const [cadre, setCadre] = useState(() => user?.cadre || 'ISS (Indian Statistical Service)');
   const [experienceYears, setExperienceYears] = useState(5);
-  const [education, setEducation] = useState('M.Sc. in Statistics / Agricultural Statistics (IASRI)');
+  const [education, setEducation] = useState(() => user?.education || 'M.Sc. in Statistics / Agricultural Statistics (IASRI)');
   const [savingProfile, setSavingProfile] = useState(false);
+
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const res = await api.get('/officials/me');
+        if (res.data?.data) {
+          const d = res.data.data;
+          if (d.designation) setDesignation(d.designation);
+          if (d.department) setDepartment(d.department);
+          if (d.cadre) setCadre(d.cadre);
+          if (d.experienceYears != null) setExperienceYears(d.experienceYears);
+          if (d.education) setEducation(d.education);
+          if (d.preferredLanguage) setLanguage(d.preferredLanguage);
+        }
+      } catch {
+        // Fallback to local session
+      }
+    }
+    loadProfile();
+  }, []);
 
   // Admin Governance State
   const [auditLogsEnabled, setAuditLogsEnabled] = useState(true);
