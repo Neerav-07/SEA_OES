@@ -1,13 +1,13 @@
-import { db } from "../db/index.js";
+import { db } from "../../db/index.js";
 import { eq } from "drizzle-orm";
 import {
   officials,
   competencies,
   evidence,
   competencyHistory,
-} from "../db/schema/index.js";
-import { sendSuccess } from "../utils/response.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+} from "../../db/schema/index.js";
+import { sendSuccess } from "../../utils/response.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 /**
  * Get Organization-Wide Workforce Analytics & Competency Heatmaps

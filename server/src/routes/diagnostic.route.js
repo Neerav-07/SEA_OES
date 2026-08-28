@@ -4,7 +4,7 @@ import {
   generateDiagnosticBlueprint,
   generateDiagnosticAssessment,
   submitDiagnosticAttempt,
-} from "../controllers/diagnostic.controller.js";
+} from "../controllers/assessments/diagnostic.controller.js";
 
 const router = Router();
 

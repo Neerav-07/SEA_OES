@@ -1,4 +1,4 @@
-import { db } from "../db/index.js";
+import { db } from "../../db/index.js";
 
 import {
   officials,
@@ -8,15 +8,15 @@ import {
   evidence,
   assessments,
   questions,
-} from "../db/schema/index.js";
+} from "../../db/schema/index.js";
 
 import { eq } from "drizzle-orm";
 
-import { sendSuccess, sendError } from "../utils/response.js";
+import { sendSuccess, sendError } from "../../utils/response.js";
 
-import { asyncHandler } from "../utils/asyncHandler.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
-import { generateAssessment } from "../services/ml.service.js";
+import { generateAssessment } from "../../services/ml.service.js";
 
 /**
  * Bloom distribution used by the diagnostic assessment.

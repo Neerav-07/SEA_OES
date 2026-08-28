@@ -1,4 +1,4 @@
-import { db } from "../db/index.js";
+import { db } from "../../db/index.js";
 import { eq } from "drizzle-orm";
 import {
   officials,
@@ -7,9 +7,9 @@ import {
   evidence,
   competencies,
   roleCompetencies,
-} from "../db/schema/index.js";
-import { sendSuccess, sendError } from "../utils/response.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+} from "../../db/schema/index.js";
+import { sendSuccess, sendError } from "../../utils/response.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 /**
  * Get all official profiles with user details & current role

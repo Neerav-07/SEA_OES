@@ -1,8 +1,8 @@
-import { db } from "../db/index.js";
+import { db } from "../../db/index.js";
 import { eq } from "drizzle-orm";
-import { roles, roleCompetencies, competencies } from "../db/schema/index.js";
-import { sendSuccess, sendError } from "../utils/response.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import { roles, roleCompetencies, competencies } from "../../db/schema/index.js";
+import { sendSuccess, sendError } from "../../utils/response.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 /**
  * Get all official roles with required competency profiles

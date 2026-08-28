@@ -1,20 +1,20 @@
 import { eq } from "drizzle-orm";
-import { db } from "../db/index.js";
+import { db } from "../../db/index.js";
 import {
   officials,
   competencies,
   competencyRequirements,
   evidence,
   learningMaterials,
-} from "../db/schema/index.js";
-import { sendSuccess, sendError } from "../utils/response.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { calculateWeightedEstimate } from "../utils/evidenceFusion.js";
-import { calculateSkillGaps } from "../utils/skillGapCalculator.js";
+} from "../../db/schema/index.js";
+import { sendSuccess, sendError } from "../../utils/response.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
+import { calculateWeightedEstimate } from "../../utils/evidenceFusion.js";
+import { calculateSkillGaps } from "../../utils/skillGapCalculator.js";
 import {
   getCourseRecommendations,
   mapTextToCompetencies,
-} from "../services/ml.service.js";
+} from "../../services/ml.service.js";
 
 /**
  * Get Personalized iGOT & NSSTA Learning Pathway for Official
