@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getOfficialEvidence, recordEvidence, getEvidenceProvenance } from '../controllers/evidence.controller.js';
+import { getOfficialEvidence, recordEvidence, getEvidenceProvenance } from '../controllers/competencies/evidence.controller.js';
 
 const router = Router();
 

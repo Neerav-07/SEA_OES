@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
-import { Award, BarChart3, GraduationCap, FileCheck, TrendingUp, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
+import {
+  Award, BarChart3, GraduationCap, FileCheck, TrendingUp, ShieldCheck, ArrowRight, CheckCircle2,
+  FileText, Database, History, Layers, Sparkles, Brain, BookOpen, Lock,
+} from 'lucide-react';
 import KshamataLogo from '../../components/KshamataLogo';
 import Footer from '../../components/Footer';
 import HeroProductStoryDemo from '../../components/landing/HeroProductStoryDemo';
@@ -7,39 +10,75 @@ import HeroProductStoryDemo from '../../components/landing/HeroProductStoryDemo'
 const FEATURES = [
   {
     icon: Award,
-    badge: 'MoSPI Taxonomy',
-    title: 'Role Competency Frameworks',
-    desc: 'Maps statistical, technical, digital governance, and managerial competencies across official roles in MoSPI DIID and state statistical departments.',
+    badge: 'FRAC Taxonomy',
+    title: 'FRAC Role Competency Mapping',
+    desc: 'Maps statistical, technical, digital governance, and managerial competencies across all MoSPI official roles using FRAC (Framework for Roles, Activities, and Competencies) taxonomy alignment.',
+  },
+  {
+    icon: FileCheck,
+    badge: 'AI Assessment Engine',
+    title: 'Grounded MCQ & Blueprint Studio',
+    desc: 'Generates diagnostic quiz questions directly from ingested MoSPI manuals and training materials with zero hallucination, full source citation, and configurable cognitive-level distribution.',
   },
   {
     icon: BarChart3,
     badge: 'Evidence Fusion',
-    title: 'Evidence-Driven Skill Gaps',
-    desc: 'Evaluates existing capabilities against required role profiles using diagnostic evidence, confidence scores, and auditable provenance.',
+    title: 'Evidence-Driven Skill Gap Analysis',
+    desc: 'Evaluates existing capabilities against required role profiles using diagnostic scores, cryptographic evidence hashes, confidence intervals, and auditable provenance chains.',
   },
   {
     icon: GraduationCap,
     badge: 'iGOT Karmayogi',
-    title: 'iGOT & NSSTA Integration',
-    desc: 'Recommends personalized learning pathways directly integrated with iGOT Karmayogi modules and NSSTA TPAC training programmes.',
-  },
-  {
-    icon: FileCheck,
-    badge: 'AI MCQ Generator',
-    title: 'Intelligent Assessment Engine',
-    desc: 'Generates grounded MCQs and diagnostic quizzes directly from uploaded documents, presentations, and training materials with instant evaluation.',
+    title: 'Personalized iGOT & NSSTA Pathways',
+    desc: 'Recommends AI-personalized learning pathways integrated with iGOT Karmayogi modules and NSSTA TPAC training catalogue, dynamically re-ranked from past assessment performance.',
   },
   {
     icon: TrendingUp,
-    badge: 'Workforce Analytics',
-    title: 'Learner & Admin Dashboards',
-    desc: 'Empowers officials with personal progress tracking and gives administrators organization-wide workforce analytics and predictive capacity insights.',
+    badge: 'Predictive Analytics',
+    title: 'Workforce Capacity Forecasting',
+    desc: 'Predicts future skill deficits across MoSPI divisions using ML time-series models, enabling proactive annual capacity building planning before gaps become critical.',
+  },
+  {
+    icon: FileText,
+    badge: 'ACBP Report Engine',
+    title: 'Official ACBP Report Generator',
+    desc: 'Compiles and exports the official MoSPI Annual Capacity Building Plan (ACBP) as a production-ready A4 PDF with government emblems, digital signatures, and NIC e-Sign DSC stamps.',
   },
   {
     icon: ShieldCheck,
+    badge: 'Governance & Review',
+    title: 'Admin Question Review Queue',
+    desc: 'Empowers NSSTA governance officers with a dedicated quality review pipeline for AI-generated questions, supporting approve, reject, revise, and validate workflows.',
+  },
+  {
+    icon: Database,
+    badge: 'RAG Knowledge Base',
+    title: 'Source Library & Vector Grounding',
+    desc: 'Ingest official manuals, video lecture transcripts, and dataset schemas into a traceable vector knowledge base for retrieval-augmented grounded AI question generation.',
+  },
+  {
+    icon: History,
+    badge: 'Behavior Tracking',
+    title: 'Assessment History & Score Ledger',
+    desc: 'Permanently tracks every diagnostic attempt, score trajectory, proficiency elevation, cryptographic evidence hashes, and timestamps for ML-driven personalized recommendation updates.',
+  },
+  {
+    icon: Brain,
+    badge: 'AI Virtual Assistant',
+    title: 'Kshamata AI Copilot',
+    desc: 'An always-available AI virtual assistant that answers competency queries, explains FRAC standards, and guides officials through diagnostic and learning workflows in natural language.',
+  },
+  {
+    icon: Layers,
+    badge: 'Dual-Role Platform',
+    title: 'Learner & Admin Governance Views',
+    desc: 'Role-segregated dashboards: Officials track personal competency growth and take diagnostics, while Admins audit workforce analytics, mandate courses, and generate ACBP reports.',
+  },
+  {
+    icon: Lock,
     badge: 'GIGW & Cyber Standard',
     title: 'Cloud-Ready & Cyber Compliant',
-    desc: 'Built with role-based access control (RBAC), SSO integration, and strict alignment with official government cybersecurity guidelines.',
+    desc: 'Built with role-based access control (RBAC), SSO-ready authentication, production-grade JWT sessions, and strict alignment with official government cybersecurity guidelines.',
   },
 ];
 
@@ -66,36 +105,38 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Split Hero (Left Text Copy + Right Interactive Product Story Demo) ── */}
-      <section className="relative z-10 mx-auto max-w-7xl px-6 py-12 lg:py-20">
+      <section className="relative z-10 mx-auto max-w-7xl px-6 pt-4 pb-12 lg:pt-8 lg:pb-16">
         <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
           {/* Left Text Column */}
           <div className="lg:col-span-6 text-left space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/90 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[#1E3A8A] backdrop-blur shadow-2xs">
-              <span className="h-2 w-2 rounded-full bg-[#1E3A8A] animate-pulse" />
-              Kshamata | MoSPI DIID & NSSTA Capacity Building
-            </div>
-
-            <h1 className="text-4xl font-black leading-[1.12] tracking-tight text-[#020617] lg:text-5xl">
-              AI-Enabled Competency Intelligence for <br />
-              <span className="bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8] bg-clip-text text-transparent">
-                India's Official Statistical System
+            <h1 className="text-3xl font-black leading-[1.2] tracking-tight text-[#020617] sm:text-4xl lg:text-[46px] xl:text-[54px]">
+              <span className="block whitespace-nowrap">Empowering India's</span>
+              <span className="block mt-1 whitespace-nowrap bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8] bg-clip-text text-transparent pb-1">
+                statistical workforce!
               </span>
             </h1>
 
-            <p className="text-base lg:text-lg text-slate-700 leading-relaxed font-medium max-w-xl">
-              Bridging skill gaps, personalizing iGOT Karmayogi & NSSTA TPAC pathways, and generating grounded assessments for continuous workforce capacity building.
+            <p className="text-lg lg:text-xl font-semibold text-slate-500 tracking-wide mt-1">
+              For India's Official Statistical System
             </p>
 
-            <div className="space-y-2 pt-1 text-xs font-bold text-slate-700">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-[#1E3A8A]" /> Baseline Evidence Fusion & Confidence Scoring
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-[#1E3A8A]" /> Prerequisite-Aware iGOT Learning Pathways
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-[#1E3A8A]" /> Grounded AI MCQ Generation & Closed-Loop Analytics
-              </div>
+            <div className="text-xs lg:text-sm font-medium tracking-wide text-slate-500 flex flex-wrap items-center gap-x-5 gap-y-2.5 pt-1">
+              <span className="flex items-center gap-1.5">
+                <span className="text-emerald-600 font-black text-sm">✓</span>
+                <span>FRAC Competency Mapping</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-emerald-600 font-black text-sm">✓</span>
+                <span>AI Grounded Assessments</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-emerald-600 font-black text-sm">✓</span>
+                <span>Personalized Pathways</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-emerald-600 font-black text-sm">✓</span>
+                <span>ACBP Report Engine</span>
+              </span>
             </div>
 
             <div className="flex flex-col items-start gap-4 sm:flex-row pt-4">
@@ -109,51 +150,53 @@ export default function LandingPage() {
           </div>
 
           {/* Right Product Story Demo Animation Column */}
-          <div className="lg:col-span-6">
-            <HeroProductStoryDemo />
+          <div className="lg:col-span-6 flex justify-end w-full">
+            <div className="w-full max-w-lg lg:mr-0 lg:ml-auto">
+              <HeroProductStoryDemo />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── Features Grid (Sleek & Professional Compact Cards) ── */}
-      <section className="relative z-10 mx-auto max-w-6xl px-6 pb-20">
-        <div className="text-center mb-10">
+      {/* ── Features Grid ── */}
+      <section className="relative z-10 mx-auto max-w-7xl px-6 pb-20">
+        <div className="text-center mb-12">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#1E3A8A] mb-2.5">
-            <CheckCircle2 size={14} className="text-[#1E3A8A]" /> Enterprise Capabilities
+            <Sparkles size={14} className="text-[#1E3A8A]" /> 12 Production-Ready Capabilities
           </div>
           <h2 className="text-3xl lg:text-4xl font-black tracking-tight text-[#020617]">
-            Core Platform Capabilities
+            Enterprise Platform Features
           </h2>
-          <p className="mx-auto mt-2 max-w-2xl text-slate-600 font-medium text-sm">
-            Transforming government workforce development through evidence, personalized learning, and grounded assessment intelligence.
+          <p className="mx-auto mt-2 max-w-3xl text-slate-600 font-medium text-sm">
+            Every module is built, tested, and production-deployed — from AI-grounded question generation and FRAC taxonomy mapping to official ACBP report exports with digital signatures.
           </p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {FEATURES.map((feat) => {
             const Icon = feat.icon;
             return (
               <div
                 key={feat.title}
-                className="group relative rounded-2xl border border-slate-200/90 bg-white/90 p-5 lg:p-6 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-900/5 flex flex-col justify-between overflow-hidden text-left"
+                className="group relative rounded-2xl border border-slate-200/90 bg-white/90 p-5 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-900/5 flex flex-col justify-between overflow-hidden text-left"
               >
-                {/* Top subtle highlight glow */}
-                <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-blue-600/0 to-transparent group-hover:via-blue-600 transition-all duration-500" />
+                {/* Bottom subtle highlight glow */}
+                <div className="absolute bottom-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#1E3A8A] to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
 
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="inline-flex items-center justify-center rounded-xl bg-blue-50/90 p-3 ring-1 ring-blue-100/80 group-hover:bg-[#1E3A8A] group-hover:scale-105 transition-all duration-300">
-                      <Icon size={20} className="text-[#1E3A8A] group-hover:text-white transition-colors duration-300" />
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="inline-flex items-center justify-center rounded-xl bg-blue-50/90 p-2.5 ring-1 ring-blue-100/80 group-hover:bg-[#1E3A8A] group-hover:scale-105 transition-all duration-300">
+                      <Icon size={18} className="text-[#1E3A8A] group-hover:text-white transition-colors duration-300" />
                     </div>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-700 group-hover:bg-blue-50 group-hover:text-[#1E3A8A] transition-colors">
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold text-slate-600 group-hover:bg-blue-50 group-hover:text-[#1E3A8A] transition-colors">
                       {feat.badge}
                     </span>
                   </div>
 
-                  <h3 className="mb-2 text-base font-bold text-[#020617] group-hover:text-[#1E3A8A] transition-colors">
+                  <h3 className="mb-1.5 text-sm font-bold text-[#020617] group-hover:text-[#1E3A8A] transition-colors">
                     {feat.title}
                   </h3>
-                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
                     {feat.desc}
                   </p>
                 </div>
@@ -166,7 +209,9 @@ export default function LandingPage() {
       {/* ── Bottom CTA ── */}
       <section className="relative z-10 py-20 text-center border-t border-slate-200 bg-white/70 backdrop-blur-md">
         <h2 className="mb-4 text-3xl lg:text-4xl font-black text-[#020617]">Strengthen Official Statistical Capacity Today</h2>
-        <p className="mb-8 text-slate-600 font-medium max-w-xl mx-auto">Empowering officials with targeted training, evidence, and actionable competency insights.</p>
+        <p className="mb-8 text-slate-600 font-medium max-w-xl mx-auto">
+          AI-powered competency diagnostics, grounded assessments, and personalized iGOT pathways for India's statistical workforce.
+        </p>
         <Link to="/register" className="inline-flex items-center gap-2 rounded-2xl bg-[#1E3A8A] px-10 py-4 text-base font-bold !text-white shadow-xl hover:bg-[#172554] transition-all hover:scale-105">
           Access Portal Now <ArrowRight size={18} className="!text-white" />
         </Link>

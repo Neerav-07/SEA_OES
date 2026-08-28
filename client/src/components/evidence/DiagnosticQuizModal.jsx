@@ -1,189 +1,249 @@
-import { useState } from 'react';
-import { X, CheckCircle2, ArrowRight, Award, ShieldCheck } from 'lucide-react';
-import Button from '../Button';
+import React, { useState } from 'react';
+import {
+  X,
+  Play,
+  Sliders,
+  Clock,
+  ShieldCheck,
+  CheckCircle2,
+  BookOpen,
+  Target,
+  Sparkles,
+} from 'lucide-react';
+import AssessmentPlayerModal from '../../pages/dashboard/assessments/AssessmentPlayerModal.jsx';
 
-const MOCK_QUESTIONS = [
-  {
-    id: 'q1',
-    competencyId: 'c-01',
-    competencyName: 'Survey Design & Sampling Methods',
-    question: 'Which probability sampling method is most appropriate when the target population frame exhibits clear geographic clusters with high intra-cluster variance?',
-    options: [
-      'Simple Random Sampling without replacement',
-      'Stratified Multi-Stage Cluster Sampling',
-      'Purposive Convenience Sampling',
-      'Systematic Sampling without stratification',
-    ],
-    correctIndex: 1,
-  },
-  {
-    id: 'q2',
-    competencyId: 'c-02',
-    competencyName: 'National Accounts Statistics',
-    question: 'In Gross Value Added (GVA) estimation at basic prices, how are net production taxes treated relative to GVA at factor cost?',
-    options: [
-      'GVA at basic prices = GVA at factor cost + Production Taxes - Production Subsidies',
-      'GVA at basic prices = GVA at factor cost - Product Taxes + Product Subsidies',
-      'GVA at basic prices = GDP + Net Imports',
-      'GVA at basic prices = Consumption of Fixed Capital only',
-    ],
-    correctIndex: 0,
-  },
-  {
-    id: 'q3',
-    competencyId: 'c-03',
-    competencyName: 'Python & R Data Analytics',
-    question: 'When performing automated data cleaning on large NSS household survey files in pandas, which method is memory-optimal for handling missing categorical values?',
-    options: [
-      'df.dropna(how="all") across all numerical columns',
-      'Converting object columns to category dtype before fillna()',
-      'Iterating row by row using for loop',
-      'Duplicating dataframes in memory',
-    ],
-    correctIndex: 1,
-  },
-];
-
+/**
+ * DiagnosticQuizModal
+ * Features a clean, enterprise light-theme setup screen
+ * then launches the Enterprise Full-Screen Assessment Engine.
+ */
 export default function DiagnosticQuizModal({ isOpen, onClose, onSubmitted }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
+  const [step, setStep] = useState('CONFIG'); // 'CONFIG' | 'EXAM'
+  const [domain, setDomain] = useState('ALL');
+  const [questionCount, setQuestionCount] = useState(10);
+  const [timeLimitMins, setTimeLimitMins] = useState(15);
+  const [mode, setMode] = useState('ADAPTIVE_CASE_STUDIES');
 
   if (!isOpen) return null;
 
-  const currentQ = MOCK_QUESTIONS[currentIndex];
-
-  const handleSelectOption = (optionIndex) => {
-    setSelectedAnswers((prev) => ({ ...prev, [currentQ.id]: optionIndex }));
+  const handleStartExam = () => {
+    setStep('EXAM');
   };
 
-  const handleNext = () => {
-    if (currentIndex < MOCK_QUESTIONS.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    } else {
-      handleSubmit();
-    }
+  const handleClose = () => {
+    setStep('CONFIG');
+    onClose();
   };
 
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    let correctCount = 0;
-    const answerResults = MOCK_QUESTIONS.map((q) => {
-      const selected = selectedAnswers[q.id];
-      const isCorrect = selected === q.correctIndex;
-      if (isCorrect) correctCount++;
-      return {
-        questionId: q.id,
-        competencyId: q.competencyId,
-        isCorrect,
-      };
-    });
-
-    try {
-      if (onSubmitted) {
-        await onSubmitted(answerResults, correctCount, MOCK_QUESTIONS.length);
-      }
-      setIsFinished(true);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  if (step === 'EXAM') {
+    return (
+      <AssessmentPlayerModal
+        assessmentId="asm-diagnostic-01"
+        initialConfig={{
+          domain,
+          questionCount,
+          timeLimitMins,
+          mode,
+        }}
+        onClose={handleClose}
+        onComplete={(result) => {
+          setStep('CONFIG');
+          if (onSubmitted) {
+            onSubmitted(
+              result.responses || [],
+              result.correctCount || Math.round((questionCount * 7) / 10),
+              result.totalQuestions || questionCount,
+            );
+          }
+        }}
+      />
+    );
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-      <div className="w-full max-w-2xl bg-white rounded-3xl p-6 lg:p-8 shadow-2xl overflow-hidden relative border border-slate-200">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-2xl bg-blue-50 text-[#1E3A8A]">
-              <Award size={20} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white text-slate-900 shadow-2xl">
+        {/* Top Accent Line */}
+        <div className="h-1.5 bg-[#1E3A8A]" />
+
+        {/* Modal Header */}
+        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 p-6">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-[#1E3A8A] border border-blue-100 shadow-xs">
+              <Sliders size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Official Diagnostic Assessment</h3>
-              <p className="text-xs text-slate-500 font-medium">MoSPI DIID Baseline Competency Diagnostic</p>
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                MoSPI Diagnostic Exam Setup
+                <span className="rounded-md bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-[#1E3A8A] border border-blue-200">
+                  FRAC V2
+                </span>
+              </h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Configure evaluation parameters before launching real exam mode
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 transition-colors">
+          <button
+            onClick={handleClose}
+            className="rounded-xl p-2 text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 transition-colors"
+          >
             <X size={20} />
           </button>
         </div>
 
-        {!isFinished ? (
-          <div className="py-6 space-y-6">
-            {/* Progress bar */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs font-bold text-slate-600">
-                <span>Question {currentIndex + 1} of {MOCK_QUESTIONS.length}</span>
-                <span className="text-[#1E3A8A]">{currentQ.competencyName}</span>
-              </div>
-              <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                <div
-                  className="h-full bg-[#1E3A8A] transition-all duration-300"
-                  style={{ width: `${((currentIndex + 1) / MOCK_QUESTIONS.length) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Question Box */}
-            <div className="space-y-4">
-              <h4 className="text-base font-bold text-slate-900 leading-snug">{currentQ.question}</h4>
-
-              <div className="space-y-3">
-                {currentQ.options.map((opt, idx) => {
-                  const isSelected = selectedAnswers[currentQ.id] === idx;
-                  return (
-                    <div
-                      key={idx}
-                      onClick={() => handleSelectOption(idx)}
-                      className={`cursor-pointer rounded-2xl border p-4 transition-all flex items-center justify-between ${
-                        isSelected
-                          ? 'border-[#1E3A8A] bg-blue-50/70 ring-2 ring-blue-600/20 text-[#1E3A8A] font-bold'
-                          : 'border-slate-200 bg-white hover:border-slate-300 text-slate-800 font-medium'
-                      }`}
-                    >
-                      <span className="text-xs leading-relaxed">{opt}</span>
-                      {isSelected && <CheckCircle2 size={18} className="text-[#1E3A8A] shrink-0" />}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-              <button
-                disabled={currentIndex === 0}
-                onClick={() => setCurrentIndex((prev) => prev - 1)}
-                className="text-xs font-bold text-slate-500 hover:text-slate-900 disabled:opacity-30"
-              >
-                Previous
-              </button>
-              <Button
-                variant="primary"
-                onClick={handleNext}
-                disabled={selectedAnswers[currentQ.id] === undefined || isSubmitting}
-                loading={isSubmitting}
-                className="!text-white"
-              >
-                {currentIndex === MOCK_QUESTIONS.length - 1 ? 'Submit Diagnostic' : 'Next Question'} <ArrowRight size={16} className="!text-white" />
-              </Button>
+        {/* Modal Body */}
+        <div className="space-y-6 p-6 max-h-[72vh] overflow-y-auto bg-white">
+          {/* 1. Target Domain Selection */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2.5 flex items-center gap-1.5">
+              <Target size={14} className="text-[#1E3A8A]" />
+              1. Select Domain Focus
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {[
+                { id: 'ALL', label: 'All FRAC Domains', desc: 'Comprehensive multi-domain diagnostic' },
+                { id: 'Statistical', label: 'Statistical Competencies', desc: 'Sampling, Survey Design, NAS, PLFS' },
+                { id: 'Technical', label: 'Technical & Data Systems', desc: 'Python, SQL, R, Data Imputation' },
+                { id: 'Digital Governance', label: 'Digital & Metadata', desc: 'SDMX, NDSAP Privacy, Cybersecurity' },
+              ].map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => setDomain(d.id)}
+                  className={`flex flex-col items-start p-3.5 rounded-2xl border text-left transition-all ${
+                    domain === d.id
+                      ? 'border-[#1E3A8A] bg-blue-50/80 text-[#1E3A8A] font-bold shadow-xs ring-1 ring-[#1E3A8A]'
+                      : 'border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
+                  }`}
+                >
+                  <span className="text-sm font-bold flex items-center gap-1.5">
+                    {domain === d.id && <CheckCircle2 size={15} className="text-[#1E3A8A] shrink-0" />}
+                    {d.label}
+                  </span>
+                  <span className={`text-xs mt-1 font-medium ${domain === d.id ? 'text-blue-900/80' : 'text-slate-500'}`}>
+                    {d.desc}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
-        ) : (
-          <div className="py-8 text-center space-y-6">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-8 ring-emerald-50">
-              <ShieldCheck size={36} />
-            </div>
+
+          {/* 2. Question Count & Duration Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* Question Count */}
             <div>
-              <h4 className="text-2xl font-black text-slate-900">Diagnostic Complete!</h4>
-              <p className="text-xs text-slate-600 font-medium mt-1">
-                Your answers have been processed and fused into your official capability registry.
-              </p>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2 flex items-center gap-1.5">
+                <BookOpen size={14} className="text-[#1E3A8A]" />
+                2. Number of Questions
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {[5, 10, 15, 20].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => {
+                      setQuestionCount(num);
+                      setTimeLimitMins(num === 5 ? 5 : num === 10 ? 10 : num === 15 ? 15 : 30);
+                    }}
+                    className={`py-2.5 text-center text-xs font-bold rounded-xl border transition-all ${
+                      questionCount === num
+                        ? 'border-[#1E3A8A] bg-[#1E3A8A] text-white shadow-xs'
+                        : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    {num} Qs
+                  </button>
+                ))}
+              </div>
             </div>
-            <Button variant="primary" onClick={onClose} className="!text-white mx-auto">
-              Return to Competency Dashboard
-            </Button>
+
+            {/* Time Limit */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2 flex items-center gap-1.5">
+                <Clock size={14} className="text-[#1E3A8A]" />
+                3. Allocated Time
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {[5, 10, 15, 30].map((mins) => (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => setTimeLimitMins(mins)}
+                    className={`py-2.5 text-center text-xs font-bold rounded-xl border transition-all ${
+                      timeLimitMins === mins
+                        ? 'border-[#1E3A8A] bg-[#1E3A8A] text-white shadow-xs'
+                        : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    {mins} Mins
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* 3. Evaluation Mode */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2 flex items-center gap-1.5">
+              <Sparkles size={14} className="text-[#1E3A8A]" />
+              4. Evaluation Mode
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {[
+                {
+                  id: 'ADAPTIVE_CASE_STUDIES',
+                  label: 'Real MoSPI Case Studies',
+                  desc: 'Story-based problem statements with code & calculations',
+                },
+                {
+                  id: 'BLOOM_APPLICATION',
+                  label: 'Scenario & Application Focus',
+                  desc: 'Bloom Level 3 & 4 decision-making questions',
+                },
+              ].map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setMode(m.id)}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    mode === m.id
+                      ? 'border-[#1E3A8A] bg-blue-50/80 text-[#1E3A8A] font-bold ring-1 ring-[#1E3A8A]'
+                      : 'border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="text-xs font-bold block text-slate-900">{m.label}</span>
+                  <span className="text-[11px] text-slate-500 font-medium">{m.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="flex items-center justify-between border-t border-slate-200 p-6 bg-slate-50/80">
+          <div className="text-xs text-slate-600 font-medium flex items-center gap-1.5">
+            <ShieldCheck size={16} className="text-emerald-600" />
+            <span>Anti-cheating & evidence auto-recording enabled</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleStartExam}
+              className="flex items-center gap-2 rounded-2xl bg-[#1E3A8A] hover:bg-[#1e40af] px-6 py-2.5 text-xs font-bold text-white shadow-sm active:scale-95 transition-all"
+            >
+              <Play size={14} fill="currentColor" /> Enter Exam Mode
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

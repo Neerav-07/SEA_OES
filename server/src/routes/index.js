@@ -11,6 +11,18 @@ import diagnosticRouter from "./diagnostic.route.js";
 import analyticsRouter from "./analytics.route.js";
 import recalibrationRouter from "./recalibration.route.js";
 import pathwayRouter from "./pathway.route.js";
+import assessmentRouter from "./assessment.route.js";
+import assessmentBlueprintRouter from "./assessmentBlueprint.route.js";
+import sourceRouter from "./source.route.js";
+import retrievalRouter from "./retrieval.route.js";
+import questionGenerationRouter from "./questionGeneration.route.js";
+import igotRouter from "./igot.route.js";
+import nsstaRouter from "./nssta.route.js";
+import attemptRouter from "./attempt.route.js";
+import reviewRouter from "./review.route.js";
+import assistantRouter from "./assistant.route.js";
+import predictionsRouter from "./predictions.route.js";
+import reportRouter from "./report.route.js";
 
 const router = Router();
 
@@ -26,5 +38,17 @@ router.use("/diagnostics", diagnosticRouter);
 router.use("/analytics", analyticsRouter);
 router.use("/recalibration", recalibrationRouter);
 router.use("/pathways", pathwayRouter);
+router.use("/assessments", assessmentRouter);
+router.use("/assessment-blueprints", assessmentBlueprintRouter);
+router.use("/sources", sourceRouter);
+router.use("/retrieval", retrievalRouter);
+router.use("/questions", questionGenerationRouter);
+router.use("/igot", igotRouter);
+router.use("/nssta", nsstaRouter);
+router.use("/attempts", attemptRouter);
+router.use("/review", reviewRouter);
+router.use("/assistant", assistantRouter);
+router.use("/predictions", predictionsRouter);
+router.use("/reports", reportRouter);
 
 export default router;

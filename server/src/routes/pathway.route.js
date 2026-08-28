@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getPersonalizedPathway, ingestLearningMaterial, getLearningMaterials } from '../controllers/pathway.controller.js';
+import { getPersonalizedPathway, ingestLearningMaterial, getLearningMaterials } from '../controllers/integrations/pathway.controller.js';
 
 const router = Router();
 

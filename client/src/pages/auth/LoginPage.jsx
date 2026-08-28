@@ -7,6 +7,7 @@ import Button from '../../components/Button';
 import Container from '../../components/Container';
 import Input from '../../components/Input';
 import KshamataLogo from '../../components/KshamataLogo';
+import useServerWarmup from '../../hooks/useServerWarmup';
 import api from '../../services/api.js';
 import useAuthStore from '../../store/auth.store.js';
 import { validateLoginForm } from '../../utils/validators.js';
@@ -27,6 +28,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
   const setTransitioning = useAuthStore((s) => s.setTransitioning);
+  const { isWakingUp } = useServerWarmup();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -83,9 +85,9 @@ export default function LoginPage() {
         className="grid w-full max-w-6xl overflow-hidden rounded-[2.5rem] border border-(--app-color-border)/40 backdrop-blur-md lg:grid-cols-[1.1fr_0.9fr]"
         style={{ backgroundColor: 'var(--app-color-surface-glass)', boxShadow: 'var(--app-shadow-elevated)' }}
       >
-          {/* ── Left branding panel ── */}
+          {/* ── Left branding panel (hidden on mobile, visible on lg screens) ── */}
           <section
-            className="relative flex flex-col items-center justify-center overflow-hidden p-8 text-center text-white lg:p-12"
+            className="hidden lg:flex relative flex-col items-center justify-center overflow-hidden p-8 text-center text-white lg:p-12"
             style={{ background: 'var(--app-gradient-auth-login)' }}
           >
             <div className="noise-overlay pointer-events-none opacity-20" />
@@ -118,15 +120,18 @@ export default function LoginPage() {
             </div>
           </section>
 
-          {/* ── Right form panel ── */}
+          {/* ── Right form panel (full width on mobile) ── */}
           <section
-            className="auth-form-slide flex flex-col justify-center p-8 lg:p-12"
+            className="auth-form-slide flex flex-col justify-center p-6 sm:p-8 lg:p-12 w-full"
             style={{ backgroundColor: 'var(--app-color-surface-glass)' }}
           >
             <div className="mx-auto w-full max-w-sm">
-              <div className="mb-8 text-center lg:text-left">
-                <h2 className="text-3xl font-bold tracking-tight text-(--app-color-text)">Welcome back</h2>
-                <p className="mt-1 text-sm text-(--app-color-text-muted)">Sign in to your competency dashboard</p>
+              <div className="lg:hidden flex justify-center mb-6">
+                <KshamataLogo size="md" className="bg-white p-3 rounded-xl shadow-md border border-slate-200" />
+              </div>
+              <div className="mb-6 text-center lg:text-left">
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-(--app-color-text)">Welcome back</h2>
+                <p className="mt-1 text-xs sm:text-sm text-(--app-color-text-muted)">Sign in to your competency dashboard</p>
               </div>
               <form className="space-y-4" onSubmit={handleSubmit} noValidate>
                 <Input
@@ -155,10 +160,21 @@ export default function LoginPage() {
                   />
                 </div>
                 <div className="pt-1">
-                  <Button type="submit" variant="primary" className="h-11 w-full rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99] bg-[#1E3A8A] text-white hover:bg-[#172554]" loading={isSubmitting} disabled={isSubmitting}>
-                    Sign In
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="h-11 w-full rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99] bg-[#1E3A8A] text-white hover:bg-[#172554]"
+                    loading={isSubmitting || isWakingUp}
+                    disabled={isSubmitting || isWakingUp}
+                  >
+                    {isWakingUp
+                      ? 'Starting production servers...'
+                      : isSubmitting
+                      ? 'Signing in...'
+                      : 'Sign In'}
                   </Button>
                 </div>
+
                 <p className="mt-8 text-center text-xs text-(--app-color-text-muted)">
                   Don't have an official account?{' '}
                   <Link to="/register" className="font-black text-[#1E3A8A] hover:underline">

@@ -12,6 +12,25 @@
 
 ---
 
+> ### 🔴 VERSION 2 ITERATION IN PROGRESS
+>
+> See **`docs/PLAN_V2_ITERATION.md`** for the full V2 plan. Key additions:
+> - **FRAC Framework** (Roles → Activities → Competencies) - the CBC/Mission Karmayogi standard the PS demands
+> - **Full MoSPI Competency Seed** — all 4 domains: Statistical, Technical, Digital Governance, Behavioural
+> - **Simplified to 2 roles**: ADMIN (training coordinator) + EMPLOYEE (official/learner)
+> - **iGOT Karmayogi mock API** with exact Sunbird request/response shapes (switchable to real API)
+> - **NSSTA TPAC programme catalogue** as second recommendation source
+> - **Automation-first**: auto-trigger gap calc, auto-recommend, auto-generate blueprints, iGOT daily sync
+> - **AI Virtual Assistant** chat widget for employee support
+> - **Assessment Player** with instant feedback, timer, interruption recovery
+> - **Admin Review Queue** for AI-generated questions
+> - **Predictive Analytics** for org-wide skill gap forecasting
+> - **Hindi + English multilingual** UI
+
+---
+
+
+
 # 0. STACK & ENGINEERING DIRECTION
 
 ## 0.1 Recommended stack
