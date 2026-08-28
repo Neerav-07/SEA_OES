@@ -148,3 +148,82 @@ export const updateOfficialRole = asyncHandler(async (req, res) => {
     "Role updated and gaps recalculated",
   );
 });
+
+/**
+ * Update authenticated official profile (Designation, Department, Cadre, Experience, Education)
+ */
+export const updateMyProfile = asyncHandler(async (req, res) => {
+  const userId = req.auth.userId;
+  const { designation, department, cadre, experienceYears, education, preferredLanguage } = req.body;
+
+  let [off] = await db.select().from(officials).where(eq(officials.userId, userId));
+  if (!off) {
+    [off] = await db.insert(officials).values({
+      userId,
+      designation: designation || 'Senior Statistical Officer',
+      department: department || 'MoSPI DIID Headquarters',
+      cadre: cadre || 'ISS (Indian Statistical Service)',
+      experienceYears: Number(experienceYears) || 3,
+      education: education || 'M.Sc. in Statistics',
+      preferredLanguage: preferredLanguage || 'en',
+    }).returning();
+  } else {
+    [off] = await db.update(officials).set({
+      designation: designation !== undefined ? designation : off.designation,
+      department: department !== undefined ? department : off.department,
+      cadre: cadre !== undefined ? cadre : off.cadre,
+      experienceYears: experienceYears !== undefined ? Number(experienceYears) : off.experienceYears,
+      education: education !== undefined ? education : off.education,
+      preferredLanguage: preferredLanguage !== undefined ? preferredLanguage : off.preferredLanguage,
+      updatedAt: new Date(),
+    }).where(eq(officials.id, off.id)).returning();
+  }
+
+  await db.update(users).set({
+    designation: off.designation,
+    department: off.department,
+    cadre: off.cadre,
+    updatedAt: new Date(),
+  }).where(eq(users.id, userId));
+
+  return sendSuccess(res, off, 'Official service profile updated successfully');
+});
+
+/**
+ * Get authenticated official profile (Name, Role, Cadre, Department, Experience, Education)
+ */
+export const getMyProfile = asyncHandler(async (req, res) => {
+  const userId = req.auth.userId;
+  const [off] = await db.select().from(officials).where(eq(officials.userId, userId));
+  const [user] = await db.select().from(users).where(eq(users.id, userId));
+
+  if (!user) {
+    return sendError(res, 'User not found', 404);
+  }
+
+  let role = null;
+  if (off?.roleId) {
+    const [r] = await db.select().from(roles).where(eq(roles.id, off.roleId));
+    role = r;
+  }
+
+  const profile = {
+    id: off?.id || null,
+    userId: user.id,
+    userName: user.name || 'Official User',
+    userEmail: user.email,
+    designation: off?.designation || user.designation || 'Senior Statistical Officer',
+    department: off?.department || user.department || 'MoSPI DIID Headquarters',
+    cadre: off?.cadre || user.cadre || 'ISS (Indian Statistical Service)',
+    experienceYears: off?.experienceYears ?? 4,
+    education: off?.education || 'M.Sc. in Statistics',
+    roleId: off?.roleId || role?.id || null,
+    roleTitle: role?.title || 'Statistical Officer (SO)',
+    roleCode: role?.code || 'STAT_OFFICER',
+    preferredLanguage: off?.preferredLanguage || 'en',
+  };
+
+  return sendSuccess(res, profile, 'Official service profile retrieved successfully');
+});
+
+

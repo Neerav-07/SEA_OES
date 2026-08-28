@@ -84,7 +84,7 @@ const ADMIN_STATS = [
 const ADMIN_ACTIVITY = [
   {
     id: 1,
-    label: 'Dr. Rajesh Kumar (SSO, DIID) completed Diagnostic Assessment: Survey Sampling (Score: 85%)',
+    label: 'Senior Statistical Officer (SSO, DIID) completed Diagnostic Assessment: Survey Sampling (Score: 85%)',
     time: '10 mins ago',
     status: 'done',
     actionText: 'Audit Scorecard →',
@@ -139,10 +139,10 @@ export default function DashboardHomePage() {
       startReportGen();
     } else if (item.actionType === 'AUDIT_DIAGNOSTIC') {
       setSelectedAuditItem({
-        officerName: 'Dr. Rajesh Kumar',
-        designation: 'Senior Statistical Officer (SSO)',
-        department: 'Data Informatics & Innovation Division (DIID)',
-        cadre: 'ISS (Indian Statistical Service)',
+        officerName: user?.name || 'Senior Statistical Officer',
+        designation: user?.designation || 'Senior Statistical Officer (SSO)',
+        department: user?.department || 'Data Informatics & Innovation Division (DIID)',
+        cadre: user?.cadre || 'ISS (Indian Statistical Service)',
         assessmentName: 'Diagnostic Module 1: Survey Sampling & Bias Evaluation',
         score: '85%',
         questionsCorrect: '17 / 20 Questions Correct',
@@ -394,15 +394,15 @@ export default function DashboardHomePage() {
                     MoSPI DIID Official Cadre Audit
                   </span>
                   <h3 className="text-lg font-extrabold flex items-center gap-2">
-                    <UserCheck size={20} className="text-blue-200" /> Dr. Rajesh Kumar
+                    <UserCheck size={20} className="text-blue-200" /> {user?.name || 'Official Officer'}
                   </h3>
                   <p className="text-xs text-blue-100 font-medium mt-0.5">
-                    Senior Statistical Officer (SSO) • ISS Cadre • MoSPI DIID Headquarters
+                    {user?.designation || 'Senior Statistical Officer (SSO)'} • {user?.cadre || 'ISS Cadre'} • {user?.department || 'MoSPI DIID Headquarters'}
                   </p>
                 </div>
                 <button
                   onClick={() => setIsOfficerDrawerOpen(false)}
-                  className="p-2 rounded-xl text-blue-200 hover:bg-blue-800 text-white"
+                  className="p-2 rounded-xl text-blue-200 hover:bg-blue-800 text-white cursor-pointer"
                 >
                   <X size={20} />
                 </button>
@@ -417,7 +417,7 @@ export default function DashboardHomePage() {
                       Evaluated Target FRAC Role Benchmark
                     </span>
                     <span className="text-sm font-bold text-[#1E3A8A] flex items-center gap-1.5 mt-0.5">
-                      Statistical Officer (SO) • Required Level 4.0
+                      {user?.designation || 'Statistical Officer (SO)'} • Required Level 4.0
                     </span>
                   </div>
                   <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-800 border border-emerald-200">
@@ -447,8 +447,8 @@ export default function DashboardHomePage() {
                         <p className="text-[11px] text-slate-500 font-medium">Verified by Diagnostic Score (85%) • High Confidence (94%)</p>
                       </div>
                       <button
-                        onClick={() => toast.success('TPAC-STAT-104 Pathway assigned to Dr. Rajesh Kumar!')}
-                        className="px-3 py-1.5 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] text-white text-xs font-bold shrink-0"
+                        onClick={() => toast.success(`TPAC-STAT-104 Pathway assigned to ${user?.name || 'Official'}!`)}
+                        className="px-3 py-1.5 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] text-white text-xs font-bold shrink-0 cursor-pointer"
                       >
                         Mandate Course
                       </button>
@@ -469,8 +469,8 @@ export default function DashboardHomePage() {
                         <p className="text-[11px] text-slate-500 font-medium">iGOT Course Enrolment Active • Pending Final Evaluation</p>
                       </div>
                       <button
-                        onClick={() => toast.success('TPAC-SNA-208 Pathway assigned to Dr. Rajesh Kumar!')}
-                        className="px-3 py-1.5 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] text-white text-xs font-bold shrink-0"
+                        onClick={() => toast.success(`TPAC-SNA-208 Pathway assigned to ${user?.name || 'Official'}!`)}
+                        className="px-3 py-1.5 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] text-white text-xs font-bold shrink-0 cursor-pointer"
                       >
                         Mandate Course
                       </button>
@@ -491,8 +491,8 @@ export default function DashboardHomePage() {
                         <p className="text-[11px] text-slate-500 font-medium">No Evidence Found • Mandated TPAC Course Recommended</p>
                       </div>
                       <button
-                        onClick={() => toast.success('TPAC-PYTHON-302 Pathway assigned to Dr. Rajesh Kumar!')}
-                        className="px-3 py-1.5 rounded-xl bg-red-700 hover:bg-red-800 text-white text-xs font-bold shrink-0 shadow-xs"
+                        onClick={() => toast.success(`TPAC-PYTHON-302 Pathway assigned to ${user?.name || 'Official'}!`)}
+                        className="px-3 py-1.5 rounded-xl bg-red-700 hover:bg-red-800 text-white text-xs font-bold shrink-0 shadow-xs cursor-pointer"
                       >
                         Mandate Course
                       </button>

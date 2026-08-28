@@ -32,7 +32,7 @@ export default function OfficialRoleDrawer({ isOpen, onClose, official, roles = 
               </div>
               <div>
                 <h3 className="text-base font-bold text-slate-900">Select Target FRAC Role Benchmark</h3>
-                <p className="text-xs text-slate-500 font-medium">{official?.userName || 'Dr. Rajesh Kumar'}</p>
+                <p className="text-xs text-slate-500 font-medium">{official?.userName || 'Official User'}</p>
               </div>
             </div>
             <button onClick={onClose} className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100">

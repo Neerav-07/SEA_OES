@@ -15,8 +15,8 @@ import useAuthStore from '../../../store/auth.store.js';
 
 const FALLBACK_OFFICIAL = {
   id: 'off-01',
-  userName: 'Dr. Rajesh Kumar',
-  userEmail: 'rajesh.kumar@mospi.gov.in',
+  userName: 'Official Profile',
+  userEmail: 'official@mospi.gov.in',
   designation: 'Senior Statistical Officer',
   department: 'MoSPI DIID Headquarters',
   cadre: 'ISS (Indian Statistical Service)',
@@ -137,7 +137,19 @@ export default function CompetenciesPage() {
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.platformRole === 'ADMIN';
 
-  const [official, setOfficial] = useState(FALLBACK_OFFICIAL);
+  const [official, setOfficial] = useState(() => ({
+    id: 'my-profile',
+    userName: user?.name || 'Official User',
+    userEmail: user?.email || '',
+    designation: user?.designation || 'Senior Statistical Officer',
+    department: user?.department || 'MoSPI DIID Headquarters',
+    cadre: user?.cadre || 'ISS (Indian Statistical Service)',
+    experienceYears: user?.experienceYears ?? 4,
+    education: user?.education || 'M.Sc. in Statistics',
+    roleTitle: 'Statistical Officer (SO)',
+    roleCode: 'STAT_OFFICER',
+    roleId: 'role-01',
+  }));
   const [competencies, setCompetencies] = useState(FALLBACK_COMPETENCIES);
   const [roles, setRoles] = useState(FALLBACK_ROLES);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -147,27 +159,44 @@ export default function CompetenciesPage() {
   const [selectedEvidenceForAudit, setSelectedEvidenceForAudit] = useState(null);
 
   useEffect(() => {
+    if (user) {
+      setOfficial((prev) => ({
+        ...prev,
+        userName: user.name || prev.userName,
+        userEmail: user.email || prev.userEmail,
+        designation: user.designation || prev.designation,
+        department: user.department || prev.department,
+        cadre: user.cadre || prev.cadre,
+        experienceYears: user.experienceYears ?? prev.experienceYears,
+        education: user.education || prev.education,
+      }));
+    }
+  }, [user]);
+
+  useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
     try {
-      const [offRes, compRes, roleRes] = await Promise.allSettled([
-        api.get('/officials'),
+      const [myProfileRes, compRes, roleRes] = await Promise.allSettled([
+        api.get('/officials/me'),
         api.get('/competencies'),
         api.get('/roles'),
       ]);
 
-      if (offRes.status === 'fulfilled' && offRes.value.data?.data?.[0]) {
-        const fetchedOff = offRes.value.data.data[0];
-        const cleanName = (fetchedOff.userName && !fetchedOff.userName.includes('Module 3'))
-          ? fetchedOff.userName
-          : 'Dr. Rajesh Kumar';
+      if (myProfileRes.status === 'fulfilled' && myProfileRes.value.data?.data) {
+        const fetchedOff = myProfileRes.value.data.data;
         setOfficial((prev) => ({
           ...prev,
           ...fetchedOff,
-          userName: cleanName,
-          designation: fetchedOff.designation || 'Senior Statistical Officer',
+          userName: fetchedOff.userName || user?.name || prev.userName,
+          designation: fetchedOff.designation || user?.designation || prev.designation,
+          department: fetchedOff.department || user?.department || prev.department,
+          cadre: fetchedOff.cadre || user?.cadre || prev.cadre,
+          experienceYears: fetchedOff.experienceYears ?? user?.experienceYears ?? prev.experienceYears,
+          education: fetchedOff.education || user?.education || prev.education,
+          roleTitle: fetchedOff.roleTitle || prev.roleTitle,
         }));
       }
       if (compRes.status === 'fulfilled' && compRes.value.data?.data) {

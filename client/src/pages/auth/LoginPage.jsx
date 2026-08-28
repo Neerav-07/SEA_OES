@@ -70,9 +70,9 @@ export default function LoginPage() {
   };
 
   return (
-    <Container className="flex flex-col min-h-screen items-center justify-center py-6">
+    <Container className="flex flex-col min-h-screen items-center justify-center py-6 px-4">
       {/* ── Top Back Button ── */}
-      <div className="w-full max-w-6xl mb-4">
+      <div className="w-full max-w-7xl mb-4">
         <Link
           to="/"
           className="inline-flex items-center gap-2 rounded-xl bg-white/80 border border-slate-200 px-4 py-2 text-xs font-bold text-slate-800 shadow-xs hover:bg-white hover:border-slate-300 transition-all"
@@ -82,12 +82,12 @@ export default function LoginPage() {
       </div>
 
       <div
-        className="grid w-full max-w-6xl overflow-hidden rounded-[2.5rem] border border-(--app-color-border)/40 backdrop-blur-md lg:grid-cols-[1.1fr_0.9fr]"
+        className="grid w-full max-w-7xl overflow-hidden rounded-[2.5rem] border border-(--app-color-border)/40 backdrop-blur-md lg:grid-cols-[1fr_1fr]"
         style={{ backgroundColor: 'var(--app-color-surface-glass)', boxShadow: 'var(--app-shadow-elevated)' }}
       >
           {/* ── Left branding panel (hidden on mobile, visible on lg screens) ── */}
           <section
-            className="hidden lg:flex relative flex-col items-center justify-center overflow-hidden p-8 text-center text-white lg:p-12"
+            className="hidden lg:flex relative flex-col items-center justify-center overflow-hidden p-8 text-center text-white lg:p-14"
             style={{ background: 'var(--app-gradient-auth-login)' }}
           >
             <div className="noise-overlay pointer-events-none opacity-20" />
@@ -97,11 +97,11 @@ export default function LoginPage() {
                 <div className="h-[3px] w-16 rounded-full bg-[#2563EB]" />
               </div>
               <div className="mt-6">
-                <p className="mx-auto max-w-sm text-sm font-semibold leading-relaxed text-white">
+                <p className="mx-auto max-w-md text-sm font-semibold leading-relaxed text-white">
                   Personalized iGOT Karmayogi & NSSTA learning pathways for India's Official Statistical System (MoSPI DIID).
                 </p>
               </div>
-              <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-3 px-2 text-left">
+              <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-3.5 px-2 text-left max-w-md">
                 {FEATURE_BULLETS.map((f) => (
                   <div key={f} className="flex items-center gap-2.5">
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-white">
@@ -122,10 +122,10 @@ export default function LoginPage() {
 
           {/* ── Right form panel (full width on mobile) ── */}
           <section
-            className="auth-form-slide flex flex-col justify-center p-6 sm:p-8 lg:p-12 w-full"
+            className="auth-form-slide flex flex-col justify-center p-6 sm:p-10 lg:p-14 w-full"
             style={{ backgroundColor: 'var(--app-color-surface-glass)' }}
           >
-            <div className="mx-auto w-full max-w-sm">
+            <div className="mx-auto w-full max-w-md">
               <div className="lg:hidden flex justify-center mb-6">
                 <KshamataLogo size="md" className="bg-white p-3 rounded-xl shadow-md border border-slate-200" />
               </div>
