@@ -150,11 +150,14 @@ export const ingestLearningMaterial = asyncHandler(async (req, res) => {
 
   let resolvedCompetencyId = competencyId || null;
   let mappingResult = null;
+  const textForMapping = (rawTextContent && rawTextContent.trim().length > 0)
+    ? rawTextContent
+    : `${title}. ${provider || ''}`;
 
-  if (!resolvedCompetencyId && rawTextContent) {
+  if (!resolvedCompetencyId && textForMapping.trim()) {
     try {
       const matches = await mapTextToCompetencies({
-        text: rawTextContent,
+        text: textForMapping,
         topK: 1,
       });
       const topMatch = matches?.[0];

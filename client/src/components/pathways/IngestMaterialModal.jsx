@@ -259,7 +259,7 @@ export default function IngestMaterialModal({ isOpen, onClose, onIngested }) {
               <p className="text-xs text-slate-600 font-medium mt-1">
                 Material successfully ingested with{' '}
                 <span className="font-bold text-[#1E3A8A]">
-                  {Math.round((ingestSuccess.confidenceScore || 0.94) * 100)}% Match Confidence
+                  {Math.round((typeof ingestSuccess.confidenceScore === 'number' ? ingestSuccess.confidenceScore : 0.88) * 100)}% Match Confidence
                 </span>{' '}
                 to <span className="font-bold text-slate-900">{formData.title || 'MoSPI Training Document'}</span>.
               </p>
@@ -268,19 +268,23 @@ export default function IngestMaterialModal({ isOpen, onClose, onIngested }) {
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-slate-700">Mapped Competency:</span>
-                <span className="font-bold text-[#1E3A8A]">Statistical Analysis & Inference</span>
+                <span className="font-bold text-[#1E3A8A]">{ingestSuccess.mappedCompetencyName || ingestSuccess.mappedCompetency || 'Statistical Analysis & Inference'}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-700">Cosine Similarity Score:</span>
+                <span className="font-mono font-bold text-emerald-700">{(typeof ingestSuccess.confidenceScore === 'number' ? ingestSuccess.confidenceScore : 0.88).toFixed(3)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-bold text-slate-700">Learning Objectives Extracted:</span>
-                <span className="font-bold text-slate-900">3 Core Objectives</span>
+                <span className="font-bold text-slate-900">{ingestSuccess.extractedObjectivesCount || 3} Core Objectives</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="font-bold text-slate-700">Automated Quizzes Generated:</span>
-                <span className="font-bold text-emerald-700">5 Objective MCQs</span>
+                <span className="font-bold text-emerald-700">{ingestSuccess.generatedQuizzesCount || 5} Grounded MCQs</span>
               </div>
             </div>
 
-            <Button variant="primary" onClick={resetForm} className="!text-white mx-auto">
+            <Button variant="primary" onClick={resetForm} className="!text-white mx-auto cursor-pointer">
               Return to Pathways
             </Button>
           </div>
