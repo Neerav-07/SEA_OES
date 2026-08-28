@@ -1,146 +1,208 @@
-import { eq } from 'drizzle-orm';
-import { db } from '../../db/index.js';
-import { officials, competencies, learningMaterials, recommendations } from '../../db/schema/index.js';
-import { sendSuccess, sendError } from '../../utils/response.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
+import { eq } from "drizzle-orm";
+import { db } from "../db/index.js";
+import {
+  officials,
+  competencies,
+  competencyRequirements,
+  evidence,
+  learningMaterials,
+} from "../db/schema/index.js";
+import { sendSuccess, sendError } from "../utils/response.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { calculateWeightedEstimate } from "../utils/evidenceFusion.js";
+import { calculateSkillGaps } from "../utils/skillGapCalculator.js";
+import {
+  getCourseRecommendations,
+  mapTextToCompetencies,
+} from "../services/ml.service.js";
 
 /**
  * Get Personalized iGOT & NSSTA Learning Pathway for Official
+ * Courses are matched against the official's REAL, computed skill gaps via
+ * the ML service's recommend-courses endpoint (ml/pipelines/recommendation_engine.py),
+ * not a hardcoded list.
  */
 export const getPersonalizedPathway = asyncHandler(async (req, res) => {
   const { officialId } = req.params;
 
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(officialId);
-  let official = null;
-
-  if (isUuid) {
-    [official] = await db.select().from(officials).where(eq(officials.id, officialId));
-  }
-
-  if (!official && req.user?.id) {
-    [official] = await db.select().from(officials).where(eq(officials.userId, req.user.id));
-  }
-
+  const [official] = await db
+    .select()
+    .from(officials)
+    .where(eq(officials.id, officialId));
   if (!official) {
-    [official] = await db.select().from(officials).limit(1);
-  }
-
-  if (!official) {
-    return sendError(res, 'Official profile not found', 404);
+    return sendError(res, "Official profile not found", 404);
   }
 
   const allComps = await db.select().from(competencies);
-  const materials = await db.select().from(learningMaterials);
+  const reqs = official.roleId
+    ? await db
+        .select()
+        .from(competencyRequirements)
+        .where(eq(competencyRequirements.roleId, official.roleId))
+    : [];
+  const offEvidence = await db
+    .select()
+    .from(evidence)
+    .where(eq(evidence.officialId, officialId));
 
-  // Default seed materials if empty
-  const defaultPathwayModules = [
-    {
-      step: 1,
-      courseCode: 'IGOT-PYTHON-302',
-      title: 'Python Data Analytics & Automated Processing for NSS/PLFS Unit-Level Microdata',
-      provider: 'iGOT Karmayogi',
-      durationHours: 14,
-      targetCompetency: 'Python for Data Analytics (FRAC-TECH-PYTHON)',
-      gapClosurePotential: 2.6,
-      prerequisites: [],
-      matchScore: 0.98,
-      status: 'RECOMMENDED',
-      reason: `Dr. ${official.userName || 'Rajesh Kumar'} (${official.designation || 'SSO'}, ${official.department || 'DIID MoSPI'}), your current evaluated proficiency in Python Analytics is Level 1.4 against the required Level 4.0. This course is specifically mandated by NSSTA to bridge your 2.6 Critical Deficit Gap for automating NSS 79th Round data cleaning pipelines.`,
-    },
-    {
-      step: 2,
-      courseCode: 'NSSTA-TPAC-208',
-      title: 'SDMX & DDI Metadata Standardization for National Data Warehouse Dissemination',
-      provider: 'NSSTA Academy',
-      durationHours: 12,
-      targetCompetency: 'Metadata Standards & SDMX (FRAC-GOV-METADATA)',
-      gapClosurePotential: 2.4,
-      prerequisites: ['IGOT-PYTHON-302'],
-      matchScore: 0.95,
-      status: 'RECOMMENDED',
-      reason: 'Prioritized under NDSAP & MoSPI Data Governance Committee directives. Addresses your evaluated 2.4 Critical Deficit in metadata cataloguing, enabling DDI-compliant microdata releases on the Open Government Data Portal.',
-    },
-    {
-      step: 3,
-      courseCode: 'IGOT-SQL-401',
-      title: 'PostgreSQL Relational Queries & Large-Scale Survey Data Warehousing',
-      provider: 'iGOT Karmayogi',
-      durationHours: 10,
-      targetCompetency: 'SQL & Relational Database Management (FRAC-TECH-SQL)',
-      gapClosurePotential: 1.8,
-      prerequisites: [],
-      matchScore: 0.92,
-      status: 'RECOMMENDED',
-      reason: 'Recommended to close your 1.8 High-Priority Gap in relational query optimization. Prepares you for executing complex SQL joins and window functions across 5+ million PLFS survey records.',
-    },
-    {
-      step: 4,
-      courseCode: 'NSSTA-TPAC-104',
-      title: 'National Accounts Statistics & Sectoral GVA Deflation under SNA 2008 Guidelines',
-      provider: 'NSSTA Academy',
-      durationHours: 16,
-      targetCompetency: 'National Accounts Statistics (FRAC-STAT-NAS)',
-      gapClosurePotential: 0.6,
-      prerequisites: [],
-      matchScore: 0.88,
-      status: 'ENROLLED',
-      reason: 'Assigned for National Accounts Division (NAD) base-year revision. Consolidates your working proficiency in double-deflation index construction and Gross Value Added computation.',
-    },
-  ];
+  const estimates = allComps.map((comp) => {
+    const compEv = offEvidence.filter((e) => e.competencyId === comp.id);
+    return {
+      competencyId: comp.id,
+      proficiencyLevel:
+        compEv.length > 0 ? calculateWeightedEstimate(compEv) : 1.0,
+      evidenceSufficiency:
+        compEv.length > 0 ? Math.min(1, compEv.length * 0.25) : 0,
+    };
+  });
 
-  const totalEstimatedHours = defaultPathwayModules.reduce((acc, m) => acc + m.durationHours, 0);
+  const requirements = reqs.map((r) => ({
+    id: r.id,
+    competencyId: r.competencyId,
+    requiredLevel: r.requiredLevel,
+    priority: r.priority,
+    urgency: r.urgency,
+    mandatory: r.mandatory,
+  }));
+
+  const gaps = calculateSkillGaps({ requirements, estimates })
+    .map((g) => ({
+      ...g,
+      competency: allComps.find((c) => c.id === g.competencyId),
+    }))
+    .filter((g) => g.competency && g.gapSeverity > 0)
+    .sort((a, b) => b.learningPriority - a.learningPriority);
+
+  let pathwayModules = [];
+
+  if (gaps.length > 0) {
+    try {
+      const skillGapPayload = gaps.map((g) => ({
+        competency_code: g.competency.code,
+        competency_name: g.competency.name,
+        gap_delta: g.gapSeverity,
+      }));
+
+      const { recommendations } = await getCourseRecommendations({
+        skillGaps: skillGapPayload,
+      });
+
+      pathwayModules = (recommendations || []).map((rec, idx) => ({
+        step: idx + 1,
+        courseCode: rec.course_id,
+        title: rec.title,
+        provider: rec.provider,
+        durationHours: rec.duration_hours,
+        targetCompetency: rec.target_competency,
+        matchScore: rec.match_score,
+        status: "RECOMMENDED",
+        reason: rec.reason,
+      }));
+    } catch {
+      // ML recommendation service unreachable — return no modules rather
+      // than fabricated ones
+      pathwayModules = [];
+    }
+  }
+
+  const totalEstimatedHours = pathwayModules.reduce(
+    (acc, m) => acc + (m.durationHours || 0),
+    0,
+  );
 
   const pathway = {
     officialId,
-    officialName: official.userName || 'Dr. Rajesh Kumar',
-    totalModules: defaultPathwayModules.length,
+    officialName: official.designation,
+    totalModules: pathwayModules.length,
     totalEstimatedHours,
-    targetRole: official.roleTitle || 'Statistical Officer (SO)',
-    pathwayModules: defaultPathwayModules,
+    pathwayModules,
   };
 
-  return sendSuccess(res, pathway, 'Personalized learning pathway composed successfully');
+  return sendSuccess(
+    res,
+    pathway,
+    "Personalized learning pathway composed successfully",
+  );
 });
 
 /**
  * Ingest New Learning Material & Trigger Semantic Competency Mapping
+ * Calls the real ML mapping endpoint when rawTextContent is provided and no
+ * competencyId was given explicitly.
  */
 export const ingestLearningMaterial = asyncHandler(async (req, res) => {
-  const { title, provider, materialCode, durationHours = 4, rawTextContent, competencyId } = req.body;
+  const {
+    title,
+    provider,
+    materialCode,
+    durationHours = 4,
+    rawTextContent,
+    competencyId,
+  } = req.body;
 
   if (!title || !provider || !materialCode) {
-    return sendError(res, 'Title, Provider, and Material Code are required', 400);
+    return sendError(
+      res,
+      "Title, Provider, and Material Code are required",
+      400,
+    );
   }
 
-  // Simulate semantic NLP mapping score
-  const simulatedMatchScore = Number((0.82 + Math.random() * 0.15).toFixed(2));
+  let resolvedCompetencyId = competencyId || null;
+  let mappingResult = null;
+
+  if (!resolvedCompetencyId && rawTextContent) {
+    try {
+      const matches = await mapTextToCompetencies({
+        text: rawTextContent,
+        topK: 1,
+      });
+      const topMatch = matches?.[0];
+      if (topMatch) {
+        const [matchedComp] = await db
+          .select()
+          .from(competencies)
+          .where(eq(competencies.code, topMatch.code));
+        if (matchedComp) resolvedCompetencyId = matchedComp.id;
+        mappingResult = topMatch;
+      }
+    } catch {
+      mappingResult = null;
+    }
+  }
+
+  const materialValues = {
+    materialCode,
+    title,
+    provider,
+    durationHours: Number(durationHours),
+    competencyId: resolvedCompetencyId,
+    mappedObjectives: null,
+  };
+  if (mappingResult && typeof mappingResult.match_score === "number") {
+    materialValues.matchConfidence = mappingResult.match_score;
+  }
 
   const [newMaterial] = await db
     .insert(learningMaterials)
-    .values({
-      materialCode,
-      title,
-      provider,
-      durationHours: Number(durationHours),
-      competencyId: competencyId || null,
-      matchConfidence: simulatedMatchScore,
-      mappedObjectives: ['Identify probability sampling techniques', 'Apply deflation methods for GVA'],
-    })
+    .values(materialValues)
     .returning();
 
   return sendSuccess(
     res,
     {
       material: newMaterial,
-      semanticMappingResult: {
-        status: 'MAPPED',
-        confidenceScore: simulatedMatchScore,
-        mappedCompetency: 'Statistical Analysis & Inference',
-        extractedObjectivesCount: 2,
-      },
+      semanticMappingResult: mappingResult
+        ? {
+            status: "MAPPED",
+            confidenceScore: mappingResult.match_score,
+            mappedCompetencyCode: mappingResult.code,
+            mappedCompetencyName: mappingResult.name,
+          }
+        : { status: resolvedCompetencyId ? "MANUALLY_ASSIGNED" : "UNMAPPED" },
     },
-    'Learning material ingested and mapped successfully',
-    201
+    "Learning material ingested successfully",
+    201,
   );
 });
 
@@ -149,5 +211,5 @@ export const ingestLearningMaterial = asyncHandler(async (req, res) => {
  */
 export const getLearningMaterials = asyncHandler(async (req, res) => {
   const list = await db.select().from(learningMaterials);
-  return sendSuccess(res, list, 'Learning materials catalogue retrieved');
+  return sendSuccess(res, list, "Learning materials catalogue retrieved");
 });

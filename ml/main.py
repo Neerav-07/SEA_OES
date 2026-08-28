@@ -5,12 +5,13 @@ Provides AI endpoints for competency mapping, evidence gap calculation, learning
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from pipelines.skill_gap_calculator import calculate_competency_estimate
 from pipelines.competency_mapping import map_text_to_competencies
 from pipelines.recommendation_engine import generate_recommendations
 from pipelines.assessment_generator import generate_grounded_mcqs
+from pipelines.llm_client import LLMGenerationError
 
 app = FastAPI(
     title="Kshamata ML Intelligence API",
@@ -28,15 +29,18 @@ class MappingInput(BaseModel):
 
 class AssessmentInput(BaseModel):
     source_text: str
-    num_questions: Optional[int] = 5
-    bloom_level: Optional[str] = "APPLY"
+    competency_name: Optional[str] = "General Competency"
+    competency_category: Optional[str] = "Statistical"
+    bloom_distribution: Optional[Dict[str, int]] = None
+    existing_intent_hashes: Optional[List[str]] = None
 
-class AssistantInput(BaseModel):
-    message: str
-    context: Optional[dict] = {}
+class SkillGapInput(BaseModel):
+    competency_code: str
+    competency_name: Optional[str] = None
+    gap_delta: Optional[float] = 1.0
 
-class PredictionInput(BaseModel):
-    department: Optional[str] = "MoSPI DIID"
+class RecommendationInput(BaseModel):
+    skill_gaps: List[SkillGapInput]
 
 @app.get("/")
 def root():
@@ -57,39 +61,21 @@ def api_map_competencies(input_data: MappingInput):
 
 @app.post("/api/ml/generate-assessment")
 def api_generate_assessment(input_data: AssessmentInput):
-    return generate_grounded_mcqs(input_data.source_text, input_data.num_questions, input_data.bloom_level)
+    try:
+        questions = generate_grounded_mcqs(
+            source_text=input_data.source_text,
+            competency_name=input_data.competency_name,
+            competency_category=input_data.competency_category,
+            bloom_distribution=input_data.bloom_distribution,
+            existing_intent_hashes=input_data.existing_intent_hashes,
+        )
+        return {"questions": questions}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except LLMGenerationError as exc:
+        raise HTTPException(status_code=502, detail=f"Question generation failed: {exc}")
 
-@app.post("/assistant/chat")
-def api_assistant_chat(input_data: AssistantInput):
-    ctx = input_data.context or {}
-    name = ctx.get("officialName", "Official")
-    desig = ctx.get("designation", "Statistician")
-    dept = ctx.get("department", "MoSPI")
-    gaps = ctx.get("topGaps", [])
-    
-    msg_lower = input_data.message.lower()
-    
-    if "gap" in msg_lower or "weak" in msg_lower or "skill" in msg_lower:
-        gap_names = ", ".join([g.get("competency", "") for g in gaps[:3]]) or "Python Data Analytics, Stratified Sampling"
-        reply = f"Namaste {name}! As a {desig} in {dept}, your primary competency gaps are: **{gap_names}**. I recommend prioritizing the NSSTA TPAC & iGOT Karmayogi modules to strengthen your proficiency."
-    elif "score" in msg_lower or "esi" in msg_lower or "calculate" in msg_lower:
-        reply = f"Your competency scores are calculated using Kshamata's Evidence Sufficiency Index (ESI). Scores update dynamically whenever you complete diagnostic quizzes, iGOT courses, or scenario assessments."
-    else:
-        reply = f"Hello {name}! I am your Kshamata AI Capacity Building Assistant for India's Official Statistical System. How can I support your upskilling in statistical methodologies or digital technologies today?"
-
-    return {"reply": reply}
-
-@app.post("/api/ml/predict-trends")
-def api_predict_trends(input_data: PredictionInput):
-    return {
-        "department": input_data.department,
-        "forecastMonths": 6,
-        "predictedEmergingGaps": [
-            {"competency": "Python for Data Analytics", "predictedDeficitRisk": 0.42, "trend": "HIGH_INCREASE", "recommendedCapacityBuilding": "Mandatory Python & Pandas certification via iGOT"},
-            {"competency": "AI/ML Fundamentals for Statistics", "predictedDeficitRisk": 0.38, "trend": "MODERATE_INCREASE", "recommendedCapacityBuilding": "NSSTA TPAC Workshop on AI/ML in Survey Imputation"},
-            {"competency": "Cybersecurity & Data Privacy", "predictedDeficitRisk": 0.31, "trend": "MODERATE_INCREASE", "recommendedCapacityBuilding": "CERT-In Cyber Hygiene Module"},
-        ],
-        "departmentReadinessScore": 3.4,
-        "modelConfidence": 0.89
-    }
-
+@app.post("/api/ml/recommend-courses")
+def api_recommend_courses(input_data: RecommendationInput):
+    gaps = [g.dict() for g in input_data.skill_gaps]
+    return {"recommendations": generate_recommendations({}, gaps)}

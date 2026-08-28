@@ -1,8 +1,8 @@
-import { eq } from 'drizzle-orm';
-import { db } from '../../db/index.js';
-import { roles, roleCompetencies, competencies } from '../../db/schema/index.js';
-import { sendSuccess, sendError } from '../../utils/response.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
+import { db } from "../db/index.js";
+import { eq } from "drizzle-orm";
+import { roles, roleCompetencies, competencies } from "../db/schema/index.js";
+import { sendSuccess, sendError } from "../utils/response.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 /**
  * Get all official roles with required competency profiles
@@ -20,9 +20,9 @@ export const getRoles = asyncHandler(async (req, res) => {
         return {
           id: rc.id,
           competencyId: rc.competencyId,
-          competencyCode: comp?.code || 'UNKNOWN',
-          competencyName: comp?.name || 'Unknown Competency',
-          category: comp?.category || 'General',
+          competencyCode: comp?.code || "UNKNOWN",
+          competencyName: comp?.name || "Unknown Competency",
+          category: comp?.category || "General",
           requiredLevel: rc.requiredLevel,
           priority: rc.priority,
           isMandatory: rc.isMandatory,
@@ -35,7 +35,7 @@ export const getRoles = asyncHandler(async (req, res) => {
     };
   });
 
-  return sendSuccess(res, mappedRoles, 'Roles retrieved successfully');
+  return sendSuccess(res, mappedRoles, "Roles retrieved successfully");
 });
 
 /**
@@ -46,10 +46,13 @@ export const getRoleRequirements = asyncHandler(async (req, res) => {
   const [role] = await db.select().from(roles).where(eq(roles.id, roleId));
 
   if (!role) {
-    return sendError(res, 'Role not found', 404);
+    return sendError(res, "Role not found", 404);
   }
 
-  const reqs = await db.select().from(roleCompetencies).where(eq(roleCompetencies.roleId, roleId));
+  const reqs = await db
+    .select()
+    .from(roleCompetencies)
+    .where(eq(roleCompetencies.roleId, roleId));
   const allComps = await db.select().from(competencies);
 
   const mappedReqs = reqs.map((rc) => {
@@ -66,5 +69,9 @@ export const getRoleRequirements = asyncHandler(async (req, res) => {
     };
   });
 
-  return sendSuccess(res, { role, requirements: mappedReqs }, 'Role requirements retrieved');
+  return sendSuccess(
+    res,
+    { role, requirements: mappedReqs },
+    "Role requirements retrieved",
+  );
 });

@@ -1,8 +1,15 @@
-import { eq } from 'drizzle-orm';
-import { db } from '../../db/index.js';
-import { officials, users, roles, evidence, competencies, roleCompetencies } from '../../db/schema/index.js';
-import { sendSuccess, sendError } from '../../utils/response.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
+import { db } from "../db/index.js";
+import { eq } from "drizzle-orm";
+import {
+  officials,
+  users,
+  roles,
+  evidence,
+  competencies,
+  roleCompetencies,
+} from "../db/schema/index.js";
+import { sendSuccess, sendError } from "../utils/response.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 /**
  * Get all official profiles with user details & current role
@@ -17,14 +24,14 @@ export const getOfficials = asyncHandler(async (req, res) => {
     const role = allRoles.find((r) => r.id === off.roleId);
     return {
       ...off,
-      userName: user?.name || 'Official User',
-      userEmail: user?.email || '',
-      roleTitle: role?.title || 'Unassigned Role',
-      roleCode: role?.code || '',
+      userName: user?.name || "Official User",
+      userEmail: user?.email || "",
+      roleTitle: role?.title || "Unassigned Role",
+      roleCode: role?.code || "",
     };
   });
 
-  return sendSuccess(res, result, 'Officials retrieved successfully');
+  return sendSuccess(res, result, "Officials retrieved successfully");
 });
 
 /**
@@ -35,14 +42,24 @@ export const getOfficialProfile = asyncHandler(async (req, res) => {
   const [off] = await db.select().from(officials).where(eq(officials.id, id));
 
   if (!off) {
-    return sendError(res, 'Official profile not found', 404);
+    return sendError(res, "Official profile not found", 404);
   }
 
   const [user] = await db.select().from(users).where(eq(users.id, off.userId));
-  const [role] = off.roleId ? await db.select().from(roles).where(eq(roles.id, off.roleId)) : [];
-  const offEvidence = await db.select().from(evidence).where(eq(evidence.officialId, off.id));
+  const [role] = off.roleId
+    ? await db.select().from(roles).where(eq(roles.id, off.roleId))
+    : [];
+  const offEvidence = await db
+    .select()
+    .from(evidence)
+    .where(eq(evidence.officialId, off.id));
   const allComps = await db.select().from(competencies);
-  const reqs = role ? await db.select().from(roleCompetencies).where(eq(roleCompetencies.roleId, role.id)) : [];
+  const reqs = role
+    ? await db
+        .select()
+        .from(roleCompetencies)
+        .where(eq(roleCompetencies.roleId, role.id))
+    : [];
 
   // Calculate Competency Estimates & Gaps
   const competencyProfile = allComps.map((comp) => {
@@ -63,7 +80,10 @@ export const getOfficialProfile = asyncHandler(async (req, res) => {
       avgConfidence = Math.round((avgConfidence / compEv.length) * 100);
     }
 
-    const estimatedLevel = totalWeight > 0 ? Number((totalScoreWeight / totalWeight).toFixed(1)) : 1.0;
+    const estimatedLevel =
+      totalWeight > 0
+        ? Number((totalScoreWeight / totalWeight).toFixed(1))
+        : 1.0;
     const requiredLevel = roleReq ? roleReq.requiredLevel : 3.0;
     const gap = Number(Math.max(0, requiredLevel - estimatedLevel).toFixed(1));
 
@@ -76,7 +96,7 @@ export const getOfficialProfile = asyncHandler(async (req, res) => {
       estimatedLevel,
       gap,
       confidencePct: avgConfidence > 0 ? avgConfidence : 45,
-      priority: roleReq ? roleReq.priority : 'MEDIUM',
+      priority: roleReq ? roleReq.priority : "MEDIUM",
       isMandatory: roleReq ? roleReq.isMandatory : false,
       evidenceCount: compEv.length,
       evidenceItems: compEv,
@@ -90,12 +110,12 @@ export const getOfficialProfile = asyncHandler(async (req, res) => {
         ...off,
         userName: user?.name,
         userEmail: user?.email,
-        roleTitle: role?.title || 'Unassigned Role',
+        roleTitle: role?.title || "Unassigned Role",
         roleCode: role?.code,
       },
       competencyProfile,
     },
-    'Official profile retrieved'
+    "Official profile retrieved",
   );
 });
 
@@ -108,12 +128,13 @@ export const updateOfficialRole = asyncHandler(async (req, res) => {
 
   const [off] = await db.select().from(officials).where(eq(officials.id, id));
   if (!off) {
-    return sendError(res, 'Official not found', 404);
+    return sendError(res, "Official not found", 404);
   }
 
   const [role] = await db.select().from(roles).where(eq(roles.id, roleId));
+
   if (!role) {
-    return sendError(res, 'Role not found', 404);
+    return sendError(res, "Role not found", 404);
   }
 
   await db
@@ -121,5 +142,9 @@ export const updateOfficialRole = asyncHandler(async (req, res) => {
     .set({ roleId, updatedAt: new Date() })
     .where(eq(officials.id, id));
 
-  return sendSuccess(res, { officialId: id, newRoleId: roleId, newRoleTitle: role.title }, 'Role updated and gaps recalculated');
+  return sendSuccess(
+    res,
+    { officialId: id, newRoleId: roleId, newRoleTitle: role.title },
+    "Role updated and gaps recalculated",
+  );
 });
