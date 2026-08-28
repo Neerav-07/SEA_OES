@@ -14,6 +14,7 @@ import toast from "react-hot-toast";
 
 import PageHeader from "../../../components/PageHeader.jsx";
 import Button from "../../../components/Button.jsx";
+import Spinner from "../../../components/Spinner.jsx";
 import api from "../../../services/api.js";
 
 export default function AnalyticsPage() {
@@ -109,17 +110,8 @@ export default function AnalyticsPage() {
           subtitle="Organization-wide competency readiness, recency decay auditing, and traceable history logs for MoSPI DIID & NSSTA."
         />
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-10 shadow-sm">
-          <div className="flex items-center justify-center gap-3 text-slate-600">
-            <RefreshCw
-              size={20}
-              className="animate-spin"
-            />
-
-            <span className="text-sm font-semibold">
-              Loading live workforce analytics...
-            </span>
-          </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <Spinner label="Loading live workforce analytics & recalibration data..." className="py-10" />
         </div>
       </div>
     );
