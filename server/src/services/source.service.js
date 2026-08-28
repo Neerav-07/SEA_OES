@@ -197,13 +197,11 @@ export async function createChunks(sourceId, versionId, payload = {}) {
   if (existing.length > 0) throw domainError('SOURCE_CHUNKS_ALREADY_EXIST', 'versionId', 'Chunks already exist for this source version.', 409);
   const values = chunkValues(versionId, payload.content, payload);
   if (values.length === 0) throw domainError('EMPTY_SOURCE_CONTENT', 'content', 'Source content produced no chunks.');
-  return db.transaction(async (tx) => {
-    const chunks = await tx.insert(sourceChunks).values(values).returning();
-    const [updatedVersion] = await tx.update(sourceDocumentVersions)
-      .set({ status: 'READY', checksum: version.checksum || contentChecksum })
-      .where(eq(sourceDocumentVersions.id, versionId)).returning();
-    return { version: updatedVersion, chunks };
-  });
+  const chunks = await db.insert(sourceChunks).values(values).returning();
+  const [updatedVersion] = await db.update(sourceDocumentVersions)
+    .set({ status: 'READY', checksum: version.checksum || contentChecksum })
+    .where(eq(sourceDocumentVersions.id, versionId)).returning();
+  return { version: updatedVersion, chunks };
 }
 
 export async function ingestSourceVersion(sourceId, payload = {}) {
@@ -219,13 +217,11 @@ export async function ingestSourceVersion(sourceId, payload = {}) {
   const [latest] = await db.select({ version: max(sourceDocumentVersions.version) })
     .from(sourceDocumentVersions).where(eq(sourceDocumentVersions.documentId, sourceId));
   const nextVersion = Number(latest?.version || 0) + 1;
-  return db.transaction(async (tx) => {
-    const [version] = await tx.insert(sourceDocumentVersions).values({ documentId: sourceId, version: nextVersion, checksum, status: 'PROCESSING' }).returning();
-    const chunks = chunkValues(version.id, payload.content, payload);
-    const persistedChunks = await tx.insert(sourceChunks).values(chunks).returning();
-    const [readyVersion] = await tx.update(sourceDocumentVersions).set({ status: 'READY' }).where(eq(sourceDocumentVersions.id, version.id)).returning();
-    return { sourceId, version: readyVersion, chunks: persistedChunks, chunkCount: persistedChunks.length };
-  });
+  const [version] = await db.insert(sourceDocumentVersions).values({ documentId: sourceId, version: nextVersion, checksum, status: 'PROCESSING' }).returning();
+  const chunks = chunkValues(version.id, payload.content, payload);
+  const persistedChunks = await db.insert(sourceChunks).values(chunks).returning();
+  const [readyVersion] = await db.update(sourceDocumentVersions).set({ status: 'READY' }).where(eq(sourceDocumentVersions.id, version.id)).returning();
+  return { sourceId, version: readyVersion, chunks: persistedChunks, chunkCount: persistedChunks.length };
 }
 
 export async function listChunks(sourceId, versionId) {

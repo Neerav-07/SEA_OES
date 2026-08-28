@@ -84,11 +84,9 @@ export async function assembleAssessment(blueprintId) {
   const validation = validateAssessmentAssembly(requirements, selected);
   if (!validation.valid) throw failure('ASSESSMENT_NOT_ASSEMBLABLE', 'blueprintId', 'Blueprint cannot be assembled from eligible approved questions.', 409, { missing: { totalQuestions: Math.max(0, requirements.questionCount - selected.length) } });
   const items = selected.map((row, index) => ({ position: index + 1, questionId: row.question.id, questionVersionId: row.version.id }));
-  return db.transaction(async (tx) => {
-    const [assessment] = await tx.insert(assessments).values({ title: `${result.blueprint.title} — Assessment`, competencyId: result.blueprint.competencyId, blueprintId: result.blueprint.id, totalQuestions: requirements.questionCount, blueprint: { assemblyStatus: 'ASSEMBLED', requirements } }).returning();
-    await tx.insert(assessmentQuestionItems).values(items.map((item) => ({ assessmentId: assessment.id, ...item })));
-    return { assessment, requirements, items, validation };
-  });
+  const [assessment] = await db.insert(assessments).values({ title: `${result.blueprint.title} — Assessment`, competencyId: result.blueprint.competencyId, blueprintId: result.blueprint.id, totalQuestions: requirements.questionCount, blueprint: { assemblyStatus: 'ASSEMBLED', requirements } }).returning();
+  await db.insert(assessmentQuestionItems).values(items.map((item) => ({ assessmentId: assessment.id, ...item })));
+  return { assessment, requirements, items, validation };
 }
 
 async function loadAssessmentRecord(assessmentId) {

@@ -381,6 +381,7 @@ async function seedKeyLearningObjectives(competencyRows) {
   if (agriComp) {
     loDefs.push(
       { competencyId: agriComp.id, code: 'AGRI_LO_01', title: 'Calculate crop production estimates using Crop Cutting Experiment (CCE) sampling design', targetLevel: 3, status: 'ACTIVE', isActive: true },
+      { competencyId: agriComp.id, code: 'AGRI_LO_02', title: 'Compile Agricultural Census schedules and validate land holding distributions', targetLevel: 4, status: 'ACTIVE', isActive: true },
     );
   }
 
@@ -388,6 +389,7 @@ async function seedKeyLearningObjectives(competencyRows) {
   if (indComp) {
     loDefs.push(
       { competencyId: indComp.id, code: 'IND_LO_01', title: 'Compute Index of Industrial Production (IIP) and compile ASI enterprise schedules', targetLevel: 3, status: 'ACTIVE', isActive: true },
+      { competencyId: indComp.id, code: 'IND_LO_02', title: 'Apply National Industrial Classification (NIC) codes and reconcile enterprise data', targetLevel: 4, status: 'ACTIVE', isActive: true },
     );
   }
 
@@ -395,11 +397,78 @@ async function seedKeyLearningObjectives(competencyRows) {
   if (projComp) {
     loDefs.push(
       { competencyId: projComp.id, code: 'PROJ_LO_01', title: 'Manage national survey field operation logistics, timelines, and quality control checkpoints', targetLevel: 3, status: 'ACTIVE', isActive: true },
+      { competencyId: projComp.id, code: 'PROJ_LO_02', title: 'Develop risk mitigation strategies and contingency plans for large-scale field enumerations', targetLevel: 4, status: 'ACTIVE', isActive: true },
     );
+  }
+
+  const decComp = findComp('DECISION_MAKING');
+  if (decComp) {
+    loDefs.push(
+      { competencyId: decComp.id, code: 'DEC_LO_01', title: 'Formulate evidence-based policy briefs using multi-sectoral statistical data', targetLevel: 3, status: 'ACTIVE', isActive: true },
+      { competencyId: decComp.id, code: 'DEC_LO_02', title: 'Evaluate statistical confidence intervals and risk boundaries for executive governance', targetLevel: 4, status: 'ACTIVE', isActive: true },
+    );
+  }
+
+  const dpiComp = findComp('DIGITAL_PUBLIC_INFRA');
+  if (dpiComp) {
+    loDefs.push(
+      { competencyId: dpiComp.id, code: 'DPI_LO_01', title: 'Integrate DigiLocker and Aadhaar authentication frameworks into official data capture systems', targetLevel: 3, status: 'ACTIVE', isActive: true },
+      { competencyId: dpiComp.id, code: 'DPI_LO_02', title: 'Design interoperable statistical workflows leveraging India Stack APIs', targetLevel: 4, status: 'ACTIVE', isActive: true },
+    );
+  }
+
+  const dsigComp = findComp('DIGITAL_SIGNATURES');
+  if (dsigComp) {
+    loDefs.push(
+      { competencyId: dsigComp.id, code: 'DSIG_LO_01', title: 'Implement Public Key Infrastructure (PKI) and DSC authentication for official survey reports', targetLevel: 3, status: 'ACTIVE', isActive: true },
+    );
+  }
+
+  const dataVizComp = findComp('DATA_VISUALIZATION');
+  if (dataVizComp) {
+    loDefs.push(
+      { competencyId: dataVizComp.id, code: 'VIZ_LO_01', title: 'Design interactive statistical dashboards following government usability guidelines', targetLevel: 3, status: 'ACTIVE', isActive: true },
+      { competencyId: dataVizComp.id, code: 'VIZ_LO_02', title: 'Select optimal visual encodings for multidimensional survey data dissemination', targetLevel: 3, status: 'ACTIVE', isActive: true },
+    );
+  }
+
+  // Ensure EVERY single competency has at least 2 active learning objectives
+  for (const comp of competencyRows) {
+    const existing = loDefs.filter(lo => lo.competencyId === comp.id);
+    if (existing.length === 0) {
+      loDefs.push(
+        { competencyId: comp.id, code: `${comp.code}_LO_01`, title: `Apply fundamental concepts and operational methods of ${comp.name}`, targetLevel: 3, status: 'ACTIVE', isActive: true },
+        { competencyId: comp.id, code: `${comp.code}_LO_02`, title: `Evaluate data accuracy, quality controls, and compliance for ${comp.name}`, targetLevel: 4, status: 'ACTIVE', isActive: true },
+      );
+    }
   }
 
   if (loDefs.length > 0) {
     await db.insert(learningObjectives).values(loDefs).onConflictDoNothing();
-    console.log(`✅ Seeded ${loDefs.length} learning objectives for key competencies`);
+    console.log(`✅ Seeded ${loDefs.length} learning objectives for all MoSPI competencies`);
+  }
+
+  // ── Seed Competency Claims for all competencies ──
+  const claimDefs = [];
+  for (const comp of competencyRows) {
+    claimDefs.push(
+      {
+        competencyId: comp.id,
+        code: `${comp.code}_CLAIM_01`,
+        statement: `Official demonstrates direct ability to execute ${comp.name} in accordance with official MoSPI guidelines and procedures.`,
+        status: 'ACTIVE',
+      },
+      {
+        competencyId: comp.id,
+        code: `${comp.code}_CLAIM_02`,
+        statement: `Official demonstrates capacity to audit, validate, and troubleshoot complex issues arising within ${comp.name}.`,
+        status: 'ACTIVE',
+      },
+    );
+  }
+
+  if (claimDefs.length > 0) {
+    await db.insert(competencyClaims).values(claimDefs).onConflictDoNothing();
+    console.log(`✅ Seeded ${claimDefs.length} competency claims for all MoSPI competencies`);
   }
 }

@@ -1,16 +1,23 @@
-import { eq } from 'drizzle-orm';
-import { db } from '../../db/index.js';
-import { evidence, officials, competencies } from '../../db/schema/index.js';
-import { sendSuccess, sendError } from '../../utils/response.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { calculateWeightedEstimate, calculateConfidenceScore, DEFAULT_TYPE_WEIGHTS } from '../../utils/evidenceFusion.js';
+import { db } from "../../db/index.js";
+import { eq } from "drizzle-orm";
+import { evidence, officials, competencies } from "../../db/schema/index.js";
+import { sendSuccess, sendError } from "../../utils/response.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
+import {
+  calculateWeightedEstimate,
+  calculateConfidenceScore,
+  DEFAULT_TYPE_WEIGHTS,
+} from "../../utils/evidenceFusion.js";
 
 /**
  * Get all evidence for an official with calculated fused estimates
  */
 export const getOfficialEvidence = asyncHandler(async (req, res) => {
   const { officialId } = req.params;
-  const offEvidence = await db.select().from(evidence).where(eq(evidence.officialId, officialId));
+  const offEvidence = await db
+    .select()
+    .from(evidence)
+    .where(eq(evidence.officialId, officialId));
   const allComps = await db.select().from(competencies);
 
   // Group evidence by competency
@@ -38,7 +45,7 @@ export const getOfficialEvidence = asyncHandler(async (req, res) => {
       totalEvidenceRecords: offEvidence.length,
       summaryByCompetency,
     },
-    'Official evidence retrieved successfully'
+    "Official evidence retrieved successfully",
   );
 });
 
@@ -46,20 +53,38 @@ export const getOfficialEvidence = asyncHandler(async (req, res) => {
  * Record new evidence item (Diagnostic attempt, Scenario decision, External certificate)
  */
 export const recordEvidence = asyncHandler(async (req, res) => {
-  const { officialId, competencyId, evidenceType, score, maxScore = 5.0, provenance, weight } = req.body;
+  const {
+    officialId,
+    competencyId,
+    evidenceType,
+    score,
+    maxScore = 5.0,
+    provenance,
+    weight,
+  } = req.body;
 
   if (!officialId || !competencyId || !evidenceType || score === undefined) {
-    return sendError(res, 'Official ID, Competency ID, Evidence Type, and Score are required', 400);
+    return sendError(
+      res,
+      "Official ID, Competency ID, Evidence Type, and Score are required",
+      400,
+    );
   }
 
-  const [official] = await db.select().from(officials).where(eq(officials.id, officialId));
+  const [official] = await db
+    .select()
+    .from(officials)
+    .where(eq(officials.id, officialId));
   if (!official) {
-    return sendError(res, 'Official profile not found', 404);
+    return sendError(res, "Official profile not found", 404);
   }
 
-  const [comp] = await db.select().from(competencies).where(eq(competencies.id, competencyId));
+  const [comp] = await db
+    .select()
+    .from(competencies)
+    .where(eq(competencies.id, competencyId));
   if (!comp) {
-    return sendError(res, 'Competency definition not found', 404);
+    return sendError(res, "Competency definition not found", 404);
   }
 
   const effectiveWeight = weight || DEFAULT_TYPE_WEIGHTS[evidenceType] || 0.2;
@@ -74,11 +99,18 @@ export const recordEvidence = asyncHandler(async (req, res) => {
       maxScore: Number(maxScore),
       weight: Number(effectiveWeight),
       confidence: 0.85,
-      provenance: provenance || `Diagnostic evaluation on ${new Date().toLocaleDateString()}`,
+      provenance:
+        provenance ||
+        `Diagnostic evaluation on ${new Date().toLocaleDateString()}`,
     })
     .returning();
 
-  return sendSuccess(res, newEvidence, 'Evidence record created successfully', 201);
+  return sendSuccess(
+    res,
+    newEvidence,
+    "Evidence record created successfully",
+    201,
+  );
 });
 
 /**
@@ -89,14 +121,19 @@ export const getEvidenceProvenance = asyncHandler(async (req, res) => {
   const [record] = await db.select().from(evidence).where(eq(evidence.id, id));
 
   if (!record) {
-    return sendError(res, 'Evidence record not found', 404);
+    return sendError(res, "Evidence record not found", 404);
   }
 
-  const [comp] = await db.select().from(competencies).where(eq(competencies.id, record.competencyId));
+  const [comp] = await db
+    .select()
+    .from(competencies)
+    .where(eq(competencies.id, record.competencyId));
 
   const provenanceChain = {
     evidenceId: record.id,
-    competency: comp ? { code: comp.code, name: comp.name, category: comp.category } : null,
+    competency: comp
+      ? { code: comp.code, name: comp.name, category: comp.category }
+      : null,
     evidenceType: record.evidenceType,
     score: `${record.score} / ${record.maxScore}`,
     weightApplied: record.weight,
@@ -104,10 +141,17 @@ export const getEvidenceProvenance = asyncHandler(async (req, res) => {
     timestamp: record.recordedAt,
     verificationAudit: {
       auditable: true,
-      integrityCheck: 'PASSED',
-      sourceType: record.evidenceType === 'KNOWLEDGE' ? 'NSSTA Diagnostic Test' : 'Official Performance Log',
+      integrityCheck: "PASSED",
+      sourceType:
+        record.evidenceType === "KNOWLEDGE"
+          ? "NSSTA Diagnostic Test"
+          : "Official Performance Log",
     },
   };
 
-  return sendSuccess(res, provenanceChain, 'Evidence provenance chain retrieved');
+  return sendSuccess(
+    res,
+    provenanceChain,
+    "Evidence provenance chain retrieved",
+  );
 });

@@ -1,21 +1,37 @@
-{
-  "domains": [
-    {
-      "name": "Statistical Competencies",
-      "competencies": [
-        { "code": "SURVEY_DESIGN", "name": "Survey Design & Sampling Methods" },
-        { "code": "NATIONAL_ACCOUNTS", "name": "National Accounts Statistics" },
-        { "code": "PRICE_STATS", "name": "Price Statistics & Index Numbers" },
-        { "code": "DATA_QUALITY", "name": "Metadata Standards & Data Quality Frameworks" }
-      ]
-    },
-    {
-      "name": "Technical Competencies",
-      "competencies": [
-        { "code": "PYTHON_R", "name": "Python & R Data Analytics" },
-        { "code": "SQL_DATA", "name": "SQL & Data Management" },
-        { "code": "GIS_MAPPING", "name": "Spatial Analytics & GIS Mapping" }
-      ]
-    }
-  ]
-}
+[
+  {
+    "code": "SURVEY_SAMPLING",
+    "name": "Survey Design and Sampling",
+    "category": "Statistical"
+  },
+  {
+    "code": "STATISTICAL_ANALYSIS",
+    "name": "Statistical Analysis",
+    "category": "Statistical"
+  },
+  {
+    "code": "PYTHON_DATA",
+    "name": "Python and Data Analysis",
+    "category": "Technical"
+  },
+  {
+    "code": "DATA_PRIVACY",
+    "name": "Data Privacy and Cybersecurity",
+    "category": "Digital Governance"
+  },
+  {
+    "code": "SQL_DATA",
+    "name": "SQL and Data Management",
+    "category": "Technical"
+  },
+  {
+    "code": "GIS_VISUALIZATION",
+    "name": "GIS and Data Visualization",
+    "category": "Technical"
+  },
+  {
+    "code": "CLOUD_APIS",
+    "name": "Cloud Computing and APIs",
+    "category": "Technical"
+  }
+]

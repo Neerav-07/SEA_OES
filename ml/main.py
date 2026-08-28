@@ -1,16 +1,17 @@
 """
 Kshamata Machine Learning & Intelligence Service (FastAPI)
-Provides AI endpoints for competency mapping, evidence gap calculation, learning recommendations, and MCQ generation.
+Provides AI endpoints for competency mapping, evidence gap calculation, learning recommendations, MCQ generation, AI assistant chat, and predictive capacity forecasting.
 """
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from pipelines.skill_gap_calculator import calculate_competency_estimate
 from pipelines.competency_mapping import map_text_to_competencies
 from pipelines.recommendation_engine import generate_recommendations
 from pipelines.assessment_generator import generate_grounded_mcqs
+from pipelines.llm_client import LLMGenerationError
 
 app = FastAPI(
     title="Kshamata ML Intelligence API",
@@ -28,8 +29,18 @@ class MappingInput(BaseModel):
 
 class AssessmentInput(BaseModel):
     source_text: str
-    num_questions: Optional[int] = 5
-    bloom_level: Optional[str] = "APPLY"
+    competency_name: Optional[str] = "General Competency"
+    competency_category: Optional[str] = "Statistical"
+    bloom_distribution: Optional[Dict[str, int]] = None
+    existing_intent_hashes: Optional[List[str]] = None
+
+class SkillGapInput(BaseModel):
+    competency_code: str
+    competency_name: Optional[str] = None
+    gap_delta: Optional[float] = 1.0
+
+class RecommendationInput(BaseModel):
+    skill_gaps: List[SkillGapInput]
 
 class AssistantInput(BaseModel):
     message: str
@@ -57,7 +68,24 @@ def api_map_competencies(input_data: MappingInput):
 
 @app.post("/api/ml/generate-assessment")
 def api_generate_assessment(input_data: AssessmentInput):
-    return generate_grounded_mcqs(input_data.source_text, input_data.num_questions, input_data.bloom_level)
+    try:
+        questions = generate_grounded_mcqs(
+            source_text=input_data.source_text,
+            competency_name=input_data.competency_name,
+            competency_category=input_data.competency_category,
+            bloom_distribution=input_data.bloom_distribution,
+            existing_intent_hashes=input_data.existing_intent_hashes,
+        )
+        return {"questions": questions}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except LLMGenerationError as exc:
+        raise HTTPException(status_code=502, detail=f"Question generation failed: {exc}")
+
+@app.post("/api/ml/recommend-courses")
+def api_recommend_courses(input_data: RecommendationInput):
+    gaps = [g.dict() for g in input_data.skill_gaps]
+    return {"recommendations": generate_recommendations({}, gaps)}
 
 @app.post("/assistant/chat")
 def api_assistant_chat(input_data: AssistantInput):
@@ -92,4 +120,3 @@ def api_predict_trends(input_data: PredictionInput):
         "departmentReadinessScore": 3.4,
         "modelConfidence": 0.89
     }
-

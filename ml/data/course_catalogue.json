@@ -1,0 +1,79 @@
+[
+  {
+    "course_id": "NSSTA-TPAC-102",
+    "title": "Sampling Design and Survey Methods",
+    "provider": "NSSTA",
+    "competency_codes": [
+      "SURVEY_SAMPLING"
+    ],
+    "level": "Intermediate",
+    "duration_hours": 12,
+    "url": null
+  },
+  {
+    "course_id": "IGOT-STAT-401",
+    "title": "Applied Statistical Analysis",
+    "provider": "iGOT",
+    "competency_codes": [
+      "STATISTICAL_ANALYSIS"
+    ],
+    "level": "Advanced",
+    "duration_hours": 16,
+    "url": null
+  },
+  {
+    "course_id": "IGOT-PYTHON-204",
+    "title": "Python for Data Analysis",
+    "provider": "iGOT",
+    "competency_codes": [
+      "PYTHON_DATA"
+    ],
+    "level": "Intermediate",
+    "duration_hours": 14,
+    "url": null
+  },
+  {
+    "course_id": "IGOT-DP-301",
+    "title": "Data Privacy and Responsible Data Handling",
+    "provider": "iGOT",
+    "competency_codes": [
+      "DATA_PRIVACY"
+    ],
+    "level": "Intermediate",
+    "duration_hours": 10,
+    "url": null
+  },
+  {
+    "course_id": "IGOT-SQL-205",
+    "title": "SQL for Official Statistics",
+    "provider": "iGOT",
+    "competency_codes": [
+      "SQL_DATA"
+    ],
+    "level": "Intermediate",
+    "duration_hours": 12,
+    "url": null
+  },
+  {
+    "course_id": "NSSTA-GIS-110",
+    "title": "GIS and Statistical Visualization",
+    "provider": "NSSTA",
+    "competency_codes": [
+      "GIS_VISUALIZATION"
+    ],
+    "level": "Intermediate",
+    "duration_hours": 10,
+    "url": null
+  },
+  {
+    "course_id": "IGOT-CLOUD-220",
+    "title": "Cloud APIs and Digital Government",
+    "provider": "iGOT",
+    "competency_codes": [
+      "CLOUD_APIS"
+    ],
+    "level": "Intermediate",
+    "duration_hours": 12,
+    "url": null
+  }
+]

@@ -205,6 +205,8 @@ const TABLE_QUERIES = [
     updated_at timestamp DEFAULT now() NOT NULL
   );`,
 
+  `ALTER TABLE assessments ADD COLUMN IF NOT EXISTS blueprint_id uuid;`,
+
   `CREATE TABLE IF NOT EXISTS questions (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
     assessment_id uuid NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
@@ -215,6 +217,16 @@ const TABLE_QUERIES = [
     intent_hash text,
     created_at timestamp DEFAULT now() NOT NULL
   );`,
+
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS question_type text DEFAULT 'MCQ';`,
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS correct_answer jsonb;`,
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS rationale text;`,
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS competency_id uuid;`,
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS claim_id uuid;`,
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS learning_objective_id uuid;`,
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS target_level real;`,
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS validation_status text DEFAULT 'PENDING';`,
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS review_status text DEFAULT 'DRAFT';`,
 
   `CREATE TABLE IF NOT EXISTS recommendations (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
