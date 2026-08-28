@@ -193,7 +193,7 @@ export default function CompetencyTree({ competency, onStartDiagnostic, onAuditE
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  toast.success(`Assigned TPAC Pathway for ${competency.name} to Dr. Rajesh Kumar!`);
+                  toast.success(`Assigned TPAC Pathway for ${competency.name} to Official Profile!`);
                 }}
                 className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[#1E3A8A] font-bold text-xs flex items-center gap-1.5 transition-colors"
               >

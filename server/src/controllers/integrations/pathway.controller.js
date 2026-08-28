@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import {
   officials,
+  users,
   competencies,
   competencyRequirements,
   evidence,
@@ -25,13 +26,24 @@ import {
 export const getPersonalizedPathway = asyncHandler(async (req, res) => {
   const { officialId } = req.params;
 
-  const [official] = await db
-    .select()
-    .from(officials)
-    .where(eq(officials.id, officialId));
+  let targetOfficialId = officialId;
+  let official;
+
+  if (targetOfficialId === 'me' && req.auth?.userId) {
+    const [found] = await db.select().from(officials).where(eq(officials.userId, req.auth.userId));
+    official = found;
+    targetOfficialId = official?.id;
+  } else {
+    const [found] = await db.select().from(officials).where(eq(officials.id, targetOfficialId));
+    official = found;
+  }
+
   if (!official) {
     return sendError(res, "Official profile not found", 404);
   }
+
+  const [u] = official.userId ? await db.select().from(users).where(eq(users.id, official.userId)) : [];
+  const officialName = u?.name || official.designation || "Official";
 
   const allComps = await db.select().from(competencies);
   const reqs = official.roleId
@@ -111,8 +123,9 @@ export const getPersonalizedPathway = asyncHandler(async (req, res) => {
   );
 
   const pathway = {
-    officialId,
-    officialName: official.designation,
+    officialId: targetOfficialId,
+    officialName,
+    roleTitle: official.designation || 'Statistical Officer',
     totalModules: pathwayModules.length,
     totalEstimatedHours,
     pathwayModules,

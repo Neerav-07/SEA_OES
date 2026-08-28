@@ -19,9 +19,10 @@ import PageHeader from '../../../components/PageHeader.jsx';
 import Button from '../../../components/Button.jsx';
 import IngestMaterialModal from '../../../components/pathways/IngestMaterialModal.jsx';
 import api from '../../../services/api.js';
+import useAuthStore from '../../../store/auth.store.js';
 
 const INITIAL_PATHWAY = {
-  officialName: 'Dr. Rajesh Kumar',
+  officialName: 'Official User',
   targetRole: 'Statistical Officer (SO)',
   totalModules: 4,
   totalEstimatedHours: 52,
@@ -38,7 +39,7 @@ const INITIAL_PATHWAY = {
       matchScore: 0.98,
       status: 'RECOMMENDED',
       progressPct: 0,
-      reason: 'Dr. Rajesh Kumar (SSO, DIID MoSPI), your current evaluated proficiency in Python Analytics is Level 1.4 against the required Level 4.0. This course is specifically mandated by NSSTA to bridge your 2.6 Critical Deficit Gap for automating NSS 79th Round data cleaning pipelines.',
+      reason: 'Your evaluated proficiency in Python Analytics has a 2.6 Critical Deficit Gap against your FRAC role requirement. This course is recommended by NSSTA to bridge this gap for automating survey data pipelines.',
     },
     {
       step: 2,
@@ -52,7 +53,7 @@ const INITIAL_PATHWAY = {
       matchScore: 0.95,
       status: 'RECOMMENDED',
       progressPct: 0,
-      reason: 'Prioritized under NDSAP & MoSPI Data Governance Committee directives. Addresses your evaluated 2.4 Critical Deficit in metadata cataloguing, enabling DDI-compliant microdata releases on the Open Government Data Portal.',
+      reason: 'Prioritized under NDSAP & MoSPI Data Governance directives. Addresses your evaluated 2.4 Critical Deficit in metadata cataloguing, enabling DDI-compliant microdata releases.',
     },
     {
       step: 3,
@@ -60,36 +61,51 @@ const INITIAL_PATHWAY = {
       title: 'PostgreSQL Relational Queries & Large-Scale Survey Data Warehousing',
       provider: 'iGOT Karmayogi',
       durationHours: 10,
-      targetCompetency: 'SQL & Relational Database Management (FRAC-TECH-SQL)',
+      targetCompetency: 'Database Queries & SQL (FRAC-TECH-SQL)',
       gapClosurePotential: 1.8,
       prerequisites: [],
-      matchScore: 0.92,
-      status: 'RECOMMENDED',
+      matchScore: 0.91,
+      status: 'NOT_STARTED',
       progressPct: 0,
-      reason: 'Recommended to close your 1.8 High-Priority Gap in relational query optimization. Prepares you for executing complex SQL joins and window functions across 5+ million PLFS survey records.',
+      reason: 'Required for advanced SQL querying and database validation across large-scale enterprise microdata repositories.',
     },
     {
       step: 4,
-      courseCode: 'NSSTA-TPAC-104',
-      title: 'National Accounts Statistics & Sectoral GVA Deflation under SNA 2008 Guidelines',
+      courseCode: 'NSSTA-SNA-102',
+      title: 'SNA 2008 Gross Value Added (GVA) Deflation & Double-Deflation Methodology',
       provider: 'NSSTA Academy',
       durationHours: 16,
-      targetCompetency: 'National Accounts Statistics (FRAC-STAT-NAS)',
-      gapClosurePotential: 0.6,
+      targetCompetency: 'National Accounts Statistics (FRAC-STAT-NATIONAL-ACCOUNTS)',
+      gapClosurePotential: 1.6,
       prerequisites: [],
       matchScore: 0.88,
       status: 'ENROLLED',
       progressPct: 35,
-      reason: 'Assigned for National Accounts Division (NAD) base-year revision. Consolidates your working proficiency in double-deflation index construction and Gross Value Added computation.',
+      reason: 'Assigned for National Accounts base-year revision. Consolidates your working proficiency in double-deflation index construction and Gross Value Added computation.',
     },
   ],
 };
 
 export default function LearningPathsPage() {
-  const [pathway, setPathway] = useState(INITIAL_PATHWAY);
+  const user = useAuthStore((s) => s.user);
+  const [pathway, setPathway] = useState(() => ({
+    ...INITIAL_PATHWAY,
+    officialName: user?.name || 'Official User',
+    targetRole: user?.designation || 'Statistical Officer (SO)',
+  }));
   const [isIngestModalOpen, setIsIngestModalOpen] = useState(false);
   const [enrollingCode, setEnrollingCode] = useState(null);
   const [activeCourseViewer, setActiveCourseViewer] = useState(null);
+
+  useEffect(() => {
+    if (user?.name) {
+      setPathway((prev) => ({
+        ...prev,
+        officialName: user.name,
+        targetRole: user.designation || prev.targetRole,
+      }));
+    }
+  }, [user]);
 
   useEffect(() => {
     fetchPathway();
@@ -97,11 +113,13 @@ export default function LearningPathsPage() {
 
   const fetchPathway = async () => {
     try {
-      const res = await api.get('/pathways/official/off-01');
+      const res = await api.get('/pathways/official/me');
       if (res.data?.data) {
         setPathway((prev) => ({
           ...prev,
           ...res.data.data,
+          officialName: res.data.data.officialName || user?.name || prev.officialName,
+          targetRole: res.data.data.roleTitle || user?.designation || prev.targetRole,
           pathwayModules: res.data.data.pathwayModules || prev.pathwayModules,
         }));
       }
