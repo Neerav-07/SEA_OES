@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, ClipboardList, FileText, Plus, RefreshCw, Save, ShieldCheck, Sparkles, XCircle } from 'lucide-react';
+import { BookOpen, Check, CheckCircle2, ClipboardList, FileText, Plus, RefreshCw, Save, ShieldCheck, Sliders, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import Alert from '../../../components/Alert.jsx';
@@ -397,6 +397,9 @@ export default function AssessmentsPage() {
       setGenStep('Question successfully generated and grounded in source evidence!');
       setGenerationResult(result);
       toast.success('AI Question successfully generated from grounded material!');
+      setTimeout(() => {
+        document.getElementById('generated-question-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
     } catch (error) {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -413,42 +416,114 @@ export default function AssessmentsPage() {
 
   const handleQuestionValidation = async () => {
     if (!generationResult?.question?.id) return;
-    setQuestionAction(true); setErrors([]);
-    try { setGenerationResult({ ...generationResult, validation: await validateQuestion(generationResult.question.id) }); }
-    catch (error) { setErrors(apiErrors(error)); }
-    finally { setQuestionAction(false); }
+    setQuestionAction(true);
+    setErrors([]);
+    try {
+      const validation = await validateQuestion(generationResult.question.id);
+      setGenerationResult((prev) => ({
+        ...prev,
+        validation,
+        question: { ...prev.question, validationStatus: validation.valid ? 'PASSED' : 'FAILED', reviewStatus: validation.status },
+        questionVersion: { ...prev.questionVersion, validationStatus: validation.valid ? 'PASSED' : 'FAILED', reviewStatus: validation.status },
+      }));
+      if (validation.valid) {
+        toast.success(`Question Validated (Score: ${validation.score}%) — Status: ${validation.status}`);
+      } else {
+        toast.error(`Validation found issues: ${validation.errors?.[0]?.message || 'Check validation errors below.'}`);
+      }
+    } catch (error) {
+      const errs = apiErrors(error);
+      setErrors(errs);
+      toast.error(errs[0]?.message || 'Question validation failed.');
+    } finally {
+      setQuestionAction(false);
+    }
   };
 
   const handleReview = async (action) => {
     if (!generationResult?.question?.id) return;
-    setQuestionAction(true); setErrors([]);
-    try { const result = await reviewQuestion(generationResult.question.id, { action }); setGenerationResult({ ...generationResult, question: result.question, questionVersion: result.version }); }
-    catch (error) { setErrors(apiErrors(error)); }
-    finally { setQuestionAction(false); }
+    setQuestionAction(true);
+    setErrors([]);
+    try {
+      const result = await reviewQuestion(generationResult.question.id, { action });
+      setGenerationResult((prev) => ({
+        ...prev,
+        question: { ...prev.question, ...result.question },
+        questionVersion: { ...prev.questionVersion, ...result.version },
+      }));
+      if (action === 'APPROVE') {
+        toast.success('Question Approved! Added to blueprint question bank.');
+      } else if (action === 'REJECT') {
+        toast.success('Question marked as REJECTED.');
+      } else {
+        toast.success('Question marked for revision.');
+      }
+    } catch (error) {
+      const errs = apiErrors(error);
+      setErrors(errs);
+      toast.error(errs[0]?.message || `Failed to ${action.toLowerCase()} question.`);
+    } finally {
+      setQuestionAction(false);
+    }
   };
 
   const handleRevision = async () => {
     if (!generationResult?.question?.id) return;
-    setQuestionAction(true); setErrors([]);
-    try { const result = await reviseQuestion(generationResult.question.id, { rationale: 'Revised during review.' }); setGenerationResult({ ...generationResult, questionVersion: result.version, revision: result }); }
-    catch (error) { setErrors(apiErrors(error)); }
-    finally { setQuestionAction(false); }
+    setQuestionAction(true);
+    setErrors([]);
+    try {
+      const result = await reviseQuestion(generationResult.question.id, { rationale: 'Revised during review.' });
+      setGenerationResult((prev) => ({
+        ...prev,
+        questionVersion: result.version,
+        revision: result,
+      }));
+      toast.success(`Created Question Version v${result.version?.version || 2} for revision.`);
+    } catch (error) {
+      const errs = apiErrors(error);
+      setErrors(errs);
+      toast.error(errs[0]?.message || 'Failed to request revision.');
+    } finally {
+      setQuestionAction(false);
+    }
   };
 
   const handleAssembly = async () => {
     if (!selectedBlueprintId) return;
-    setAssembling(true); setErrors([]);
-    try { const result = await assembleAssessment(selectedBlueprintId); setAssemblyResult(result); }
-    catch (error) { setErrors(apiErrors(error)); }
-    finally { setAssembling(false); }
+    setAssembling(true);
+    setErrors([]);
+    try {
+      const result = await assembleAssessment(selectedBlueprintId);
+      setAssemblyResult(result);
+      toast.success('Assessment successfully assembled from approved blueprint questions!');
+    } catch (error) {
+      const errs = apiErrors(error);
+      setErrors(errs);
+      toast.error(errs[0]?.message || 'Assessment assembly failed. Ensure sufficient approved questions exist.');
+    } finally {
+      setAssembling(false);
+    }
   };
 
   const handleAssemblyValidation = async () => {
     if (!assemblyResult?.assessment?.id) return;
-    setAssembling(true); setErrors([]);
-    try { const result = await validateAssessment(assemblyResult.assessment.id); setAssemblyResult({ ...assemblyResult, validation: result, persisted: await getAssessment(assemblyResult.assessment.id) }); }
-    catch (error) { setErrors(apiErrors(error)); }
-    finally { setAssembling(false); }
+    setAssembling(true);
+    setErrors([]);
+    try {
+      const result = await validateAssessment(assemblyResult.assessment.id);
+      setAssemblyResult((prev) => ({ ...prev, validation: result, persisted: prev.persisted }));
+      if (result.valid) {
+        toast.success('Assembled Assessment is 100% compliant and ready for testing!');
+      } else {
+        toast.error('Assessment assembly validation found compliance errors.');
+      }
+    } catch (error) {
+      const errs = apiErrors(error);
+      setErrors(errs);
+      toast.error(errs[0]?.message || 'Assembly validation failed.');
+    } finally {
+      setAssembling(false);
+    }
   };
 
   if (loading) return <Spinner variant="bar" label="Loading assessment blueprint workspace..." className="py-20" />;
@@ -565,10 +640,10 @@ export default function AssessmentsPage() {
                       <button
                         type="button"
                         onClick={() => updateForm('cognitiveDistribution', autoBalanceCognitive(form.questionCount))}
-                        className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
                         title="Auto-balance Bloom taxonomy distribution according to question count"
                       >
-                        ⚡ Auto-Balance
+                        <Sliders className="h-3 w-3" /> Auto-Balance
                       </button>
                     </div>
                   </div>
@@ -620,30 +695,29 @@ export default function AssessmentsPage() {
           </div>
 
           {generating && (
-            <div className="rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50/90 via-indigo-50/90 to-purple-50/90 p-5 shadow-sm transition-all duration-300 animate-in fade-in">
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm my-2 transition-all duration-300 animate-in fade-in">
               <div className="flex items-center justify-between gap-4 mb-2">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-blue-600 animate-spin" />
-                  <span className="text-sm font-bold text-slate-800">Generating Grounded Assessment Question</span>
+                  <span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-700 animate-pulse" />
+                  <span className="text-sm font-bold text-slate-900">Generating Grounded Assessment Question</span>
                 </div>
-                <span className="text-xs font-black font-mono text-blue-700 bg-blue-100/90 px-2.5 py-0.5 rounded-full border border-blue-200 shadow-xs">
+                <span className="text-xs font-bold font-mono text-blue-800 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
                   {genProgress}%
                 </span>
               </div>
               
-              <div className="w-full bg-slate-200/90 rounded-full h-2.5 overflow-hidden my-2.5">
+              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden my-2.5 border border-slate-200">
                 <div
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2.5 rounded-full transition-all duration-300 ease-out shadow-xs"
+                  className="bg-gradient-to-r from-blue-700 via-blue-900 to-slate-950 h-2 rounded-full transition-all duration-300 ease-out"
                   style={{ width: `${genProgress}%` }}
                 />
               </div>
 
-              <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
-                <span className="flex items-center gap-1.5 truncate">
-                  <span className="inline-block w-2 h-2 rounded-full bg-blue-600 animate-ping shrink-0" />
+              <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+                <span className="truncate text-slate-700">
                   {genStep}
                 </span>
-                <span className="text-slate-400 font-mono shrink-0 ml-2">MoSPI-AI Engine</span>
+                <span className="text-slate-400 font-mono shrink-0 ml-2">MoSPI Engine</span>
               </div>
             </div>
           )}
@@ -668,9 +742,106 @@ export default function AssessmentsPage() {
         {validationResult.warnings.length > 0 && <div className="mt-4 space-y-2"><h4 className="text-sm font-bold text-(--app-color-text)">Warnings</h4>{validationResult.warnings.map((warning, index) => <p key={index} className="text-sm text-amber-700">{warning.message || warning}</p>)}</div>}
       </Card>}
 
-      {generationResult && <Card title="Generated question" subtitle="Question output and source evidence returned by the grounded generation pipeline.">
-        {generationResult.status === 'INSUFFICIENT_EVIDENCE' ? <Alert type="warning" title="Insufficient evidence" message={generationResult.message} /> : <div className="space-y-4"><p className="text-base font-semibold">{generationResult.question?.stem || generationResult.questionVersion?.stem}</p><div className="space-y-2">{(generationResult.question?.options || []).map((option) => <p key={option.id || option.text} className="rounded border border-(--app-color-border) p-2 text-sm">{option.id || ''} {option.text}</p>)}</div><p className="text-xs text-(--app-color-text-muted)">Provenance: {generationResult.provenance?.map((item) => item.sourceChunkId).join(', ') || 'none'}</p><p className="text-xs font-semibold">Validation: {generationResult.validation?.status || generationResult.questionVersion?.validationStatus || 'PENDING'} · Review: {generationResult.question?.reviewStatus || generationResult.questionVersion?.reviewStatus || 'DRAFT'}</p><div className="flex flex-wrap gap-2"><Button type="button" variant="secondary" onClick={handleQuestionValidation} loading={questionAction}>Validate question</Button><Button type="button" variant="success" onClick={() => handleReview('APPROVE')} loading={questionAction}>Approve</Button><Button type="button" variant="danger" onClick={() => handleReview('REJECT')} loading={questionAction}>Reject</Button><Button type="button" variant="secondary" onClick={handleRevision} loading={questionAction}>Request revision</Button></div>{generationResult.validation?.errors?.length > 0 && <Alert type="error" title="Validation errors" message={generationResult.validation.errors.map((item) => item.message).join(' ')}/>}</div>}
-      </Card>}
+      {generationResult && (
+        <div id="generated-question-card" className="scroll-mt-6">
+          <Card title="Generated Question Output" subtitle="AI question output synthesized and grounded in official MoSPI reference evidence.">
+            {generationResult.status === 'INSUFFICIENT_EVIDENCE' ? (
+              <Alert type="warning" title="Insufficient evidence" message={generationResult.message} />
+            ) : (
+              <div className="space-y-5">
+                <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-800">
+                      {generationResult.question?.bloomLevel || generationResult.questionVersion?.bloomLevel || 'APPLY'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-800">
+                      {generationResult.question?.questionType || generationResult.questionVersion?.questionType || 'MCQ'}
+                    </span>
+                  </div>
+                  <p className="text-base font-bold text-slate-900 leading-relaxed">
+                    {generationResult.question?.stem || generationResult.questionVersion?.stem}
+                  </p>
+                </div>
+
+                {/* Options List */}
+                <div className="space-y-2.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Answer Options</span>
+                  <div className="grid gap-2">
+                    {(generationResult.question?.options || generationResult.questionVersion?.options || []).map((option, idx) => {
+                      const optText = typeof option === 'object' ? option.text : option;
+                      const optId = typeof option === 'object' ? option.id : ['A', 'B', 'C', 'D'][idx];
+                      const isCorrect = String(optId).toUpperCase() === String(generationResult.question?.correctAnswer || generationResult.questionVersion?.correctAnswer || '').toUpperCase();
+
+                      return (
+                        <div
+                          key={optId || idx}
+                          className={`flex items-start gap-3 rounded-lg border p-3 text-sm transition-colors ${
+                            isCorrect
+                              ? 'border-emerald-300 bg-emerald-50/60 font-semibold text-emerald-950'
+                              : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-md text-xs font-bold shrink-0 ${
+                            isCorrect ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'
+                          }`}>
+                            {optId}
+                          </span>
+                          <span className="flex-1 mt-0.5">{optText}</span>
+                          {isCorrect && (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">
+                              <Check className="h-3 w-3" /> Correct
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Rationale / Explanation */}
+                {(generationResult.question?.explanation || generationResult.question?.rationale || generationResult.questionVersion?.rationale) && (
+                  <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3.5 text-xs text-blue-950">
+                    <span className="font-bold text-blue-950 flex items-center gap-1.5 mb-1">
+                      <BookOpen className="h-3.5 w-3.5 text-blue-700" /> Official Rationale & Explanation:
+                    </span>
+                    <p className="leading-normal">{generationResult.question?.explanation || generationResult.question?.rationale || generationResult.questionVersion?.rationale}</p>
+                  </div>
+                )}
+
+                {/* Provenance & Status */}
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-3 text-xs text-slate-500">
+                  <span>
+                    <strong>Source Provenance:</strong> {generationResult.provenance?.length ? `${generationResult.provenance.length} MoSPI source chunk(s) cited` : 'Standard Framework Ref'}
+                  </span>
+                  <span>
+                    <strong>Validation:</strong> {generationResult.validation?.status || generationResult.questionVersion?.validationStatus || 'PENDING'} · <strong>Review:</strong> {generationResult.question?.reviewStatus || generationResult.questionVersion?.reviewStatus || 'DRAFT'}
+                  </span>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button type="button" variant="secondary" onClick={handleQuestionValidation} loading={questionAction}>
+                    <ShieldCheck className="h-4 w-4" /> Validate question
+                  </Button>
+                  <Button type="button" variant="success" onClick={() => handleReview('APPROVE')} loading={questionAction}>
+                    <CheckCircle2 className="h-4 w-4" /> Approve
+                  </Button>
+                  <Button type="button" variant="danger" onClick={() => handleReview('REJECT')} loading={questionAction}>
+                    <XCircle className="h-4 w-4" /> Reject
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={handleRevision} loading={questionAction}>
+                    <RefreshCw className="h-4 w-4" /> Request revision
+                  </Button>
+                </div>
+
+                {generationResult.validation?.errors?.length > 0 && (
+                  <Alert type="error" title="Validation errors" message={generationResult.validation.errors.map((item) => item.message).join(' ')} />
+                )}
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
 
       {assemblyResult && <Card title="Assembled assessment" subtitle="Blueprint-driven selection of approved, validated current question versions."><div className="space-y-3"><p className="text-sm font-semibold">Assessment {assemblyResult.assessment?.id} · {assemblyResult.items?.length || assemblyResult.persisted?.items?.length || 0} questions</p>{(assemblyResult.items || assemblyResult.persisted?.items || []).map((item, index) => <div key={item.item?.id || item.item?.questionId || index} className="rounded border border-(--app-color-border) p-3 text-sm"><span className="font-semibold">{item.item?.position || index + 1}.</span> {item.version?.stem || item.question?.stem}</div>)}<Button type="button" variant="secondary" onClick={handleAssemblyValidation} loading={assembling}>Validate assembled assessment</Button>{assemblyResult.validation && <Alert type={assemblyResult.validation.valid ? 'success' : 'error'} title={assemblyResult.validation.valid ? 'Assembly valid' : 'Assembly invalid'} message={assemblyResult.validation.errors?.map((item) => item.message).join(' ') || 'Blueprint requirements are satisfied.'} />}</div></Card>}
 
