@@ -12,6 +12,7 @@ export const officials = pgTable('officials', {
   experienceYears: integer('experience_years').default(0),
   education: text('education'),
   preferredLanguage: text('preferred_language').default('en'),
+  karmayogiId: text('karmayogi_id'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

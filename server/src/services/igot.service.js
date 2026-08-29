@@ -328,6 +328,263 @@ export async function getCourseDetails(courseId) {
   return buildSunbirdResponse('api.content.read', { content });
 }
 
+// ── Mock Civil Servant Profiles (Demo Onboarding Sync) ─────────────────────────
+const DEMO_KARMAYOGI_PROFILES = [
+  {
+    karmayogiId: 'ISS-2021-0842',
+    name: 'Dr. Ramesh Sharma',
+    email: 'ramesh.sharma@mospi.gov.in',
+    cadre: 'ISS (Indian Statistical Service)',
+    designation: 'Senior Statistical Officer (SSO)',
+    department: 'Data Informatics & Innovation Division (DIID)',
+    experienceYears: 6,
+    education: 'M.Sc. in Statistics & Computing',
+    preferredLanguage: 'en',
+    verifiedBadge: 'MoSPI Civil Servant (Karmayogi Bharat)',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    completedCourses: [
+      {
+        courseId: 'do_11298388341098496001',
+        name: 'Statistical Methods for Survey Design and Analysis',
+        organisation: 'NSSTA',
+        completedAt: '2025-11-14',
+        certificateId: 'CERT-NSSTA-2025-8821',
+        durationSeconds: 14400,
+        competenciesAwarded: [
+          { code: 'SURVEY_DESIGN', name: 'Survey Design & Methodology', level: 3.8 },
+          { code: 'SAMPLING_METHODS', name: 'Sampling Theory & Methods', level: 3.5 },
+          { code: 'SURVEY_SAMPLING', name: 'Survey Design and Sampling', level: 3.8 },
+        ],
+      },
+      {
+        courseId: 'do_11298388341098496004',
+        name: 'Cybersecurity Fundamentals for Government Officials (CERT-In)',
+        organisation: 'CERT-In',
+        completedAt: '2025-08-20',
+        certificateId: 'CERT-CERTIN-2025-4109',
+        durationSeconds: 10800,
+        competenciesAwarded: [
+          { code: 'DATA_PRIVACY', name: 'Data Privacy and Cybersecurity', level: 3.5 },
+          { code: 'CYBERSECURITY', name: 'Cybersecurity Fundamentals', level: 3.5 },
+        ],
+      },
+      {
+        courseId: 'do_11298388341098496011',
+        name: 'Ethics and Integrity for Government Officials (Seva Bhav)',
+        organisation: 'DoPT',
+        completedAt: '2025-06-10',
+        certificateId: 'CERT-DOPT-2025-1205',
+        durationSeconds: 5400,
+        competenciesAwarded: [
+          { code: 'ETHICS_INTEGRITY', name: 'Ethics and Integrity (Seva Bhav)', level: 4.0 },
+          { code: 'LEADERSHIP_COLLAB', name: 'Civil Service Leadership & Ethics', level: 4.0 },
+        ],
+      },
+    ],
+    skillsSummary: [
+      'Survey Sampling Design',
+      'Data Quality Standards',
+      'CERT-In Cyber Hygiene',
+      'Civil Service Ethics (Seva Bhav)',
+    ],
+    identifiedGaps: [
+      'Python for Data Analysis and Visualization',
+      'AI/ML Fundamentals for Official Statistics',
+      'Government Cloud Computing (MeghRaj)',
+    ],
+  },
+  {
+    karmayogiId: 'SSS-2023-1149',
+    name: 'Priya Verma',
+    email: 'priya.verma@mospi.gov.in',
+    cadre: 'SSS (Subordinate Statistical Service)',
+    designation: 'Junior Statistical Officer (JSO)',
+    department: 'Field Operations Division (FOD)',
+    experienceYears: 3,
+    education: 'B.Sc. in Mathematical Statistics',
+    preferredLanguage: 'en',
+    verifiedBadge: 'MoSPI Civil Servant (Karmayogi Bharat)',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+    completedCourses: [
+      {
+        courseId: 'do_11298388341098496010',
+        name: 'Labour Force Survey Methods and PLFS Analysis',
+        organisation: 'NSSO',
+        completedAt: '2025-10-05',
+        certificateId: 'CERT-NSSO-2025-0412',
+        durationSeconds: 14400,
+        competenciesAwarded: [
+          { code: 'LABOUR_STATISTICS', name: 'Labour Statistics (PLFS)', level: 3.4 },
+          { code: 'SURVEY_DESIGN', name: 'Survey Design & Methodology', level: 3.0 },
+          { code: 'SURVEY_SAMPLING', name: 'Survey Design and Sampling', level: 3.0 },
+        ],
+      },
+      {
+        courseId: 'do_11298388341098496011',
+        name: 'Ethics and Integrity for Government Officials (Seva Bhav)',
+        organisation: 'DoPT',
+        completedAt: '2025-04-18',
+        certificateId: 'CERT-DOPT-2025-9912',
+        durationSeconds: 5400,
+        competenciesAwarded: [
+          { code: 'ETHICS_INTEGRITY', name: 'Ethics and Integrity (Seva Bhav)', level: 3.5 },
+          { code: 'LEADERSHIP_COLLAB', name: 'Civil Service Leadership & Ethics', level: 3.5 },
+        ],
+      },
+    ],
+    skillsSummary: [
+      'Field Enumeration & Scrutiny',
+      'PLFS Survey Instruments',
+      'CAPI Household Canvassing',
+    ],
+    identifiedGaps: [
+      'SQL for Data Management and Statistical Analysis',
+      'Python Data Cleaning',
+      'Data Visualization & Dashboards',
+    ],
+  },
+  {
+    karmayogiId: 'ISS-2018-0329',
+    name: 'Anil Kumar',
+    email: 'anil.kumar@mospi.gov.in',
+    cadre: 'ISS (Indian Statistical Service)',
+    designation: 'Assistant Director',
+    department: 'National Accounts Division (NAD)',
+    experienceYears: 8,
+    education: 'M.Stat (Indian Statistical Institute, Kolkata)',
+    preferredLanguage: 'en',
+    verifiedBadge: 'MoSPI Civil Servant (Karmayogi Bharat)',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    completedCourses: [
+      {
+        courseId: 'do_11298388341098496008',
+        name: 'National Accounts Statistics: Concepts and Compilation',
+        organisation: 'MoSPI',
+        completedAt: '2024-12-01',
+        certificateId: 'CERT-MOSPI-2024-0199',
+        durationSeconds: 21600,
+        competenciesAwarded: [
+          { code: 'NATIONAL_ACCOUNTS', name: 'National Accounts Statistics (NAS)', level: 4.2 },
+          { code: 'STATISTICAL_ANALYSIS', name: 'Statistical Analysis', level: 4.2 },
+        ],
+      },
+      {
+        courseId: 'do_11298388341098496007',
+        name: 'Understanding SDG Indicators: India\'s Monitoring Framework',
+        organisation: 'MoSPI',
+        completedAt: '2025-02-15',
+        certificateId: 'CERT-SDG-2025-3321',
+        durationSeconds: 7200,
+        competenciesAwarded: [
+          { code: 'SDG_INDICATORS', name: 'SDG Indicators & Monitoring', level: 3.8 },
+          { code: 'METADATA_STANDARDS', name: 'Metadata Standards & Data Quality', level: 3.6 },
+        ],
+      },
+      {
+        courseId: 'do_11298388341098496001',
+        name: 'Statistical Methods for Survey Design and Analysis',
+        organisation: 'NSSTA',
+        completedAt: '2024-05-10',
+        certificateId: 'CERT-NSSTA-2024-7711',
+        durationSeconds: 14400,
+        competenciesAwarded: [
+          { code: 'SURVEY_DESIGN', name: 'Survey Design & Methodology', level: 4.0 },
+          { code: 'SURVEY_SAMPLING', name: 'Survey Design and Sampling', level: 4.0 },
+        ],
+      },
+    ],
+    skillsSummary: [
+      'SNA 2008 National Accounts',
+      'GDP/GVA Sectoral Compilation',
+      'SDG India Index Framework',
+      'Statistical Metadata Standardization',
+    ],
+    identifiedGaps: [
+      'Cloud Computing on MeghRaj',
+      'Advanced Python Analytics for Big Data',
+      'AI/ML for Statistical Dissemination',
+    ],
+  },
+];
+
+/**
+ * Get all available demo profiles for fast-track onboarding selection.
+ */
+export function getDemoKarmayogiProfiles() {
+  return buildSunbirdResponse('api.user.profiles.demo', {
+    count: DEMO_KARMAYOGI_PROFILES.length,
+    profiles: DEMO_KARMAYOGI_PROFILES,
+  });
+}
+
+/**
+ * Fetch a specific Karmayogi profile by its ID (or generate a realistic custom profile for any ID).
+ */
+export function getDemoProfileByKarmayogiId(karmayogiId) {
+  const cleanId = String(karmayogiId || '').trim();
+  const found = DEMO_KARMAYOGI_PROFILES.find(
+    (p) =>
+      p.karmayogiId.toLowerCase() === cleanId.toLowerCase() ||
+      p.email.toLowerCase() === cleanId.toLowerCase(),
+  );
+
+  if (found) {
+    return buildSunbirdResponse('api.user.profile.read', { profile: found });
+  }
+
+  // Fallback: dynamic valid MoSPI profile for any arbitrary user test ID
+  const isSss = cleanId.toUpperCase().startsWith('SSS');
+  const dynamicProfile = {
+    karmayogiId: cleanId || 'ISS-DEMO-2026',
+    name: 'Officer ' + cleanId,
+    email: `${cleanId.toLowerCase().replace(/[^a-z0-9]/g, '.')}@mospi.gov.in`,
+    cadre: isSss ? 'SSS (Subordinate Statistical Service)' : 'ISS (Indian Statistical Service)',
+    designation: isSss ? 'Junior Statistical Officer (JSO)' : 'Senior Statistical Officer (SSO)',
+    department: 'Data Informatics & Innovation Division (DIID)',
+    experienceYears: 4,
+    education: 'M.Sc. in Statistics',
+    preferredLanguage: 'en',
+    verifiedBadge: 'MoSPI Civil Servant (Karmayogi Bharat)',
+    completedCourses: [
+      {
+        courseId: 'do_11298388341098496001',
+        name: 'Statistical Methods for Survey Design and Analysis',
+        organisation: 'NSSTA',
+        completedAt: '2025-09-12',
+        certificateId: `CERT-NSSTA-${cleanId}-01`,
+        durationSeconds: 14400,
+        competenciesAwarded: [
+          { code: 'SURVEY_DESIGN', name: 'Survey Design & Methodology', level: 3.5 },
+          { code: 'SURVEY_SAMPLING', name: 'Survey Design and Sampling', level: 3.5 },
+        ],
+      },
+      {
+        courseId: 'do_11298388341098496011',
+        name: 'Ethics and Integrity for Government Officials (Seva Bhav)',
+        organisation: 'DoPT',
+        completedAt: '2025-05-19',
+        certificateId: `CERT-DOPT-${cleanId}-02`,
+        durationSeconds: 5400,
+        competenciesAwarded: [
+          { code: 'ETHICS_INTEGRITY', name: 'Ethics and Integrity (Seva Bhav)', level: 3.8 },
+          { code: 'LEADERSHIP_COLLAB', name: 'Civil Service Leadership & Ethics', level: 3.8 },
+        ],
+      },
+    ],
+    skillsSummary: [
+      'Survey Sampling Principles',
+      'Official Data Scrutiny',
+      'Civil Service Conduct Rules',
+    ],
+    identifiedGaps: [
+      'Python for Data Analysis and Visualization',
+      'AI/ML Fundamentals for Official Statistics',
+    ],
+  };
+
+  return buildSunbirdResponse('api.user.profile.read', { profile: dynamicProfile });
+}
+
 /**
  * Get all mock courses (for initial DB seeding).
  * Returns courses with competency code mappings for igot_courses and igot_competency_map tables.

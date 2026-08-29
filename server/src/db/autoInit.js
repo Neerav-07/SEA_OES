@@ -53,6 +53,8 @@ const TABLE_QUERIES = [
     updated_at timestamp DEFAULT now() NOT NULL
   );`,
 
+  `ALTER TABLE officials ADD COLUMN IF NOT EXISTS karmayogi_id text;`,
+
   `CREATE TABLE IF NOT EXISTS competencies (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
     code text NOT NULL UNIQUE,
