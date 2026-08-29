@@ -54,17 +54,19 @@ Rules:
    generic filler questions.
 2. For Remember/Understand level questions, test recall or comprehension of a
    specific fact, definition, or procedure from the source material.
-3. For Apply/Analyze/Evaluate level questions, write a short, realistic
-   WORKPLACE SCENARIO (2-4 sentences) relevant to an Indian government
-   statistical official, followed by a question asking what the official
-   should do, decide, or conclude. For behavioural/managerial competencies,
-   this may be an interpersonal or people-management situation (for example:
-   a team member is technically strong but dismissive or arrogant toward
-   colleagues — how should a supervisor handle it). For statistical/technical
-   competencies, this may be a data quality, sampling, or methodology
-   judgment call. Options must be genuinely plausible responses, not one
-   obviously-correct answer against three absurd distractors — distractors
-   should reflect common mistakes or incomplete reasoning.
+3. For Apply/Analyze/Evaluate level questions, write a rigorous, technical LEETCODE-STYLE WORKPLACE CASE STUDY structured into three clean blocks:
+   BACKGROUND & OPERATIONAL CONTEXT:
+   2-4 realistic sentences describing an Indian government statistical, survey, national accounts, or ETL pipeline dilemma (e.g. NSS survey non-response, CPI deflation divergence, PLFS CAPI data cleaning, ASI fixed asset imputation).
+   
+   SYSTEM & SAMPLE PARAMETERS:
+   3-4 bullet points detailing exact sample sizes, parameters, design effects, or constraints:
+   • Total Master Frame Sample (N): ...
+   • Empirical Divergence / Error Rate (Δ or η): ...
+   • Design Effect (DEFF) or Target Margin of Error: ...
+   • Hardware or Operational Constraint: ...
+
+   METHODOLOGICAL PROBLEM STATEMENT:
+   1-2 sentences explaining why naive or default approaches fail, concluding with the exact directive question asking what statistical estimator, algorithm, or adjustment procedure must be executed.
 4. Always produce exactly 4 options with exactly one marked correct.
 5. Always include an explanation naming WHY the correct option is right and,
    where relevant, which competency/behavioural indicator it reflects.

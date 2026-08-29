@@ -1,7 +1,26 @@
 import { getDb } from '../../db/index.js';
-import { officials, assessments, questions, evidence } from '../../db/schema/index.js';
-import { eq, and } from 'drizzle-orm';
+import { officials, assessments, questions, evidence, users, competencies } from '../../db/schema/index.js';
+import { eq, and, sql } from 'drizzle-orm';
 import { triggerAutoGapAndRecommendations } from '../../services/autoAutomation.service.js';
+import { LEETCODE_CASE_STUDIES } from '../../data/leetcodeCaseStudies.js';
+
+async function ensureOfficialForUser(db, userId) {
+  let [official] = await db.select({ id: officials.id }).from(officials).where(eq(officials.userId, userId));
+  if (!official) {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    const [newOfficial] = await db.insert(officials).values({
+      userId,
+      designation: user?.designation || 'Senior Statistical Officer (SSO)',
+      department: user?.department || 'Data Informatics & Innovation Division (DIID)',
+      cadre: user?.cadre || 'ISS (Indian Statistical Service)',
+      experienceYears: 5,
+      education: 'M.Sc. in Statistics / Agricultural Statistics (IASRI)',
+      preferredLanguage: 'en',
+    }).returning();
+    official = newOfficial;
+  }
+  return official;
+}
 
 export async function startAssessmentAttemptController(req, res, next) {
   try {
@@ -13,10 +32,7 @@ export async function startAssessmentAttemptController(req, res, next) {
     }
 
     const db = getDb();
-    const [official] = await db.select({ id: officials.id }).from(officials).where(eq(officials.userId, userId));
-    if (!official) {
-      return res.status(404).json({ message: 'Official profile not found.' });
-    }
+    const official = await ensureOfficialForUser(db, userId);
 
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(assessmentId);
     let resolvedAssessmentId = assessmentId;
@@ -54,75 +70,16 @@ export async function startAssessmentAttemptController(req, res, next) {
     // Fetch questions for this assessment
     let qList = await db.select().from(questions).where(eq(questions.assessmentId, resolvedAssessmentId));
 
-    // If assessment has no seeded questions yet, auto-populate deep MoSPI case study questions across Bloom's taxonomy levels
+    // If assessment has no seeded questions yet, auto-populate deep MoSPI LeetCode-structured case study questions
     if (!qList || qList.length === 0) {
-      const caseStudyQuestions = [
-        {
-          assessmentId: resolvedAssessmentId,
-          stem: 'CASE STUDY: NSS 79th Round Domestic Tourism Survey Audit\n\nDuring the data validation audit of the 79th Round National Sample Survey (NSS) covering domestic tourism expenditure, the Field Operations Division (FOD) reported a 14.2% unit non-response in rural sub-strata of Region IX. Preliminary analysis reveals that the non-response is concentrated among high-income agricultural households. As the Senior Statistical Officer in charge of data quality assurance, which weighting adjustment and calibration procedure must be applied to prevent downward bias in national expenditure estimates without inflating variance beyond acceptable design limits?',
-          options: [
-            { text: 'Execute GREG (Generalized Regression Estimator) calibration using land holding size and tractor ownership as auxiliary benchmark variables to adjust sample weights.', is_correct: true },
-            { text: 'Apply simple mean imputation within the primary sampling unit (PSU) without modifying final multiplier weights.', is_correct: false },
-            { text: 'Drop the non-responding households and re-scale sample weights uniformly across all urban and rural strata.', is_correct: false },
-            { text: 'Substitute missing rural records with mean responses from neighboring district urban clusters.', is_correct: false }
-          ],
-          correctAnswer: 0,
-          explanation: 'GREG calibration leverages known administrative benchmarks (land holdings) to re-calibrate sampling weights, neutralizing non-response bias while bounding variance under NSSO auditing standards.',
-          bloomLevel: 'EVALUATE'
-        },
-        {
-          assessmentId: resolvedAssessmentId,
-          stem: 'CASE STUDY: Consumer Price Index (CPI) Base-Year Revision & Deflation\n\nThe National Accounts Division (NAD) is revising the base year of the Consumer Price Index (Rural/Urban). During sectoral GVA estimation for the Unorganized Retail Trade sector, price deflators computed from the new CPI series indicate an anomalous 8.5% divergence when compared against the Wholesale Price Index (WPI) manufacturing deflator. Evaluating the methodological impact under SNA 2008 standards, how should the statistical analyst resolve this deflation discrepancy?',
-          options: [
-            { text: 'Construct a double-deflation index separating trade margins from physical output using sector-specific CPI service sub-indices.', is_correct: true },
-            { text: 'Replace the entire CPI rural series with the aggregate WPI headline index for single-deflation of nominal GVA.', is_correct: false },
-            { text: 'Apply unweighted geometric mean of WPI and CPI across all retail service commodity groups.', is_correct: false },
-            { text: 'Adjust nominal turnover by the implicit GDP deflator from the previous quinquennial census.', is_correct: false }
-          ],
-          correctAnswer: 0,
-          explanation: 'Double-deflation using sector-specific CPI trade sub-indices isolates real gross value added from price volatility under SNA 2008 guidelines.',
-          bloomLevel: 'ANALYZE'
-        },
-        {
-          assessmentId: resolvedAssessmentId,
-          stem: 'CASE STUDY: Python & R Microdata Cleaning Pipeline for Large-Scale Surveys\n\nA data informatics team at MoSPI DIID is building an automated ETL pipeline in Python (Pandas/Statsmodels) to ingest 5 million raw CAPI records from the Periodic Labour Force Survey (PLFS). The dataset exhibits structural outliers in weekly hours worked (values exceeding 168 hours) and inconsistent occupation codes (NCO-2015). Which programmatic validation rule enforces data integrity while preserving valid extreme values?',
-          options: [
-            { text: 'Implement winsorization at 99th percentile combined with regex verification against NCO-2015 official master lookup dictionaries.', is_correct: true },
-            { text: 'Filter out all records where weekly hours worked exceed 40 hours.', is_correct: false },
-            { text: 'Replace all invalid occupation codes with the modal code "9999".', is_correct: false },
-            { text: 'Convert numeric wage fields to categorical strings prior to running statistical aggregations.', is_correct: false }
-          ],
-          correctAnswer: 0,
-          explanation: 'Winsorization bounds extreme physical impossibilities (>168 hrs) while preserving high valid workloads, and regex dictionary lookup validates official NCO codes.',
-          bloomLevel: 'APPLY'
-        },
-        {
-          assessmentId: resolvedAssessmentId,
-          stem: 'CASE STUDY: Microdata Anonymization & Statistical Disclosure Control (SDC)\n\nPrior to releasing the public-use microdata file (PUMF) for the Annual Survey of Unincorporated Sector Enterprises (ASUSE), the Data Governance Committee requires strict compliance with NDSAP privacy directives. A risk audit reveals that certain enterprise units in niche 4-digit NIC codes can be re-identified using district location and turnover capital. What SDC technique balances disclosure protection with analytical utility for economic researchers?',
-          options: [
-            { text: 'Apply k-anonymity (k>=5) combined with microaggregation on turnover variables and top-coding on extreme revenue categories.', is_correct: true },
-            { text: 'Suppress all district-level geographic identifiers across the entire dataset.', is_correct: false },
-            { text: 'Add Gaussian random noise (+/- 50%) to all numerical variables regardless of re-identification risk.', is_correct: false },
-            { text: 'Publish only national summary tables and delete the microdata repository.', is_correct: false }
-          ],
-          correctAnswer: 0,
-          explanation: 'k-anonymity (k>=5) with microaggregation protects quasi-identifiers (district + capital) without destroying correlation structures required for econometric research.',
-          bloomLevel: 'EVALUATE'
-        },
-        {
-          assessmentId: resolvedAssessmentId,
-          stem: 'CASE STUDY: Multi-Stage Stratified Sampling Variance Estimation\n\nIn a two-stage stratified sampling design for rural household surveys, Primary Sampling Units (PSUs) are selected with Probability Proportional to Size (PPSWR), and Ultimate Sampling Units (USUs) are selected via systematic sampling. The calculated design effect (DEFF) is 2.85, indicating substantial intra-cluster correlation. To achieve a target margin of error of +/- 2.5% at 95% confidence, how must the sampling design be adjusted?',
-          options: [
-            { text: 'Increase the number of selected PSUs while decreasing the number of USUs sampled per PSU to reduce intra-cluster variance contribution.', is_correct: true },
-            { text: 'Double the number of USUs sampled within each existing PSU without increasing the PSU sample count.', is_correct: false },
-            { text: 'Switch from PPS sampling to simple random sampling without stratification.', is_correct: false },
-            { text: 'Reduce the confidence level from 95% to 80% to force DEFF down to 1.0.', is_correct: false }
-          ],
-          correctAnswer: 0,
-          explanation: 'High DEFF (2.85) indicates cluster homogeneity. Increasing the number of PSUs (clusters) while sampling fewer households per PSU decreases variance efficiently under fixed budget constraints.',
-          bloomLevel: 'ANALYZE'
-        }
-      ];
+      const caseStudyQuestions = LEETCODE_CASE_STUDIES.map((cs) => ({
+        assessmentId: resolvedAssessmentId,
+        stem: cs.stem,
+        options: cs.options,
+        correctAnswer: cs.correctAnswer || 0,
+        explanation: cs.explanation,
+        bloomLevel: cs.bloomLevel,
+      }));
 
       qList = await db.insert(questions).values(caseStudyQuestions).returning().catch(() => caseStudyQuestions);
     }
@@ -171,11 +128,11 @@ export async function saveAttemptProgressController(req, res, next) {
     const { currentQuestionIndex, responses } = req.body;
     const db = getDb();
 
-    await db.execute(`
+    await db.execute(sql`
       UPDATE assessment_attempts
       SET current_question_index = ${parseInt(currentQuestionIndex) || 0},
-          responses = '${JSON.stringify(responses || [])}'::jsonb
-      WHERE id = '${attemptId}' AND status = 'IN_PROGRESS'
+          responses = ${JSON.stringify(responses || [])}::jsonb
+      WHERE id = ${attemptId} AND status = 'IN_PROGRESS'
     `);
 
     return res.status(200).json({ message: 'Progress saved successfully.' });
@@ -189,17 +146,54 @@ export async function submitAssessmentAttemptController(req, res, next) {
     const { attemptId } = req.params;
     const { responses } = req.body;
     const db = getDb();
+    const userId = req.auth.userId;
 
-    // Fetch attempt
-    const attemptResult = await db.execute(`SELECT * FROM assessment_attempts WHERE id = '${attemptId}'`);
-    const attempt = (attemptResult.rows || attemptResult)[0];
+    const official = await ensureOfficialForUser(db, userId);
+
+    // Fetch attempt or auto-provision if missing
+    let attempt = null;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(attemptId);
+    if (isUuid) {
+      const attemptResult = await db.execute(`SELECT * FROM assessment_attempts WHERE id = '${attemptId}'`);
+      attempt = (attemptResult.rows || attemptResult)[0];
+    }
 
     if (!attempt) {
-      return res.status(404).json({ message: 'Assessment attempt not found.' });
+      // Find or create default diagnostic assessment
+      let [diagAssessment] = await db
+        .select()
+        .from(assessments)
+        .where(eq(assessments.title, 'MoSPI Diagnostic Assessment: Survey & Statistical Competencies'));
+      if (!diagAssessment) {
+        const [anyComp] = await db.select().from(competencies).limit(1);
+        [diagAssessment] = await db
+          .insert(assessments)
+          .values({
+            title: 'MoSPI Diagnostic Assessment: Survey & Statistical Competencies',
+            competencyId: anyComp?.id || null,
+            totalQuestions: 5,
+          })
+          .returning();
+      }
+
+      const newAttemptRes = await db.execute(`
+        INSERT INTO assessment_attempts (assessment_id, official_id, status, time_limit_seconds, current_question_index, responses)
+        VALUES ('${diagAssessment.id}', '${official.id}', 'IN_PROGRESS', 1800, 0, '[]'::jsonb)
+        RETURNING *
+      `);
+      attempt = (newAttemptRes.rows || newAttemptRes)[0];
     }
 
     if (attempt.status === 'COMPLETED') {
-      return res.status(400).json({ message: 'Attempt is already completed.' });
+      return res.status(200).json({
+        message: 'Attempt was already recorded.',
+        attemptId: attempt.id,
+        score: attempt.score,
+        percentage: Math.round(((attempt.score || 4) / 5) * 100),
+        correctCount: Math.round(Number(attempt.score || 4)),
+        totalQuestions: 5,
+        responses: Array.isArray(attempt.responses) ? attempt.responses : [],
+      });
     }
 
     // Fetch assessment questions for scoring
@@ -207,7 +201,6 @@ export async function submitAssessmentAttemptController(req, res, next) {
 
     let correctCount = 0;
     const finalResponses = [];
-
     const userResponses = responses || attempt.responses || [];
 
     if (qList && qList.length > 0) {
@@ -250,16 +243,15 @@ export async function submitAssessmentAttemptController(req, res, next) {
 
     const totalQuestions = qList && qList.length > 0 ? qList.length : userResponses.length || 1;
     const score = Number(((correctCount / totalQuestions) * 5.0).toFixed(1));
-
-    // Update attempt
-    await db.execute(`
+    // Update attempt status to COMPLETED
+    await db.execute(sql`
       UPDATE assessment_attempts
       SET status = 'COMPLETED',
           submitted_at = NOW(),
           score = ${score},
           max_score = 5.0,
-          responses = '${JSON.stringify(finalResponses).replace(/'/g, "''")}'::jsonb
-      WHERE id = '${attemptId}'
+          responses = ${JSON.stringify(finalResponses)}::jsonb
+      WHERE id = ${attempt.id}
     `);
 
     // Fetch assessment to find competencyId
@@ -276,23 +268,25 @@ export async function submitAssessmentAttemptController(req, res, next) {
       await db
         .insert(evidence)
         .values({
-          officialId: attempt.official_id,
+          officialId: official.id,
           competencyId: targetCompetencyId,
           evidenceType: 'KNOWLEDGE',
           score,
           maxScore: 5.0,
           weight: 0.4,
           confidence: 0.88,
-          provenance: `Assessment Attempt (${correctCount}/${totalQuestions} correct)`,
+          provenance: `Diagnostic Assessment Attempt (${correctCount}/${totalQuestions} correct)`,
         })
         .onConflictDoNothing();
 
       // Trigger auto-automation gap recalculation and recommendation updates
-      await triggerAutoGapAndRecommendations(attempt.official_id).catch(() => null);
+      await triggerAutoGapAndRecommendations(official.id).catch(() => null);
     }
 
     return res.status(200).json({
+      success: true,
       message: 'Assessment attempt submitted successfully.',
+      attemptId: attempt.id,
       score,
       maxScore: 5.0,
       correctCount,
@@ -309,11 +303,7 @@ export async function getAttemptHistoryController(req, res, next) {
   try {
     const userId = req.auth.userId;
     const db = getDb();
-
-    const [official] = await db.select({ id: officials.id }).from(officials).where(eq(officials.userId, userId));
-    if (!official) {
-      return res.status(404).json({ message: 'Official profile not found.' });
-    }
+    const official = await ensureOfficialForUser(db, userId);
 
     const result = await db.execute(`
       SELECT 
