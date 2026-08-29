@@ -20,6 +20,11 @@ export async function deleteSource(sourceId) {
   return data;
 }
 
+export async function generateAssessmentFromSource(sourceId, payload = {}) {
+  const { data } = await api.post(`/sources/${sourceId}/generate-assessment`, payload);
+  return data;
+}
+
 export async function ingestSource(sourceId, payload) {
   const { data } = await api.post(`/sources/${sourceId}/versions/ingest`, payload);
   return data;

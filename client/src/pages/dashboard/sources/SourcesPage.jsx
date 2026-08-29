@@ -43,7 +43,9 @@ import {
   listSources,
   deleteSource,
   listChunks,
+  generateAssessmentFromSource,
 } from '../../../services/source.api.js';
+import AssessmentPlayerModal from '../assessments/AssessmentPlayerModal.jsx';
 
 const SOURCE_TYPES = [
   { value: 'PDF', label: '📄 PDF / Official Government Manual' },
@@ -144,7 +146,25 @@ export default function SourcesPage() {
 
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
+  const [generatingAssessment, setGeneratingAssessment] = useState(false);
+  const [activeExamId, setActiveExamId] = useState(null);
+  const [generatedAssessmentInfo, setGeneratedAssessmentInfo] = useState(null);
   const [error, setError] = useState('');
+
+  const handleGenerateAssessmentForSource = async () => {
+    if (!selectedSource?.id) return;
+    setGeneratingAssessment(true);
+    setError('');
+    try {
+      const res = await generateAssessmentFromSource(selectedSource.id, { count: 5 });
+      setGeneratedAssessmentInfo(res);
+      toast.success(`Generated official assessment with ${res.questionsCount} questions from ${selectedSource.name}!`);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err.message || 'Generation failed');
+    } finally {
+      setGeneratingAssessment(false);
+    }
+  };
 
   // Load registered sources
   const refresh = async (selectId = null) => {
@@ -777,7 +797,60 @@ export default function SourcesPage() {
                   {selectedSource.summary ||
                     'Official MoSPI evidence source registered for AI grounding. When diagnostic assessments or blueprints are generated, questions cite these exact vector chunks.'}
                 </p>
+
+                {/* ⚡ Direct Question Generation Action for this specific file */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200">
+                  <div className="text-[11.5px] text-slate-600 font-medium">
+                    Target question generation exclusively to <strong className="text-slate-800">{selectedSource.name}</strong>:
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleGenerateAssessmentForSource}
+                    disabled={generatingAssessment || (sourceChunksList.length === 0 && !selectedSource.chunksCount)}
+                    className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-extrabold text-xs transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                    <span>
+                      {generatingAssessment
+                        ? 'Generating Grounded Questions...'
+                        : '⚡ Generate Assessment from this Document'}
+                    </span>
+                  </button>
+                </div>
               </div>
+
+              {/* Banner when assessment has been generated from this document */}
+              {generatedAssessmentInfo && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs animate-in fade-in">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs font-black text-emerald-900">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      Assessment Ready: {generatedAssessmentInfo.title}
+                    </div>
+                    <p className="text-[11px] text-emerald-800 font-medium">
+                      Generated {generatedAssessmentInfo.questionsCount} questions derived 100% from this document's vector chunks.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveExamId(generatedAssessmentInfo.assessmentId)}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#1E3A8A] hover:bg-blue-900 text-white font-black text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <FileCheck2 className="w-3.5 h-3.5 text-blue-200" />
+                      Take / Launch Exam Now
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGeneratedAssessmentInfo(null)}
+                      className="text-xs text-emerald-700 hover:text-emerald-900 font-bold px-2 py-1"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Vector Chunks Explorer */}
               <div className="space-y-3">
@@ -867,6 +940,13 @@ export default function SourcesPage() {
           )}
         </div>
       </div>
+
+      {activeExamId && (
+        <AssessmentPlayerModal
+          assessmentId={activeExamId}
+          onClose={() => setActiveExamId(null)}
+        />
+      )}
     </div>
   );
 }

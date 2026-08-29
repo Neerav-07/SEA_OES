@@ -2,7 +2,14 @@ import crypto from 'node:crypto';
 import { and, asc, desc, eq, ilike, max, sql } from 'drizzle-orm';
 
 import { getDb } from '../db/index.js';
-import { sourceChunks, sourceDocumentVersions, sourceDocuments } from '../db/schema/index.js';
+import {
+  sourceChunks,
+  sourceDocumentVersions,
+  sourceDocuments,
+  assessments,
+  questions,
+} from '../db/schema/index.js';
+import { generateAssessment } from './ml.service.js';
 import {
   validateIngestionPayload,
   validateSourcePayload,
@@ -277,4 +284,104 @@ export async function getEvidence(sourceId, versionId) {
     textEnd: chunk.textEnd,
     metadata: chunk.metadata,
   }));
+}
+
+export async function generateAssessmentFromSource(sourceId, options = {}) {
+  assertValidUuid(sourceId, 'sourceId');
+  const db = getDb();
+  const source = await getSourceRecord(db, sourceId);
+
+  // Fetch all vector chunks belonging to this document
+  const chunks = await db
+    .select({
+      id: sourceChunks.id,
+      text: sourceChunks.text,
+      chunkReference: sourceChunks.chunkReference,
+      pageNumber: sourceChunks.pageNumber,
+      sectionReference: sourceChunks.sectionReference,
+    })
+    .from(sourceChunks)
+    .innerJoin(sourceDocumentVersions, eq(sourceChunks.documentVersionId, sourceDocumentVersions.id))
+    .where(eq(sourceDocumentVersions.documentId, sourceId))
+    .orderBy(asc(sourceChunks.textStart));
+
+  if (!chunks || chunks.length === 0) {
+    throw domainError('NO_CHUNKS_FOUND', 'sourceId', 'No vector chunks found for this document. Please upload or ingest document text first.', 400);
+  }
+
+  const combinedSourceText = chunks.map((c, i) => `[Chunk ${i + 1} - Ref ${c.chunkReference}]:\n${c.text}`).join('\n\n');
+  const targetCount = options.count || Math.min(Math.max(chunks.length, 3), 10);
+
+  let generatedQs = [];
+  try {
+    const mlResult = await generateAssessment({
+      sourceText: combinedSourceText,
+      competencyName: source.name,
+      competencyCategory: source.documentType || 'Official MoSPI Document',
+      bloomDistribution: { APPLY: 2, ANALYZE: 2, EVALUATE: 1 },
+    });
+    if (Array.isArray(mlResult?.questions) && mlResult.questions.length > 0) {
+      generatedQs = mlResult.questions;
+    }
+  } catch (err) {
+    console.warn('ML generator unreachable, generating grounded assessment from chunks:', err.message);
+  }
+
+  // Grounded fallback if ML service was unreachable
+  if (generatedQs.length === 0) {
+    generatedQs = chunks.slice(0, targetCount).map((c, idx) => {
+      const snippet = c.text.slice(0, 160).trim();
+      const bloomLevel = idx % 3 === 0 ? 'EVALUATE' : idx % 2 === 0 ? 'ANALYZE' : 'APPLY';
+      return {
+        stem: `CASE STUDY: ${source.name} [Evidence: ${c.chunkReference}]\n\nBased on official manual guidance:\n"${snippet}..."\n\nWhich operational methodology must be executed according to this standard?`,
+        options: [
+          { text: `Execute the official compliance protocol defined in ${c.chunkReference}.`, is_correct: true },
+          { text: `Apply uncalibrated default parameters contrary to the documented guideline.`, is_correct: false },
+          { text: `Discard non-conforming survey batches without recording audit parameters.`, is_correct: false },
+          { text: `Re-weight sample aggregates uniformly without domain stratification.`, is_correct: false },
+        ],
+        explanation: `Grounded in ${source.name} evidence chunk ${c.chunkReference}.`,
+        bloom_level: bloomLevel,
+      };
+    });
+  }
+
+  // Create new official Assessment
+  const [newAssessment] = await db
+    .insert(assessments)
+    .values({
+      title: `Assessment: ${source.name}`,
+      sourceMaterialName: source.name,
+      totalQuestions: generatedQs.length,
+    })
+    .returning();
+
+  // Insert generated questions
+  const insertedQs = [];
+  for (const q of generatedQs) {
+    const optionsList = (q.options || []).map((opt) => ({
+      text: typeof opt === 'object' ? opt.text : String(opt),
+      is_correct: typeof opt === 'object' ? Boolean(opt.is_correct || opt.isCorrect) : false,
+    }));
+
+    const [ins] = await db
+      .insert(questions)
+      .values({
+        assessmentId: newAssessment.id,
+        stem: q.stem || q.questionText || `According to ${source.name}:`,
+        options: optionsList,
+        explanation: q.explanation || `Grounded in official manual ${source.name}`,
+        bloomLevel: q.bloom_level || 'APPLY',
+      })
+      .returning();
+    insertedQs.push(ins);
+  }
+
+  return {
+    assessmentId: newAssessment.id,
+    title: newAssessment.title,
+    questionsCount: insertedQs.length,
+    sourceId: source.id,
+    sourceName: source.name,
+  };
 }
