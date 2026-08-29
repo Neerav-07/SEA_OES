@@ -142,57 +142,62 @@ def generate_grounded_mcqs(
         raise ValueError("source_text is required to generate grounded questions")
 
     distribution = bloom_distribution or DEFAULT_BLOOM_DISTRIBUTION
+    total_requested = sum(count for count in distribution.values() if count > 0)
+    if total_requested <= 0:
+        total_requested = 5
+
     system_prompt = _build_system_prompt(competency_name, competency_category)
     seen_hashes = set(existing_intent_hashes or [])
 
-    all_questions = []
-    question_counter = 1
+    dist_summary = ", ".join(f"{lvl}: {cnt}" for lvl, cnt in distribution.items() if cnt > 0)
+    user_prompt = f"""SOURCE MATERIAL:
+\"\"\"
+{source_text.strip()[:6000]}
+\"\"\"
 
-    for bloom_level, count in distribution.items():
-        if count <= 0:
-            continue
-        question_type = _question_type_for_level(bloom_level)
-        accepted = []
-        avoid_intents = []
+Generate exactly {total_requested} questions grounded in the source material above, distributed across these Bloom levels: {dist_summary}.
+For APPLY, ANALYZE, and EVALUATE levels, structure questions as technical LeetCode case studies with clear scenarios, system parameters, and directives.
+Respond with JSON only, matching this schema exactly:
+{{
+  "questions": [
+    {{
+      "stem": "string - full case study or question statement",
+      "options": [
+        {{"text": "string", "is_correct": true}},
+        {{"text": "string", "is_correct": false}},
+        {{"text": "string", "is_correct": false}},
+        {{"text": "string", "is_correct": false}}
+      ],
+      "explanation": "string - rationale citing source guidelines",
+      "bloom_level": "APPLY|ANALYZE|EVALUATE|REMEMBER|UNDERSTAND",
+      "question_type": "SCENARIO_JUDGMENT",
+      "intent_key": "short_snake_case_slug"
+    }}
+  ]
+}}
+"""
+    try:
+        result = call_llm_json(system_prompt, user_prompt)
+        raw_qs = result.get("questions", [])
+        all_questions = []
+        for idx, q in enumerate(raw_qs):
+            b_level = q.get("bloom_level", "APPLY").upper()
+            intent_key = (q.get("intent_key") or q.get("stem", f"q_{idx}"))[:120]
+            intent_hash = _compute_intent_hash(competency_name, b_level, intent_key)
+            all_questions.append({
+                "id": f"Q_{idx + 1}",
+                "stem": q.get("stem", ""),
+                "options": q.get("options", []),
+                "explanation": q.get("explanation", ""),
+                "bloom_level": b_level,
+                "question_type": q.get("question_type", "SCENARIO_JUDGMENT"),
+                "intent_key": intent_key,
+                "intent_hash": intent_hash,
+            })
+        if len(all_questions) > 0:
+            return all_questions
+    except Exception as exc:
+        logger.error("Unified question generation failed: %s", exc)
+        raise
 
-        for attempt in range(MAX_GENERATION_ATTEMPTS_PER_LEVEL):
-            remaining = count - len(accepted)
-            if remaining <= 0:
-                break
-
-            user_prompt = _build_user_prompt(
-                source_text, bloom_level, question_type, remaining,
-                avoid_intents=avoid_intents if attempt > 0 else None,
-            )
-
-            try:
-                result = call_llm_json(system_prompt, user_prompt)
-            except LLMGenerationError as exc:
-                logger.error("Question generation failed for level %s: %s", bloom_level, exc)
-                raise
-
-            for q in result.get("questions", []):
-                intent_key = (q.get("intent_key") or q.get("stem", "untitled"))[:120]
-                intent_hash = _compute_intent_hash(competency_name, bloom_level, intent_key)
-
-                if intent_hash in seen_hashes:
-                    logger.info("Discarding duplicate intent '%s' for %s/%s", intent_key, competency_name, bloom_level)
-                    avoid_intents.append(intent_key)
-                    continue
-
-                seen_hashes.add(intent_hash)
-                accepted.append({
-                    "id": f"Q_{question_counter}",
-                    "stem": q.get("stem", ""),
-                    "options": q.get("options", []),
-                    "explanation": q.get("explanation", ""),
-                    "bloom_level": bloom_level,
-                    "question_type": q.get("question_type", question_type),
-                    "intent_key": intent_key,
-                    "intent_hash": intent_hash,
-                })
-                question_counter += 1
-
-        all_questions.extend(accepted)
-
-    return all_questions
+    return []

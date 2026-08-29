@@ -592,16 +592,39 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
     }
   };
 
+  const handleExitImmediately = () => {
+    if (attempt?.id && Object.keys(responses).length > 0) {
+      const formatted = Object.entries(responses).map(([questionId, selectedIdx]) => ({
+        questionId,
+        selectedOptionIndex: selectedIdx,
+      }));
+      api.post(`/attempts/${attempt.id}/progress`, { responses: formatted }).catch(() => {});
+    }
+    setShowExitConfirm(false);
+    setShowCompletionPopup(false);
+    if (onClose) onClose();
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        handleExitImmediately();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [attempt, responses, onClose]);
+
   const handleDoneAndExit = () => {
     setShowCompletionPopup(false);
     if (onComplete) onComplete(result);
-    onClose();
+    if (onClose) onClose();
   };
 
   const handleGoToHistory = () => {
     setShowCompletionPopup(false);
     if (onComplete) onComplete(result);
-    onClose();
+    if (onClose) onClose();
     navigate('/dashboard/assessment-history');
   };
 
@@ -703,18 +726,12 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
           )}
 
           <button
-            onClick={() => {
-              if (isSetupCompleted && !result) {
-                setShowExitConfirm(true);
-              } else {
-                onClose();
-              }
-            }}
-            className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs transition-all shadow-sm flex items-center gap-1.5 border border-rose-500"
-            title="End Examination Session"
+            onClick={handleExitImmediately}
+            className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold text-xs transition-all shadow-sm flex items-center gap-1.5 border border-rose-500 cursor-pointer"
+            title="Exit Exam (Instant 1-Click)"
           >
-            <LogOut className="w-4 h-4" />
-            <span>End Exam</span>
+            <X className="w-4 h-4" />
+            <span>Exit Exam</span>
           </button>
         </div>
       </div>
@@ -1090,39 +1107,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
         </div>
       )}
 
-      {/* ── 5. Exit Confirmation Modal ── */}
-      {showExitConfirm && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl p-8 max-w-md w-full space-y-5 shadow-2xl text-center">
-            <div className="p-4 rounded-full bg-amber-50 text-amber-700 w-16 h-16 mx-auto flex items-center justify-center border border-amber-200">
-              <ShieldAlert className="w-8 h-8 text-amber-600" />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-slate-900">Exit Assessment Session?</h3>
-              <p className="text-slate-600 text-xs font-medium mt-2 leading-relaxed">
-                You have answered <strong>{answeredCount} of {questions.length}</strong> problem statements. Quitting now will auto-submit your attempt and record your partial score in your official MoSPI governance profile.
-              </p>
-            </div>
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                onClick={() => setShowExitConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-800 font-bold text-xs hover:bg-slate-200 transition-colors"
-              >
-                Resume Exam
-              </button>
-              <button
-                onClick={() => {
-                  setShowExitConfirm(false);
-                  handleSubmitAttempt();
-                }}
-                className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-700 transition-colors shadow-sm"
-              >
-                Submit & Exit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* ── 6. Official Completion & Score Certificate Popup (Clean Enterprise Light Theme) ── */}
       {showCompletionPopup && result && (

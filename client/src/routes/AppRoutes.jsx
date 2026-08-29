@@ -74,6 +74,7 @@ export default function AppRoutes() {
             <Route path="/dashboard/sources" element={<SourcesPage />} />
             <Route path="/dashboard/settings" element={<SettingsPage />} />
             <Route path="/dashboard/admin/review-queue" element={<ReviewQueuePage />} />
+            <Route path="/dashboard/review-queue" element={<Navigate to="/dashboard/admin/review-queue" replace />} />
             <Route path="/dashboard/admin/predictions" element={<PredictiveAnalyticsPage />} />
             <Route path="/dashboard/admin/acbp-report" element={<ACBPReportPage />} />
           </Route>
