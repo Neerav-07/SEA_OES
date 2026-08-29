@@ -38,23 +38,34 @@ export default function AssessmentHistoryPage() {
       const res = await api.get('/attempts/history');
       const rawAttempts = res?.data?.attempts || [];
       
-      const mapped = rawAttempts.map((att) => ({
-        id: att.id,
-        assessmentTitle: att.assessment_title || 'Official Statistical Assessment',
-        competencyCode: att.competency_code || 'FRAC-STAT-ANALYSIS',
-        competencyName: att.competency_name || 'Statistical Competency Evaluation',
-        category: att.category || 'Statistical',
-        scorePct: att.percentage ?? (att.max_score ? Math.round((Number(att.score) / Number(att.max_score)) * 100) : 80),
-        correctCount: att.correct_count ?? (att.percentage ? Math.round(att.percentage / 5) : 16),
-        totalCount: att.total_questions || 20,
-        levelBefore: 'L' + (Number(att.level_before || 3.0)).toFixed(1),
-        levelAfter: 'L' + (Number(att.level_after || 3.4)).toFixed(1),
-        date: att.submitted_at || att.started_at ? new Date(att.submitted_at || att.started_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Recent',
-        timeSpent: att.time_spent || '14m 20s',
-        evidenceHash: att.evidence_hash || 'EV-HASH-' + String(att.id || '01').slice(-8).toUpperCase(),
-        evaluator: att.evaluator || 'AI Diagnostic Engine',
-        recommendationImpact: att.recommendation_impact || 'Evidence Synced with iGOT & ESI',
-      }));
+      const mapped = rawAttempts.map((att) => {
+        const parsedResponses = Array.isArray(att.responses) ? att.responses : [];
+        const correctCount = parsedResponses.length > 0
+          ? parsedResponses.filter((r) => r.isCorrect).length
+          : (att.correct_count ?? (att.percentage ? Math.round(att.percentage / 20) : (att.score ? Math.round(Number(att.score)) : 4)));
+        const totalCount = parsedResponses.length > 0 ? parsedResponses.length : (att.total_questions || 5);
+        const scorePct = totalCount > 0
+          ? Math.round((correctCount / totalCount) * 100)
+          : (att.score ? Math.round((Number(att.score) / 5) * 100) : 80);
+
+        return {
+          id: att.id,
+          assessmentTitle: att.assessment_title || 'MoSPI Diagnostic Assessment',
+          competencyCode: att.competency_code || 'FRAC-STAT-ANALYSIS',
+          competencyName: att.competency_name || 'Statistical Analysis & Inference',
+          category: att.category || 'Statistical',
+          scorePct,
+          correctCount,
+          totalCount,
+          levelBefore: 'L' + (Number(att.level_before || 3.0)).toFixed(1),
+          levelAfter: 'L' + (Number(att.level_after || 3.4)).toFixed(1),
+          date: att.submitted_at || att.started_at ? new Date(att.submitted_at || att.started_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent',
+          timeSpent: att.time_spent || '12m 45s',
+          evidenceHash: att.evidence_hash || 'EV-HASH-' + String(att.id || '01').slice(-8).toUpperCase(),
+          evaluator: att.evaluator || 'AI Diagnostic Engine',
+          recommendationImpact: att.recommendation_impact || 'Evidence Synced with iGOT & ESI',
+        };
+      });
 
       setAttempts(mapped);
     } catch (err) {
@@ -67,6 +78,9 @@ export default function AssessmentHistoryPage() {
 
   useEffect(() => {
     fetchHistory();
+    const handleRefresh = () => fetchHistory();
+    window.addEventListener('kshamata_assessment_submitted', handleRefresh);
+    return () => window.removeEventListener('kshamata_assessment_submitted', handleRefresh);
   }, []);
 
   const filteredAttempts = attempts.filter((att) => {

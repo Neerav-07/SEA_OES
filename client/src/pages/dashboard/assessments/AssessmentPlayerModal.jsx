@@ -445,8 +445,19 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
       }));
 
       let resData = null;
-      if (attempt?.id) {
-        const res = await api.post(`/attempts/${attempt.id}/submit`, {
+      let activeAttemptId = attempt?.id;
+
+      if (!activeAttemptId) {
+        try {
+          const startRes = await api.post('/attempts/start', { assessmentId: assessmentId || 'asm-diagnostic-01' });
+          activeAttemptId = startRes?.data?.attempt?.id;
+        } catch (e) {
+          console.warn('Fallback: could not start attempt on submit:', e?.message);
+        }
+      }
+
+      if (activeAttemptId) {
+        const res = await api.post(`/attempts/${activeAttemptId}/submit`, {
           responses: formattedResponses,
         });
         resData = res.data;
@@ -469,6 +480,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
       }
 
       setResult(resData);
+      window.dispatchEvent(new CustomEvent('kshamata_assessment_submitted', { detail: resData }));
       if (onComplete) onComplete(resData);
     } catch (err) {
       console.error('Submission failed:', err);
