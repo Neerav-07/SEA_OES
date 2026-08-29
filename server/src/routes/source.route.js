@@ -14,6 +14,7 @@ import {
   updateSourceController,
   deleteSourceController,
   generateAssessmentFromSourceController,
+  publishAssessmentController,
 } from '../controllers/sources/source.controller.js';
 import { verifyToken } from '../middlewares/verifyToken.js';
 
@@ -26,6 +27,7 @@ router.get('/:sourceId', getSourceController);
 router.patch('/:sourceId', updateSourceController);
 router.delete('/:sourceId', deleteSourceController);
 router.post('/:sourceId/generate-assessment', generateAssessmentFromSourceController);
+router.post('/assessments/:assessmentId/publish', publishAssessmentController);
 router.post('/:sourceId/versions', createVersionController);
 router.get('/:sourceId/versions', listVersionsController);
 router.post('/:sourceId/versions/ingest', ingestSourceController);

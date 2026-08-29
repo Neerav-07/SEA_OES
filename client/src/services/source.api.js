@@ -25,6 +25,11 @@ export async function generateAssessmentFromSource(sourceId, payload = {}) {
   return data;
 }
 
+export async function publishAssessment(assessmentId) {
+  const { data } = await api.post(`/sources/assessments/${assessmentId}/publish`);
+  return data;
+}
+
 export async function ingestSource(sourceId, payload) {
   const { data } = await api.post(`/sources/${sourceId}/versions/ingest`, payload);
   return data;

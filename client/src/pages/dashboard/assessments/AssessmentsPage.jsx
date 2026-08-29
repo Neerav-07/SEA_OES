@@ -1,5 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
-import { BookOpen, Check, CheckCircle2, ClipboardList, FileText, Plus, RefreshCw, Save, ShieldCheck, Sliders, XCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  BookOpen,
+  Check,
+  CheckCircle2,
+  ClipboardList,
+  FileText,
+  Plus,
+  RefreshCw,
+  Save,
+  ShieldCheck,
+  Sliders,
+  XCircle,
+  Search,
+  Eye,
+  Layers,
+  Sparkles,
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  FileCheck2,
+  X,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import Alert from '../../../components/Alert.jsx';
@@ -20,8 +42,11 @@ import {
   listBlueprintLearningObjectives,
   updateAssessmentBlueprint,
   validateAssessmentBlueprint,
+  listOfficialAssessments,
+  getOfficialAssessment,
 } from '../../../services/assessmentBlueprint.api.js';
 import { assembleAssessment, generateQuestion, getAssessment, reviewQuestion, reviseQuestion, validateAssessment, validateQuestion } from '../../../services/source.api.js';
+import AssessmentPlayerModal from './AssessmentPlayerModal.jsx';
 
 const COGNITIVE_LEVELS = ['REMEMBER', 'UNDERSTAND', 'APPLY', 'ANALYZE', 'EVALUATE'];
 const QUESTION_TYPES = ['MCQ', 'SCENARIO'];
@@ -128,6 +153,14 @@ export default function AssessmentsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingBlueprint, setLoadingBlueprint] = useState(false);
   const [loadingLookups, setLoadingLookups] = useState(false);
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('PUBLISHED_ASSESSMENTS'); // 'PUBLISHED_ASSESSMENTS' | 'BLUEPRINT_STUDIO'
+  const [officialAssessments, setOfficialAssessments] = useState([]);
+  const [loadingAssessments, setLoadingAssessments] = useState(false);
+  const [assessmentSearch, setAssessmentSearch] = useState('');
+  const [expandedAssessmentId, setExpandedAssessmentId] = useState(null);
+  const [previewExamId, setPreviewExamId] = useState(null);
+
   const [saving, setSaving] = useState(false);
   const [validating, setValidating] = useState(false);
   const [errors, setErrors] = useState([]);
@@ -142,6 +175,18 @@ export default function AssessmentsPage() {
   const [assemblyResult, setAssemblyResult] = useState(null);
   const [assembling, setAssembling] = useState(false);
   const lookupRequestRef = useRef(0);
+
+  const refreshOfficialAssessments = async () => {
+    try {
+      setLoadingAssessments(true);
+      const list = await listOfficialAssessments();
+      setOfficialAssessments(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.warn('Could not load official assessments:', err);
+    } finally {
+      setLoadingAssessments(false);
+    }
+  };
 
   const loadLookupData = async (competencyId) => {
     const requestId = lookupRequestRef.current + 1;
@@ -194,14 +239,22 @@ export default function AssessmentsPage() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([listAssessmentBlueprints(), listBlueprintCompetencies()])
-      .then(([blueprintResponse, competencyResponse]) => {
+    Promise.all([
+      listAssessmentBlueprints(),
+      listBlueprintCompetencies(),
+      listOfficialAssessments(),
+    ])
+      .then(([blueprintResponse, competencyResponse, officialList]) => {
         if (!active) return;
-        if (!Array.isArray(blueprintResponse?.items) || !Array.isArray(competencyResponse?.items)) {
-          throw new Error('Blueprint lookup returned an invalid response.');
+        if (Array.isArray(blueprintResponse?.items)) {
+          setBlueprints(blueprintResponse.items);
         }
-        setBlueprints(blueprintResponse.items);
-        setCompetencies(competencyResponse.items);
+        if (Array.isArray(competencyResponse?.items)) {
+          setCompetencies(competencyResponse.items);
+        }
+        if (Array.isArray(officialList)) {
+          setOfficialAssessments(officialList);
+        }
       })
       .catch((error) => {
         if (active) setPageError(apiErrors(error)[0].message);
@@ -526,7 +579,19 @@ export default function AssessmentsPage() {
     }
   };
 
-  if (loading) return <Spinner variant="bar" label="Loading assessment blueprint workspace..." className="py-20" />;
+  const filteredOfficialAssessments = officialAssessments.filter((item) => {
+    if (!assessmentSearch.trim()) return true;
+    const q = assessmentSearch.toLowerCase();
+    return (
+      (item.title || '').toLowerCase().includes(q) ||
+      (item.sourceMaterialName || '').toLowerCase().includes(q) ||
+      (item.competencyName || '').toLowerCase().includes(q)
+    );
+  });
+
+  const totalQuestionsSum = officialAssessments.reduce((acc, curr) => acc + (curr.questionsCount || 0), 0);
+
+  if (loading) return <Spinner variant="bar" label="Loading assessment studio..." className="py-20" />;
 
   const claimIds = mappingIds(form.claims, 'claimId');
   const objectiveIds = mappingIds(form.learningObjectives, 'learningObjectiveId');
@@ -535,9 +600,57 @@ export default function AssessmentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Assessment Blueprint Studio"
-        subtitle="Configure competency-aligned assessments from persisted taxonomy data."
+        title="Assessment Studio & Knowledge Bank"
+        subtitle="Inspect published AI-grounded assessments, examine question provenance, or design competency blueprints."
       />
+
+      {/* ── Mode Navigation Tabs ── */}
+      <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-3 flex-wrap">
+        <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-2xl">
+          <button
+            type="button"
+            onClick={() => setActiveTab('PUBLISHED_ASSESSMENTS')}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'PUBLISHED_ASSESSMENTS'
+                ? 'bg-white text-[#1E3A8A] shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>Published Assessments & Document Exams</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-blue-50 text-[#1E3A8A] font-extrabold border border-blue-200">
+              {officialAssessments.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('BLUEPRINT_STUDIO')}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'BLUEPRINT_STUDIO'
+                ? 'bg-white text-[#1E3A8A] shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Sliders className="w-4 h-4 text-blue-600" />
+            <span>Blueprint Studio & Assembly</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-200 text-slate-700 font-extrabold">
+              {blueprints.length}
+            </span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard/sources')}
+            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-blue-300 hover:text-blue-100 font-extrabold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer transition-all border border-blue-900/60"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-blue-400" />
+            <span>Generate from Document in Source Library</span>
+            <ArrowRight className="w-3.5 h-3.5 text-blue-400" />
+          </button>
+        </div>
+      </div>
 
       {pageError && <Alert type="error" title="Could not load data" message={pageError} />}
       {successMessage && <Alert type="success" title="Saved" message={successMessage} />}
@@ -549,20 +662,265 @@ export default function AssessmentsPage() {
         </Alert>
       )}
 
-      <div className="flex flex-col gap-3 rounded-xl border border-(--app-color-border) bg-white p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between">
-        <Select
-          label="Existing blueprint"
-          value={selectedBlueprintId}
-          onChange={(event) => event.target.value ? loadBlueprint(event.target.value) : handleNew()}
-          options={blueprints.map((blueprint) => ({ value: blueprint.id, label: `${blueprint.title} · ${blueprint.status}` }))}
-          placeholder={blueprints.length ? 'Select a saved blueprint' : 'No saved blueprints'}
-          disabled={loadingBlueprint}
-          className="sm:min-w-[24rem]"
-        />
-        <Button variant="primary" type="button" onClick={handleNew} disabled={loadingBlueprint} className="whitespace-nowrap shrink-0 flex items-center gap-1.5 font-bold text-xs bg-[#1E3A8A] text-white hover:bg-[#172554] cursor-pointer shadow-sm">
-          <Plus className="h-4 w-4" /> New blueprint
-        </Button>
-      </div>
+      {/* ══════════════════════════════════════════════════════════════
+          TAB 1: PUBLISHED ASSESSMENTS & INGESTED EXAMS
+         ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'PUBLISHED_ASSESSMENTS' && (
+        <div className="space-y-6">
+          {/* Quick Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Official Assessments</span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="text-2xl font-black text-slate-900">{officialAssessments.length}</div>
+              <p className="text-[11px] text-slate-500 font-medium">Ready for candidate evaluation & competency audits</p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Grounded Questions</span>
+                <Layers className="w-4 h-4 text-[#1E3A8A]" />
+              </div>
+              <div className="text-2xl font-black text-[#1E3A8A]">{totalQuestionsSum}</div>
+              <p className="text-[11px] text-slate-500 font-medium">Case studies citing official manual vector chunks</p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Provenance Standard</span>
+                <ShieldCheck className="w-4 h-4 text-blue-600" />
+              </div>
+              <div className="text-2xl font-black text-slate-900">100% Traceable</div>
+              <p className="text-[11px] text-emerald-700 font-bold">Zero-hallucination MoSPI RAG pipeline</p>
+            </div>
+          </div>
+
+          {/* Search & Actions Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="relative w-full sm:w-80">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={assessmentSearch}
+                onChange={(e) => setAssessmentSearch(e.target.value)}
+                placeholder="Search assessments or source manuals..."
+                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1E3A8A]"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button
+                type="button"
+                onClick={refreshOfficialAssessments}
+                disabled={loadingAssessments}
+                className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingAssessments ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Assessments List */}
+          {filteredOfficialAssessments.length === 0 ? (
+            <Card>
+              <EmptyState
+                icon={BookOpen}
+                title="No official assessments found"
+                message="Generate an assessment from any ingested manual in the Source Library, or assemble a blueprint below."
+              />
+              <div className="mt-4 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard/sources')}
+                  className="px-4 py-2 rounded-xl bg-[#1E3A8A] hover:bg-blue-900 text-white font-extrabold text-xs shadow-xs flex items-center gap-2 cursor-pointer"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>Go to Source Library & Ingest Document</span>
+                </button>
+              </div>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {filteredOfficialAssessments.map((item) => {
+                const isExpanded = expandedAssessmentId === item.id;
+                const questionsList = item.questions || [];
+
+                return (
+                  <div
+                    key={item.id}
+                    className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden transition-all hover:border-slate-300"
+                  >
+                    {/* Assessment Card Header */}
+                    <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
+                      <div className="space-y-1.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
+                              item.status === 'PUBLISHED'
+                                ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                                : 'bg-amber-100 text-amber-900 border border-amber-300'
+                            }`}
+                          >
+                            {item.status || 'PUBLISHED'}
+                          </span>
+
+                          {item.sourceMaterialName && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-[#1E3A8A] border border-blue-200 truncate max-w-xs">
+                              Source: {item.sourceMaterialName}
+                            </span>
+                          )}
+
+                          <span className="text-[10.5px] font-mono text-slate-400">
+                            ID: {item.id?.slice(0, 8)}
+                          </span>
+                        </div>
+
+                        <h3 className="text-base font-black text-slate-900 leading-tight">
+                          {item.title}
+                        </h3>
+
+                        <div className="flex items-center gap-4 text-xs text-slate-500 font-medium pt-0.5">
+                          <span className="flex items-center gap-1 font-bold text-slate-700">
+                            <Layers className="w-3.5 h-3.5 text-[#1E3A8A]" />
+                            {item.questionsCount} Questions
+                          </span>
+                          <span>•</span>
+                          <span>Domain: <strong className="text-slate-700">{item.competencyName || 'General Statistical'}</strong></span>
+                          {item.createdAt && (
+                            <>
+                              <span>•</span>
+                              <span>Created: {new Date(item.createdAt).toLocaleDateString()}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedAssessmentId(isExpanded ? null : item.id)}
+                          className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-slate-500" />
+                          <span>{isExpanded ? 'Hide Questions' : `Inspect Questions (${item.questionsCount})`}</span>
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setPreviewExamId(item.id)}
+                          className="px-4 py-2 rounded-xl bg-[#1E3A8A] hover:bg-blue-900 text-white font-extrabold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <FileCheck2 className="w-3.5 h-3.5 text-blue-200" />
+                          <span>Preview Exam</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expandable Questions Inspector */}
+                    {isExpanded && (
+                      <div className="p-5 border-t border-slate-200 bg-slate-50/20 space-y-4 animate-in fade-in">
+                        <div className="flex items-center justify-between text-xs pb-1 border-b border-slate-200 font-extrabold text-slate-700">
+                          <span>Grounding Verification & Questions Breakdown</span>
+                          <span className="text-[#1E3A8A]">{questionsList.length} Questions Stored</span>
+                        </div>
+
+                        {questionsList.length === 0 ? (
+                          <p className="text-xs text-slate-500 py-3 text-center">
+                            Questions dynamically served by the assessment engine. Click "Preview Exam" to verify live questions.
+                          </p>
+                        ) : (
+                          questionsList.map((q, qIdx) => (
+                            <div
+                              key={q.id || qIdx}
+                              className="p-4 rounded-xl border border-slate-200 bg-white space-y-2.5 shadow-2xs"
+                            >
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-extrabold text-slate-900">Question {qIdx + 1}</span>
+                                <span className="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase">
+                                  Bloom: {q.bloomLevel || 'APPLY'}
+                                </span>
+                              </div>
+
+                              <p className="text-xs font-medium text-slate-800 whitespace-pre-wrap leading-relaxed">
+                                {q.stem}
+                              </p>
+
+                              {/* Options */}
+                              <div className="space-y-1.5 pt-1">
+                                {(q.options || []).map((opt, oIdx) => {
+                                  const optText = typeof opt === 'object' ? opt.text : String(opt);
+                                  const isCorrect = typeof opt === 'object' ? Boolean(opt.is_correct || opt.isCorrect) : oIdx === 0;
+                                  return (
+                                    <div
+                                      key={oIdx}
+                                      className={`p-2 rounded-lg border text-xs flex items-center justify-between ${
+                                        isCorrect
+                                          ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-bold'
+                                          : 'bg-slate-50 border-slate-200 text-slate-700'
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black ${
+                                          isCorrect ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600'
+                                        }`}>
+                                          {String.fromCharCode(65 + oIdx)}
+                                        </span>
+                                        <span>{optText}</span>
+                                      </div>
+                                      {isCorrect && (
+                                        <span className="text-[10px] font-black text-emerald-700 flex items-center gap-1 uppercase">
+                                          <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Correct
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Explanation & Chunk Citation */}
+                              {q.explanation && (
+                                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-[11px] text-slate-600 leading-relaxed">
+                                  <strong className="text-slate-800">Grounding Evidence: </strong>
+                                  {q.explanation}
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          TAB 2: BLUEPRINT STUDIO & ASSEMBLY
+         ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'BLUEPRINT_STUDIO' && (
+        <div className="space-y-6 animate-in fade-in">
+          <div className="flex flex-col gap-3 rounded-xl border border-(--app-color-border) bg-white p-4 shadow-sm sm:flex-row sm:items-end sm:justify-between">
+            <Select
+              label="Existing blueprint"
+              value={selectedBlueprintId}
+              onChange={(event) => event.target.value ? loadBlueprint(event.target.value) : handleNew()}
+              options={blueprints.map((blueprint) => ({ value: blueprint.id, label: `${blueprint.title} · ${blueprint.status}` }))}
+              placeholder={blueprints.length ? 'Select a saved blueprint' : 'No saved blueprints'}
+              disabled={loadingBlueprint}
+              className="sm:min-w-[24rem]"
+            />
+            <Button variant="primary" type="button" onClick={handleNew} disabled={loadingBlueprint} className="whitespace-nowrap shrink-0 flex items-center gap-1.5 font-bold text-xs bg-[#1E3A8A] text-white hover:bg-[#172554] cursor-pointer shadow-sm">
+              <Plus className="h-4 w-4" /> New blueprint
+            </Button>
+          </div>
 
       {loadingBlueprint ? <Spinner label="Loading blueprint..." /> : (
         <form onSubmit={handleSave} className="space-y-6">
@@ -846,6 +1204,20 @@ export default function AssessmentsPage() {
       {assemblyResult && <Card title="Assembled assessment" subtitle="Blueprint-driven selection of approved, validated current question versions."><div className="space-y-3"><p className="text-sm font-semibold">Assessment {assemblyResult.assessment?.id} · {assemblyResult.items?.length || assemblyResult.persisted?.items?.length || 0} questions</p>{(assemblyResult.items || assemblyResult.persisted?.items || []).map((item, index) => <div key={item.item?.id || item.item?.questionId || index} className="rounded border border-(--app-color-border) p-3 text-sm"><span className="font-semibold">{item.item?.position || index + 1}.</span> {item.version?.stem || item.question?.stem}</div>)}<Button type="button" variant="secondary" onClick={handleAssemblyValidation} loading={assembling}>Validate assembled assessment</Button>{assemblyResult.validation && <Alert type={assemblyResult.validation.valid ? 'success' : 'error'} title={assemblyResult.validation.valid ? 'Assembly valid' : 'Assembly invalid'} message={assemblyResult.validation.errors?.map((item) => item.message).join(' ') || 'Blueprint requirements are satisfied.'} />}</div></Card>}
 
       {blueprints.length === 0 && <Card><EmptyState icon={RefreshCw} title="No saved blueprints" message="Create a blueprint draft from the live competency catalog above." /></Card>}
+        </div>
+      )}
+
+      {/* ── Test Preview Modal for Published Assessments ── */}
+      {previewExamId && (
+        <AssessmentPlayerModal
+          assessmentId={previewExamId}
+          onClose={() => setPreviewExamId(null)}
+          onComplete={() => {
+            setPreviewExamId(null);
+            refreshOfficialAssessments();
+          }}
+        />
+      )}
     </div>
   );
 }

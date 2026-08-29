@@ -10,6 +10,7 @@ export async function generateAssessment({
   const response = await fetch(`${ML_SERVICE_URL}/api/ml/generate-assessment`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(12000), // 12-second fast timeout
     body: JSON.stringify({
       source_text: sourceText,
       competency_name: competencyName,

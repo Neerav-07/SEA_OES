@@ -12,6 +12,7 @@ import {
   updateSource,
   deleteSource,
   generateAssessmentFromSource,
+  publishAssessment,
 } from '../../services/source.service.js';
 
 export async function listSourcesController(req, res, next) {
@@ -52,4 +53,7 @@ export async function evidenceController(req, res, next) {
 }
 export async function generateAssessmentFromSourceController(req, res, next) {
   try { return res.status(201).json(await generateAssessmentFromSource(req.params.sourceId, req.body)); } catch (error) { return next(error); }
+}
+export async function publishAssessmentController(req, res, next) {
+  try { return res.status(200).json(await publishAssessment(req.params.assessmentId)); } catch (error) { return next(error); }
 }

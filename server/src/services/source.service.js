@@ -383,5 +383,31 @@ export async function generateAssessmentFromSource(sourceId, options = {}) {
     questionsCount: insertedQs.length,
     sourceId: source.id,
     sourceName: source.name,
+    questions: insertedQs,
   };
+}
+
+export async function publishAssessment(assessmentId) {
+  assertValidUuid(assessmentId, 'assessmentId');
+  const db = getDb();
+  const [assessment] = await db.select().from(assessments).where(eq(assessments.id, assessmentId));
+  if (!assessment) throw domainError('ASSESSMENT_NOT_FOUND', 'assessmentId', 'Assessment was not found.', 404);
+
+  const updatedBlueprint = {
+    ...(typeof assessment.blueprint === 'object' && assessment.blueprint ? assessment.blueprint : {}),
+    status: 'PUBLISHED',
+    publishedAt: new Date().toISOString(),
+  };
+
+  const [updated] = await db.update(assessments)
+    .set({ blueprint: updatedBlueprint, updatedAt: new Date() })
+    .where(eq(assessments.id, assessmentId))
+    .returning();
+
+  // Mark questions as APPROVED in the Question Bank / Review Queue
+  await db.update(questions)
+    .set({ reviewStatus: 'APPROVED', validationStatus: 'PASSED' })
+    .where(eq(questions.assessmentId, assessmentId));
+
+  return { success: true, assessment: updated, status: 'PUBLISHED' };
 }

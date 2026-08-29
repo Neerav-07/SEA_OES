@@ -5,6 +5,16 @@ export async function listAssessmentBlueprints(params = {}) {
   return data;
 }
 
+export async function listOfficialAssessments() {
+  const { data } = await api.get('/assessments');
+  return data?.data || data?.items || data || [];
+}
+
+export async function getOfficialAssessment(id) {
+  const { data } = await api.get(`/assessments/${id}`);
+  return data?.data || data;
+}
+
 export async function getAssessmentBlueprint(id) {
   const { data } = await api.get(`/assessment-blueprints/${id}`);
   return data;

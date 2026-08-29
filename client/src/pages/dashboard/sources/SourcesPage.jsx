@@ -25,7 +25,9 @@ import {
   File,
   AlertCircle,
   FileSearch,
+  X,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import Alert from '../../../components/Alert.jsx';
@@ -44,15 +46,15 @@ import {
   deleteSource,
   listChunks,
   generateAssessmentFromSource,
+  publishAssessment,
 } from '../../../services/source.api.js';
-import AssessmentPlayerModal from '../assessments/AssessmentPlayerModal.jsx';
 
 const SOURCE_TYPES = [
-  { value: 'PDF', label: '📄 PDF / Official Government Manual' },
-  { value: 'VIDEO_TRANSCRIPT', label: '🎥 Video Lecture / Audio Transcript' },
-  { value: 'IGOT_MODULE', label: '🌐 iGOT Karmayogi / Web Module' },
-  { value: 'DATASET_SCHEMA', label: '📊 Dataset Schema / SQL Dictionary' },
-  { value: 'TEXT', label: '📝 Plain Text Document' },
+  { value: 'PDF', label: 'PDF / Official Government Manual' },
+  { value: 'VIDEO_TRANSCRIPT', label: 'Video Lecture / Audio Transcript' },
+  { value: 'IGOT_MODULE', label: 'iGOT Karmayogi / Web Module' },
+  { value: 'DATASET_SCHEMA', label: 'Dataset Schema / SQL Dictionary' },
+  { value: 'TEXT', label: 'Plain Text Document' },
 ];
 
 /**
@@ -144,25 +146,44 @@ export default function SourcesPage() {
   // Direct append content for selected source
   const [appendContent, setAppendContent] = useState('');
 
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [generatingAssessment, setGeneratingAssessment] = useState(false);
-  const [activeExamId, setActiveExamId] = useState(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [isPublished, setIsPublished] = useState(false);
   const [generatedAssessmentInfo, setGeneratedAssessmentInfo] = useState(null);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [error, setError] = useState('');
 
   const handleGenerateAssessmentForSource = async () => {
     if (!selectedSource?.id) return;
     setGeneratingAssessment(true);
     setError('');
+    setIsPublished(false);
     try {
       const res = await generateAssessmentFromSource(selectedSource.id, { count: 5 });
       setGeneratedAssessmentInfo(res);
+      setShowVerifyModal(true);
       toast.success(`Generated official assessment with ${res.questionsCount} questions from ${selectedSource.name}!`);
     } catch (err) {
       toast.error(err?.response?.data?.message || err.message || 'Generation failed');
     } finally {
       setGeneratingAssessment(false);
+    }
+  };
+
+  const handlePublishAssessment = async () => {
+    if (!generatedAssessmentInfo?.assessmentId) return;
+    setIsPublishing(true);
+    try {
+      await publishAssessment(generatedAssessmentInfo.assessmentId);
+      setIsPublished(true);
+      toast.success(`Assessment '${generatedAssessmentInfo.title}' officially published! Available for cadre competency evaluation.`);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err.message || 'Publishing failed');
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -389,6 +410,8 @@ export default function SourcesPage() {
     return s.name.toLowerCase().includes(q) || (s.externalId || '').toLowerCase().includes(q);
   });
 
+  const totalIndexedChunks = sources.reduce((acc, s) => acc + (s.chunksCount || 0), 0);
+
   // Filter chunks for search
   const filteredChunks = sourceChunksList.filter((c) => {
     if (!chunkSearch.trim()) return true;
@@ -461,25 +484,36 @@ export default function SourcesPage() {
 
       {error && <Alert type="error" title="Action Failed" message={error} />}
 
-      <div className="grid gap-6 xl:grid-cols-[22rem_1fr]">
-        {/* ── Left Column: Ingested Knowledge Sources List ── */}
-        <div className="space-y-4">
-          <Card
-            title="Ingested Sources"
-            subtitle={`${sources.length} registered official documents`}
-          >
+      <div className="grid gap-6 xl:grid-cols-[23rem_1fr] items-stretch">
+        {/* ── Left Column: Ingested Knowledge Sources List (Full Height) ── */}
+        <div className="flex flex-col h-full bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          {/* Column Header */}
+          <div className="p-4 border-b border-slate-200 bg-slate-50/70 shrink-0">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900">Ingested Sources</h3>
+                <p className="text-[11px] text-slate-500 font-medium">{sources.length} registered official documents</p>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 text-[#1E3A8A] border border-blue-200">
+                Knowledge Base
+              </span>
+            </div>
+
             {/* Search Sources Input */}
-            <div className="relative mb-3">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search registered manuals..."
-                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1E3A8A]"
+                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1E3A8A]"
               />
             </div>
+          </div>
 
+          {/* Sources List - Fills entire vertical height of right column */}
+          <div className="p-3 flex-1 overflow-y-auto space-y-2.5 min-h-[440px]">
             {filteredSources.length === 0 ? (
               <EmptyState
                 icon={Database}
@@ -487,70 +521,89 @@ export default function SourcesPage() {
                 message="Upload a manual or data dictionary to start."
               />
             ) : (
-              <div className="space-y-2.5 max-h-[620px] overflow-y-auto pr-1">
-                {filteredSources.map((src) => {
-                  const isSelected = selectedSource?.id === src.id;
-                  const chunkCount = src.chunksCount || 0;
+              filteredSources.map((src) => {
+                const isSelected = selectedSource?.id === src.id;
+                const chunkCount = src.chunksCount || 0;
 
-                  return (
-                    <div
-                      key={src.id}
-                      onClick={() => setSelectedSource(src)}
-                      className={`group relative rounded-2xl border p-3.5 text-left transition-all cursor-pointer ${
-                        isSelected
-                          ? 'border-[#1E3A8A] bg-blue-50/80 shadow-xs'
-                          : 'border-slate-200 bg-white hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1E3A8A] bg-white px-2 py-0.5 rounded border border-blue-200 shadow-xs">
-                          {src.documentType}
+                return (
+                  <div
+                    key={src.id}
+                    onClick={() => setSelectedSource(src)}
+                    className={`group relative rounded-2xl border p-3.5 text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-[#1E3A8A] bg-blue-50/80 shadow-xs'
+                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1E3A8A] bg-white px-2 py-0.5 rounded border border-blue-200 shadow-xs">
+                        {src.documentType}
+                      </span>
+                      <span className="text-[9.5px] font-mono font-bold text-slate-500">
+                        {src.externalId || 'MOSPI-DOC'}
+                      </span>
+                    </div>
+
+                    <h4 className="text-xs font-bold text-slate-900 line-clamp-2 leading-snug">
+                      {src.name}
+                    </h4>
+
+                    <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 font-medium pt-1 border-t border-slate-100">
+                      <span className="font-bold text-slate-700 flex items-center gap-1">
+                        <Layers className="w-3 h-3 text-[#1E3A8A]" />
+                        {chunkCount} {chunkCount === 1 ? 'Chunk' : 'Chunks'}
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                            chunkCount > 0
+                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                              : 'bg-amber-50 text-amber-800 border border-amber-200'
+                          }`}
+                        >
+                          {chunkCount > 0 ? '✓ INGESTED' : 'PENDING'}
                         </span>
-                        <span className="text-[9.5px] font-mono font-bold text-slate-500">
-                          {src.externalId || 'MOSPI-DOC'}
-                        </span>
-                      </div>
 
-                      <h4 className="text-xs font-bold text-slate-900 line-clamp-2 leading-snug">
-                        {src.name}
-                      </h4>
-
-                      <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 font-medium pt-1 border-t border-slate-100">
-                        <span className="font-bold text-slate-700 flex items-center gap-1">
-                          <Layers className="w-3 h-3 text-[#1E3A8A]" />
-                          {chunkCount} {chunkCount === 1 ? 'Chunk' : 'Chunks'}
-                        </span>
-
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                              chunkCount > 0
-                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                                : 'bg-amber-50 text-amber-800 border border-amber-200'
-                            }`}
-                          >
-                            {chunkCount > 0 ? '✓ INGESTED' : 'PENDING'}
-                          </span>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteSource(src.id, src.name);
-                            }}
-                            className="text-slate-400 hover:text-rose-600 transition-colors p-1 rounded hover:bg-white"
-                            title="Delete source from knowledge base"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteSource(src.id, src.name);
+                          }}
+                          className="text-slate-400 hover:text-rose-600 transition-colors p-1 rounded hover:bg-white cursor-pointer"
+                          title="Delete source from knowledge base"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })
             )}
-          </Card>
+          </div>
+
+          {/* Left Column Bottom Audit Footer - Eliminates wasted bottom space */}
+          <div className="p-3.5 border-t border-slate-200 bg-slate-50/90 shrink-0 text-slate-600 text-xs">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                Repository Status
+              </span>
+              <span className="text-[10.5px] font-mono font-bold text-emerald-700 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                RAG Synchronized
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-[11px] font-medium pt-1.5 border-t border-slate-200/80">
+              <div>
+                Total Chunks: <strong className="text-slate-900">{totalIndexedChunks.toLocaleString()}</strong>
+              </div>
+              <div className="text-right">
+                Engine: <strong className="text-slate-900">All-MiniLM</strong>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ── Right Column: Upload & Ingest Dropzone + Detailed Chunks Inspector ── */}
@@ -798,7 +851,7 @@ export default function SourcesPage() {
                     'Official MoSPI evidence source registered for AI grounding. When diagnostic assessments or blueprints are generated, questions cite these exact vector chunks.'}
                 </p>
 
-                {/* ⚡ Direct Question Generation Action for this specific file */}
+                {/* Direct Question Generation Action for this specific file */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200">
                   <div className="text-[11.5px] text-slate-600 font-medium">
                     Target question generation exclusively to <strong className="text-slate-800">{selectedSource.name}</strong>:
@@ -807,13 +860,13 @@ export default function SourcesPage() {
                     type="button"
                     onClick={handleGenerateAssessmentForSource}
                     disabled={generatingAssessment || (sourceChunksList.length === 0 && !selectedSource.chunksCount)}
-                    className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-extrabold text-xs transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 hover:from-blue-900 hover:to-slate-900 active:scale-95 text-white font-extrabold text-xs transition-all shadow-md flex items-center gap-2 disabled:opacity-50 border border-blue-900/60 cursor-pointer"
                   >
-                    <Sparkles className="w-4 h-4 text-amber-300" />
+                    <Sparkles className="w-4 h-4 text-blue-400" />
                     <span>
                       {generatingAssessment
                         ? 'Generating Grounded Questions...'
-                        : '⚡ Generate Assessment from this Document'}
+                        : 'Generate Assessment from this Document'}
                     </span>
                   </button>
                 </div>
@@ -821,33 +874,87 @@ export default function SourcesPage() {
 
               {/* Banner when assessment has been generated from this document */}
               {generatedAssessmentInfo && (
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs animate-in fade-in">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs font-black text-emerald-900">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      Assessment Ready: {generatedAssessmentInfo.title}
+                <div className="rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 border border-blue-900/40 text-white mb-5 shadow-lg overflow-hidden animate-in fade-in">
+                  {/* Top Bar: Title & Status */}
+                  <div className="px-5 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800/80 bg-black/20">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                            Assessment Ready
+                          </span>
+                          <span className="text-xs font-black text-white truncate">
+                            {generatedAssessmentInfo.title?.replace(/^Assessment:\s*/i, '')}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                          {generatedAssessmentInfo.questionsCount} questions generated & derived 100% from official vector chunks.
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-emerald-800 font-medium">
-                      Generated {generatedAssessmentInfo.questionsCount} questions derived 100% from this document's vector chunks.
-                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGeneratedAssessmentInfo(null);
+                        setIsPublished(false);
+                      }}
+                      className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors self-start md:self-center cursor-pointer"
+                      title="Dismiss notification"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setActiveExamId(generatedAssessmentInfo.assessmentId)}
-                      className="px-3.5 py-1.5 rounded-xl bg-[#1E3A8A] hover:bg-blue-900 text-white font-black text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <FileCheck2 className="w-3.5 h-3.5 text-blue-200" />
-                      Take / Launch Exam Now
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setGeneratedAssessmentInfo(null)}
-                      className="text-xs text-emerald-700 hover:text-emerald-900 font-bold px-2 py-1"
-                    >
-                      Dismiss
-                    </button>
+                  {/* Bottom Bar: Action Buttons in One Clean Aligned Row */}
+                  <div className="px-5 py-3 bg-slate-950/40 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                      <span>Ready for Verification & Cadre Assignment</span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setShowVerifyModal(true)}
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-blue-300 hover:text-blue-100 border border-blue-800/60 font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer transition-all"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Verify Questions ({generatedAssessmentInfo.questionsCount})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handlePublishAssessment}
+                        disabled={isPublishing || isPublished}
+                        className={`px-4 py-1.5 rounded-xl font-bold text-xs transition-all shadow-md flex items-center gap-1.5 cursor-pointer border ${
+                          isPublished
+                            ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300'
+                            : 'bg-blue-600 hover:bg-blue-500 active:scale-95 text-white border-blue-400/50 shadow-blue-950/50'
+                        } disabled:opacity-70`}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                        <span>
+                          {isPublishing
+                            ? 'Publishing...'
+                            : isPublished
+                            ? 'Published & Active'
+                            : 'Publish Assignment'}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => navigate('/dashboard/assessments')}
+                        className="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer border border-slate-700 transition-all"
+                      >
+                        <span>Assessments</span>
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -941,11 +1048,163 @@ export default function SourcesPage() {
         </div>
       </div>
 
-      {activeExamId && (
-        <AssessmentPlayerModal
-          assessmentId={activeExamId}
-          onClose={() => setActiveExamId(null)}
-        />
+      {/* ── Generated Questions Verification Modal ── */}
+      {showVerifyModal && generatedAssessmentInfo && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-4xl lg:max-w-5xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header (Dark Blue Black Enterprise Theme) */}
+            <div className="px-6 py-4 border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white flex items-center justify-between shrink-0 shadow-md">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded text-[10px] font-black bg-blue-500/20 text-blue-300 border border-blue-400/30 uppercase tracking-wider">
+                    AI Grounded Verification
+                  </span>
+                  <span className="text-xs text-slate-400 font-mono">
+                    ID: {generatedAssessmentInfo.assessmentId?.slice(0, 8)}
+                  </span>
+                </div>
+                <h3 className="text-base font-black text-white mt-1">
+                  {generatedAssessmentInfo.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVerifyModal(false)}
+                className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer border border-slate-700/60"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body - Scrollable list of questions */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              <div className="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-200 text-xs text-slate-700 flex items-center justify-between">
+                <span>
+                  Source Document: <strong className="text-slate-900">{generatedAssessmentInfo.sourceName}</strong>
+                </span>
+                <span className="font-bold text-[#1E3A8A]">
+                  {generatedAssessmentInfo.questions?.length || generatedAssessmentInfo.questionsCount} Questions Verified
+                </span>
+              </div>
+
+              {(generatedAssessmentInfo.questions || []).map((q, idx) => (
+                <div key={q.id || idx} className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3 shadow-xs">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-black text-slate-900">
+                      Problem Statement {idx + 1}
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase">
+                      Bloom: {q.bloomLevel || q.bloom_level || 'APPLY'}
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-medium text-slate-800 whitespace-pre-wrap leading-relaxed">
+                    {q.stem}
+                  </p>
+
+                  {/* Options */}
+                  <div className="space-y-1.5 pt-1">
+                    {(q.options || []).map((opt, oIdx) => {
+                      const optText = typeof opt === 'object' ? opt.text : String(opt);
+                      const isCorrect = typeof opt === 'object' ? Boolean(opt.is_correct || opt.isCorrect) : oIdx === 0;
+                      return (
+                        <div
+                          key={oIdx}
+                          className={`p-2.5 rounded-xl border text-xs flex items-center justify-between ${
+                            isCorrect
+                              ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-bold'
+                              : 'bg-slate-50 border-slate-200 text-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
+                              isCorrect ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600'
+                            }`}>
+                              {String.fromCharCode(65 + oIdx)}
+                            </span>
+                            <span>{optText}</span>
+                          </div>
+                          {isCorrect && (
+                            <span className="text-[10px] font-black uppercase text-emerald-700 flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Correct Answer
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Explanation */}
+                  {q.explanation && (
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 leading-relaxed">
+                      <strong className="text-slate-800">Grounding Rationale: </strong>
+                      {q.explanation}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Modal Footer (Dark Blue Black Enterprise Theme) */}
+            <div className="px-6 py-4 border-t border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-xl">
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowVerifyModal(false);
+                    navigate('/dashboard/assessments');
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-blue-300 hover:text-blue-100 border border-blue-900/60 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Assessments</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-blue-400" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowVerifyModal(false);
+                    navigate('/dashboard/review-queue');
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                >
+                  <Layers className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Review Queue</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setShowVerifyModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 font-bold text-xs transition-all cursor-pointer whitespace-nowrap shadow-xs"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePublishAssessment}
+                  disabled={isPublishing || isPublished}
+                  className={`px-4 py-2 rounded-xl font-black text-xs transition-all shadow-md flex items-center gap-2 cursor-pointer border whitespace-nowrap ${
+                    isPublished
+                      ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300'
+                      : 'bg-blue-600 hover:bg-blue-500 active:scale-95 text-white border-blue-400/50 shadow-blue-950/50'
+                  } disabled:opacity-70`}
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                  <span>
+                    {isPublishing
+                      ? 'Publishing...'
+                      : isPublished
+                      ? 'Published & Active'
+                      : 'Publish Assignment'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { assessments, questions, competencies } from '../../db/schema/index.js';
 import { sendSuccess, sendError } from '../../utils/response.js';
@@ -242,15 +242,23 @@ const DEFAULT_POOL = [
  * Get all assessments
  */
 export const getAssessments = asyncHandler(async (req, res) => {
-  const list = await db.select().from(assessments);
+  const list = await db.select().from(assessments).orderBy(desc(assessments.createdAt));
   const allComps = await db.select().from(competencies);
+  const allQuestions = await db.select().from(questions);
 
   const result = list.map(item => {
     const comp = allComps.find(c => c.id === item.competencyId);
+    const itemQuestions = allQuestions.filter(q => q.assessmentId === item.id);
+    const blueprintObj = typeof item.blueprint === 'object' && item.blueprint !== null ? item.blueprint : {};
+    
     return {
       ...item,
-      competencyName: comp ? comp.name : 'General Competencies',
-      competencyCode: comp ? comp.code : 'GEN_COMP'
+      competencyName: comp ? comp.name : (item.sourceMaterialName ? `Evidence Grounded: ${item.sourceMaterialName}` : 'General Competencies'),
+      competencyCode: comp ? comp.code : (item.sourceMaterialName ? 'RAG_GROUNDED' : 'GEN_COMP'),
+      questionsCount: itemQuestions.length || item.totalQuestions || 0,
+      questions: itemQuestions,
+      status: blueprintObj.status || (item.sourceMaterialName ? 'PUBLISHED' : 'DRAFT'),
+      sourceMaterialName: item.sourceMaterialName || blueprintObj.sourceName || null,
     };
   });
 
