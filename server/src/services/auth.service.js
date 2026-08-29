@@ -18,8 +18,9 @@ import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 
 import { getDb } from '../db/index.js';
-import { users, officials, roles } from '../db/schema/index.js';
+import { users, officials, roles, igotCourses, igotEnrolments, evidence, competencies } from '../db/schema/index.js';
 import { recalculateSkillGaps } from './skillGap.service.js';
+import { getDemoProfileByKarmayogiId } from './igot.service.js';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -134,6 +135,7 @@ export async function registerUser(payload = {}) {
     try {
       const allRoles = await db.select().from(roles);
       const defaultRole = allRoles.find(r => r.code === 'STAT_OFFICER') || allRoles[0];
+      const karmayogiId = typeof payload.karmayogiId === 'string' && payload.karmayogiId.trim() ? payload.karmayogiId.trim() : null;
 
       const [official] = await db.insert(officials).values({
         userId: user.id,
@@ -144,7 +146,70 @@ export async function registerUser(payload = {}) {
         experienceYears: Number(payload.experienceYears) || 3,
         education: typeof payload.education === 'string' && payload.education.trim() ? payload.education.trim() : 'M.Sc. in Statistics',
         preferredLanguage: payload.preferredLanguage || 'en',
+        karmayogiId: karmayogiId,
       }).returning();
+
+      // If karmayogiId is provided, sync completed courses into igot_enrolments and seed evidence
+      if (official && karmayogiId) {
+        try {
+          const profileRes = getDemoProfileByKarmayogiId(karmayogiId);
+          const karmayogiProfile = profileRes?.result?.profile;
+          const completedCourses = karmayogiProfile?.completedCourses || payload.syncedCourses || [];
+
+          if (completedCourses.length > 0) {
+            const allComps = await db.select().from(competencies);
+
+            for (const course of completedCourses) {
+              // Ensure course in igot_courses table
+              const [courseRow] = await db.select({ id: igotCourses.id }).from(igotCourses).where(eq(igotCourses.igotIdentifier, course.courseId));
+              let dbCourseId = courseRow?.id;
+              if (!dbCourseId) {
+                const [insertedCourse] = await db.insert(igotCourses).values({
+                  igotIdentifier: course.courseId,
+                  name: course.name,
+                  organisation: course.organisation || 'iGOT Karmayogi',
+                  durationSeconds: course.durationSeconds || 14400,
+                  status: 'Live',
+                }).onConflictDoNothing().returning();
+                dbCourseId = insertedCourse?.id;
+              }
+
+              if (dbCourseId) {
+                // Record completed enrolment
+                await db.execute(`
+                  INSERT INTO igot_enrolments (official_id, igot_course_id, status, completion_percentage, completed_at, evidence_created)
+                  VALUES ('${official.id}', '${dbCourseId}', 'COMPLETED', 100, NOW(), true)
+                  ON CONFLICT (official_id, igot_course_id) DO UPDATE SET status = 'COMPLETED', completion_percentage = 100, completed_at = NOW(), evidence_created = true
+                `).catch(() => {});
+              }
+
+              // Award competency evidence
+              const compsAwarded = course.competenciesAwarded || [];
+              for (const awarded of compsAwarded) {
+                const matchedComp = allComps.find(c => 
+                  c.code.toUpperCase() === awarded.code.toUpperCase() ||
+                  c.name.toLowerCase().includes(awarded.name.toLowerCase().slice(0, 8))
+                );
+
+                if (matchedComp) {
+                  await db.insert(evidence).values({
+                    officialId: official.id,
+                    competencyId: matchedComp.id,
+                    evidenceType: 'EXTERNAL',
+                    score: Number(awarded.level) || 3.5,
+                    maxScore: 5.0,
+                    weight: 1.0,
+                    confidence: 0.95,
+                    provenance: `iGOT Karmayogi Certificate: ${course.certificateId || course.name}`,
+                  }).catch(() => {});
+                }
+              }
+            }
+          }
+        } catch (syncErr) {
+          console.warn('Non-blocking iGOT evidence synchronization warning:', syncErr.message);
+        }
+      }
 
       if (official && official.roleId) {
         await recalculateSkillGaps({ userId: user.id, officialId: official.id, roleId: official.roleId }).catch((err) => {

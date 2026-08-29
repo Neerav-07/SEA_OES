@@ -1,7 +1,32 @@
 import { getDb } from '../../db/index.js';
 import { officials, igotCourses, igotEnrolments, evidence } from '../../db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
-import { searchCourses, enrolCourse, getCourseDetails } from '../../services/igot.service.js';
+import {
+  searchCourses,
+  enrolCourse,
+  getCourseDetails,
+  getDemoKarmayogiProfiles,
+  getDemoProfileByKarmayogiId,
+} from '../../services/igot.service.js';
+
+export async function getIGOTDemoProfilesController(req, res, next) {
+  try {
+    const result = getDemoKarmayogiProfiles();
+    return res.status(200).json(result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getIGOTProfileByKarmayogiIdController(req, res, next) {
+  try {
+    const { karmayogiId } = req.params;
+    const result = getDemoProfileByKarmayogiId(karmayogiId);
+    return res.status(200).json(result);
+  } catch (error) {
+    return next(error);
+  }
+}
 
 export async function searchIGOTCoursesController(req, res, next) {
   try {
