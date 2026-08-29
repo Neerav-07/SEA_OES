@@ -290,31 +290,102 @@ Which system architecture and API standard ensures seamless machine-to-machine d
   },
 ];
 
-export function getFormalQuestion(q) {
-  if (!q) return { title: 'Official Problem Statement', fullText: '' };
+export function parseLeetCodeQuestion(q) {
+  if (!q) {
+    return {
+      title: 'Official Problem Statement',
+      narrative: '',
+      parameters: [],
+      directive: '',
+      difficulty: 'Medium',
+      difficultyColor: 'bg-amber-50 text-amber-700 border-amber-200',
+    };
+  }
 
-  const raw = (q.stem || q.title || '').trim();
+  const raw = (q.stem || q.caseStudyContext || q.title || '').trim();
 
   // Pattern: "CASE STUDY: <Title>\n\n<Remaining>"
   const caseStudyPrefix = raw.match(/^CASE STUDY:\s*([^\n\r]+)/i);
   let title = q.title;
-  let remaining = raw;
+  let textToParse = raw;
 
   if (caseStudyPrefix) {
     title = caseStudyPrefix[1].trim();
-    remaining = raw.slice(caseStudyPrefix[0].length).trim();
+    textToParse = raw.slice(caseStudyPrefix[0].length).trim();
   }
 
-  if (q.caseStudyContext) {
-    return {
-      title: q.title || title || 'MoSPI Case Study',
-      fullText: q.caseStudyContext,
-    };
+  // Determine difficulty & badge styling from Bloom level
+  const bloom = (q.bloomLevel || 'ANALYZE').toUpperCase();
+  let difficulty = 'Medium';
+  let difficultyColor = 'bg-amber-50 text-amber-700 border-amber-200';
+
+  if (bloom === 'EVALUATE') {
+    difficulty = 'Hard';
+    difficultyColor = 'bg-rose-50 text-rose-700 border-rose-200';
+  } else if (bloom === 'REMEMBER' || bloom === 'UNDERSTAND') {
+    difficulty = 'Easy';
+    difficultyColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  } else if (bloom === 'APPLY') {
+    difficulty = 'Medium';
+    difficultyColor = 'bg-blue-50 text-blue-700 border-blue-200';
+  }
+
+  // Parse lines into narrative, parameters, and directive
+  const lines = textToParse.split(/\r?\n/);
+  const narrativeLines = [];
+  const parameterLines = [];
+  const directiveLines = [];
+  let currentSection = 'narrative';
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    if (/^BACKGROUND\s*(&\s*OPERATIONAL\s*CONTEXT)?:?/i.test(trimmed)) {
+      currentSection = 'narrative';
+      continue;
+    }
+    if (/^(SYSTEM\s*(&\s*[A-Z\s]+)?\s*PARAMETERS|CONSTRAINTS|ACCOUNTING RULES|SECURITY PARAMETERS|STATISTICAL PARAMETERS|DATA PARAMETERS|INDEX PARAMETERS|METRIC PARAMETERS|ARCHITECTURE REQUIREMENTS):?/i.test(trimmed)) {
+      currentSection = 'parameters';
+      continue;
+    }
+    if (/^METHODOLOGICAL\s*PROBLEM\s*STATEMENT:?/i.test(trimmed)) {
+      currentSection = 'directive';
+      continue;
+    }
+
+    if (currentSection === 'parameters' || /^[•\-*]\s+/.test(trimmed)) {
+      parameterLines.push(trimmed.replace(/^[•\-*]\s*/, ''));
+    } else if (currentSection === 'directive') {
+      directiveLines.push(trimmed);
+    } else {
+      narrativeLines.push(trimmed);
+    }
+  }
+
+  // Fallback: if directive section was empty, pull ending prompt from narrative
+  if (directiveLines.length === 0 && narrativeLines.length > 0) {
+    const lastLine = narrativeLines[narrativeLines.length - 1];
+    if (lastLine.endsWith('?') || lastLine.length > 50) {
+      directiveLines.push(narrativeLines.pop());
+    }
   }
 
   return {
-    title: title || q.title || 'MoSPI Statistical Evaluation',
-    fullText: remaining,
+    title: title || q.title || 'Official MoSPI Problem Statement',
+    narrative: narrativeLines.join('\n\n'),
+    parameters: parameterLines,
+    directive: directiveLines.join('\n\n'),
+    difficulty,
+    difficultyColor,
+  };
+}
+
+export function getFormalQuestion(q) {
+  const parsed = parseLeetCodeQuestion(q);
+  return {
+    title: parsed.title,
+    fullText: [parsed.narrative, parsed.parameters.map((p) => `• ${p}`).join('\n'), parsed.directive].filter(Boolean).join('\n\n'),
   };
 }
 
@@ -560,6 +631,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
 
   const currentQ = questions[currentIndex];
   const answeredCount = Object.keys(responses).length;
+  const leetQ = parseLeetCodeQuestion(currentQ);
   const formalQ = getFormalQuestion(currentQ);
 
   return (
@@ -847,32 +919,70 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
         /* ── 4. DEDICATED FULL-SCREEN QUESTION PLAYER SCREEN ── */
         <div className="flex-1 bg-slate-50 flex flex-col md:flex-row overflow-hidden">
           
-          {/* ── Left Column: Formal Examination Question Text ── */}
-          <div className="w-full md:w-1/2 p-6 md:p-8 bg-white border-b md:border-b-0 md:border-r border-slate-200 overflow-y-auto space-y-6">
+          {/* ── Left Column: Authentic LeetCode Problem Specification ── */}
+          <div className="w-full md:w-1/2 p-6 md:p-8 bg-white border-b md:border-b-0 md:border-r border-slate-200 overflow-y-auto space-y-5">
             
-            {/* Header: Problem number & Bloom taxonomy pill */}
-            <div className="space-y-2.5 border-b border-slate-100 pb-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-extrabold text-[#1E3A8A] uppercase tracking-wider">
-                  Problem Statement {currentIndex + 1} of {questions.length}
+            {/* Header: Title and LeetCode-style difficulty / topic tags */}
+            <div className="space-y-3 border-b border-slate-100 pb-4">
+              <div className="flex items-start gap-2.5">
+                <span className="text-sm md:text-base font-bold text-slate-400 mt-0.5 select-none">
+                  {currentIndex + 1}.
                 </span>
-                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-blue-50 text-[#1E3A8A] border border-blue-200">
+                <h3 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight leading-snug">
+                  {leetQ.title}
+                </h3>
+              </div>
+
+              {/* LeetCode Meta Tags Bar */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${leetQ.difficultyColor}`}>
+                  {leetQ.difficulty}
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-100 text-slate-700 border border-slate-200">
                   Bloom: {currentQ?.bloomLevel || 'EVALUATE'}
                 </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-50 text-[#1E3A8A] border border-blue-200">
+                  MoSPI Case Study
+                </span>
               </div>
-              <h3 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight leading-snug">
-                {formalQ.title}
-              </h3>
             </div>
 
-            {/* Continuous, Long-Paragraph Formal Question Text (No separate divided boxes/sections) */}
-            <div className="space-y-4 text-slate-800 text-[15px] sm:text-base leading-relaxed font-normal">
-              {formalQ.fullText.split(/\n\s*\n/).map((paragraph, pIdx) => (
-                <p key={pIdx} className="leading-relaxed font-normal text-slate-800 whitespace-pre-line">
-                  {paragraph}
+            {/* Background & Operational Scenario Narrative */}
+            {leetQ.narrative && (
+              <div className="text-slate-800 text-[15px] sm:text-base leading-relaxed font-normal whitespace-pre-line space-y-3">
+                {leetQ.narrative}
+              </div>
+            )}
+
+            {/* LeetCode Parameters / Constraints Box */}
+            {leetQ.parameters.length > 0 && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4 sm:p-5 space-y-2.5 shadow-xs">
+                <div className="font-mono text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-[#1E3A8A]" />
+                  System & Sample Parameters:
+                </div>
+                <div className="space-y-1.5 font-mono text-xs sm:text-[13px] text-slate-800">
+                  {leetQ.parameters.map((param, pIdx) => (
+                    <div key={pIdx} className="flex items-start gap-2.5 leading-relaxed">
+                      <span className="text-[#1E3A8A] font-bold select-none">•</span>
+                      <span>{param}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Methodological Problem Directive / Question Task */}
+            {leetQ.directive && (
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                  Methodological Problem Statement:
+                </div>
+                <p className="text-slate-900 text-[15px] sm:text-base font-semibold leading-relaxed whitespace-pre-line">
+                  {leetQ.directive}
                 </p>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* ── Right Column: Options & Action Area ── */}
