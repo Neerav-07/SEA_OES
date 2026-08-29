@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Users,
@@ -31,6 +31,7 @@ import useAuthStore from '../../../store/auth.store.js';
 import { useReportStore } from '../../../store/report.store.js';
 import StatCard from '../../../components/StatCard.jsx';
 import PageHeader from '../../../components/PageHeader.jsx';
+import api from '../../../services/api.js';
 
 const LEARNER_STATS = [
   { label: 'Assessed Competencies', value: '14 / 18', change: '84% Conf', trend: 'up' },
@@ -131,28 +132,226 @@ export default function DashboardHomePage() {
   const [selectedAuditItem, setSelectedAuditItem] = useState(null);
   const [isOfficerDrawerOpen, setIsOfficerDrawerOpen] = useState(false);
 
-  const stats = isAdmin ? ADMIN_STATS : LEARNER_STATS;
-  const activity = isAdmin ? ADMIN_ACTIVITY : LEARNER_ACTIVITY;
+  const [loadingData, setLoadingData] = useState(true);
+  const [skillGaps, setSkillGaps] = useState([]);
+  const [attempts, setAttempts] = useState([]);
+  const [workforceData, setWorkforceData] = useState(null);
+  const [reviewCount, setReviewCount] = useState(12);
+  const [blueprintCount, setBlueprintCount] = useState(16);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadDashboardData() {
+      setLoadingData(true);
+      try {
+        if (isAdmin) {
+          const [wfRes, revRes, bpRes] = await Promise.allSettled([
+            api.get('/analytics/workforce'),
+            api.get('/review-queue'),
+            api.get('/assessment-blueprints'),
+          ]);
+          if (isMounted) {
+            if (wfRes.status === 'fulfilled') setWorkforceData(wfRes.value.data);
+            if (revRes.status === 'fulfilled') {
+              const qList = revRes.value.data?.questions || revRes.value.data?.data || [];
+              setReviewCount(Array.isArray(qList) ? qList.length : 12);
+            }
+            if (bpRes.status === 'fulfilled') {
+              const bpList = bpRes.value.data?.blueprints || bpRes.value.data?.data || [];
+              setBlueprintCount(Array.isArray(bpList) ? bpList.length : 16);
+            }
+          }
+        } else {
+          const [gapsRes, attRes] = await Promise.allSettled([
+            api.get('/skill-gaps'),
+            api.get('/attempts/history'),
+          ]);
+          if (isMounted) {
+            if (gapsRes.status === 'fulfilled') {
+              setSkillGaps(gapsRes.value.data?.gaps || []);
+            }
+            if (attRes.status === 'fulfilled') {
+              setAttempts(attRes.value.data?.attempts || []);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Dashboard data fetch error:', err);
+      } finally {
+        if (isMounted) setLoadingData(false);
+      }
+    }
+
+    loadDashboardData();
+    const handleRefresh = () => loadDashboardData();
+    window.addEventListener('kshamata_assessment_submitted', handleRefresh);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('kshamata_assessment_submitted', handleRefresh);
+    };
+  }, [isAdmin]);
+
+  // Dynamic Learner Stats
+  const assessedCount = skillGaps.filter((g) => Number(g.currentLevel || 0) > 0).length;
+  const totalGapsCount = skillGaps.length > 0 ? skillGaps.length : 18;
+  const avgProficiency =
+    skillGaps.length > 0
+      ? (skillGaps.reduce((acc, g) => acc + Number(g.currentLevel || 0), 0) / skillGaps.length).toFixed(1)
+      : '3.6';
+  const criticalDeficitsCount = skillGaps.filter(
+    (g) => Number(g.gap || 0) >= 1.0 || g.priority === 'CRITICAL' || g.priority === 'HIGH'
+  ).length;
+
+  const dynamicLearnerStats = [
+    {
+      label: 'Assessed Competencies',
+      value: `${assessedCount} / ${totalGapsCount}`,
+      change: `${Math.round((assessedCount / (totalGapsCount || 1)) * 100)}% Baseline`,
+      trend: assessedCount > 0 ? 'up' : 'neutral',
+    },
+    {
+      label: 'Evaluated Proficiency Level',
+      value: `${avgProficiency} / 5.0`,
+      change: 'Target: 4.0 FRAC',
+      trend: Number(avgProficiency) >= 3.5 ? 'up' : 'neutral',
+    },
+    {
+      label: 'Critical Skill Deficits',
+      value: `${criticalDeficitsCount} Priority`,
+      change: criticalDeficitsCount > 0 ? `${criticalDeficitsCount} Require Action` : 'All Met',
+      trend: criticalDeficitsCount > 0 ? 'down' : 'up',
+    },
+    {
+      label: 'Assessment Attempts',
+      value: `${attempts.length} Completed`,
+      change:
+        attempts.length > 0
+          ? `${Math.round(
+              attempts.reduce((s, a) => {
+                const parsed = Array.isArray(a.responses) ? a.responses : [];
+                const c = parsed.length > 0 ? parsed.filter((r) => r.isCorrect).length : Number(a.score) || 4;
+                const t = parsed.length > 0 ? parsed.length : 5;
+                return s + (c / t) * 100;
+              }, 0) / attempts.length
+            )}% Avg Score`
+          : 'Take Diagnostic',
+      trend: attempts.length > 0 ? 'up' : 'neutral',
+    },
+  ];
+
+  // Dynamic Admin Stats
+  const dynamicAdminStats = [
+    {
+      label: 'Tracked MoSPI Workforce',
+      value: `${workforceData?.totalOfficials || workforceData?.overview?.totalOfficials || 248} Officials`,
+      change: 'DIID, NAD, FOD, ESD',
+      trend: 'up',
+    },
+    {
+      label: 'Workforce Gap Closure Rate',
+      value: `${workforceData?.closureRate || '78.4%'}`,
+      change: '+4.2% QoQ',
+      trend: 'up',
+    },
+    {
+      label: 'Question Review Queue',
+      value: `${reviewCount} Pending`,
+      change: 'Requires Approval',
+      trend: reviewCount > 0 ? 'down' : 'neutral',
+    },
+    {
+      label: 'Approved ACBP Pathways',
+      value: `${blueprintCount} Blueprints`,
+      change: 'NSSTA TPAC Catalogue',
+      trend: 'neutral',
+    },
+  ];
+
+  const stats = isAdmin ? dynamicAdminStats : dynamicLearnerStats;
+
+  // Dynamic Activity Stream
+  const dynamicLearnerActivity =
+    attempts.length > 0
+      ? attempts.slice(0, 5).map((att, idx) => {
+          const parsed = Array.isArray(att.responses) ? att.responses : [];
+          const correctCount = parsed.length > 0 ? parsed.filter((r) => r.isCorrect).length : Math.round(Number(att.score) || 4);
+          const totalCount = parsed.length > 0 ? parsed.length : att.total_questions || 5;
+          const scorePct = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 80;
+
+          return {
+            id: att.id || idx,
+            label: `Diagnostic Assessment Completed: ${att.assessment_title || 'Survey Sampling & Bias Evaluation'} (Scored ${scorePct}%)`,
+            time: att.submitted_at || att.started_at ? new Date(att.submitted_at || att.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
+            status: 'done',
+            actionText: 'View Audit Scorecard',
+            actionType: 'AUDIT_DIAGNOSTIC',
+            auditData: {
+              officerName: user?.name || 'Senior Statistical Officer',
+              designation: user?.designation || 'Senior Statistical Officer (SSO)',
+              department: user?.department || 'Data Informatics & Innovation Division (DIID)',
+              cadre: user?.cadre || 'ISS (Indian Statistical Service)',
+              assessmentName: att.assessment_title || 'Diagnostic Assessment: Survey Sampling & Bias Evaluation',
+              score: `${scorePct}%`,
+              questionsCorrect: `${correctCount} / ${totalCount} Questions Correct`,
+              competencyCode: att.competency_code || 'FRAC-STAT-ANALYSIS',
+              competencyName: att.competency_name || 'Statistical Analysis & Inference',
+              levelShift: `L${att.level_before || 3.0} ➔ L${(Number(att.score) || 3.8).toFixed(1)} (Advanced Proficiency)`,
+              confidenceScore: '92% (High Confidence)',
+              auditTimestamp: att.submitted_at ? new Date(att.submitted_at).toLocaleString() : 'Recent Session',
+              evidenceHash: att.evidence_hash || `EV-HASH-${String(att.id || '01').slice(-8).toUpperCase()}`,
+            },
+          };
+        })
+      : [
+          {
+            id: 'act-1',
+            label: 'iGOT Karmayogi Profile Synced: Baseline Competencies Ingested',
+            time: 'Active',
+            status: 'done',
+            actionText: 'Inspect Skill Gaps',
+            route: '/dashboard/skill-gaps',
+          },
+          {
+            id: 'act-2',
+            label: 'Diagnostic Assessment Ready: Survey Sampling & Bias Evaluation',
+            time: 'Available',
+            status: 'active',
+            actionText: 'Launch Assessment',
+            route: '/dashboard/assessments',
+          },
+          {
+            id: 'act-3',
+            label: 'MoSPI ACBP Learning Pathways Ready: NSSTA Recommended Courses',
+            time: 'Ready',
+            status: 'done',
+            actionText: 'Explore Pathways',
+            route: '/dashboard/learning-paths',
+          },
+        ];
+
+  const activity = isAdmin ? ADMIN_ACTIVITY : dynamicLearnerActivity;
 
   const handleActivityClick = (item) => {
     if (item.actionType === 'ACBP_REPORT') {
       startReportGen();
     } else if (item.actionType === 'AUDIT_DIAGNOSTIC') {
-      setSelectedAuditItem({
-        officerName: user?.name || 'Senior Statistical Officer',
-        designation: user?.designation || 'Senior Statistical Officer (SSO)',
-        department: user?.department || 'Data Informatics & Innovation Division (DIID)',
-        cadre: user?.cadre || 'ISS (Indian Statistical Service)',
-        assessmentName: 'Diagnostic Module 1: Survey Sampling & Bias Evaluation',
-        score: '85%',
-        questionsCorrect: '17 / 20 Questions Correct',
-        competencyCode: 'FRAC-STAT-STAT-ANALYSIS',
-        competencyName: 'Statistical Analysis & Inference',
-        levelShift: 'L3.2 ➔ L3.6 (Advanced Proficiency)',
-        confidenceScore: '94% (High Confidence)',
-        auditTimestamp: 'Today, 10:15 AM IST',
-        evidenceHash: 'EV-HASH-8F9A2B1C4E7D',
-      });
+      setSelectedAuditItem(
+        item.auditData || {
+          officerName: user?.name || 'Senior Statistical Officer',
+          designation: user?.designation || 'Senior Statistical Officer (SSO)',
+          department: user?.department || 'Data Informatics & Innovation Division (DIID)',
+          cadre: user?.cadre || 'ISS (Indian Statistical Service)',
+          assessmentName: 'Diagnostic Module 1: Survey Sampling & Bias Evaluation',
+          score: '85%',
+          questionsCorrect: '17 / 20 Questions Correct',
+          competencyCode: 'FRAC-STAT-STAT-ANALYSIS',
+          competencyName: 'Statistical Analysis & Inference',
+          levelShift: 'L3.2 ➔ L3.6 (Advanced Proficiency)',
+          confidenceScore: '94% (High Confidence)',
+          auditTimestamp: 'Today, 10:15 AM IST',
+          evidenceHash: 'EV-HASH-8F9A2B1C4E7D',
+        }
+      );
     } else if (item.route) {
       navigate(item.route);
     }
@@ -432,71 +631,84 @@ export default function DashboardHomePage() {
                   </h4>
 
                   <div className="space-y-2">
-                    {/* Comp 1 */}
-                    <div className="p-4 rounded-2xl border border-emerald-200 bg-emerald-50/40 flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[9.5px] font-mono font-bold text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">
-                            FRAC-STAT-ANALYSIS
-                          </span>
-                          <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
-                            L3.6 / L4.0 (Deficit: -0.4)
-                          </span>
-                        </div>
-                        <h5 className="text-xs font-bold text-slate-900">Statistical Analysis & Inference</h5>
-                        <p className="text-[11px] text-slate-500 font-medium">Verified by Diagnostic Score (85%) • High Confidence (94%)</p>
-                      </div>
-                      <button
-                        onClick={() => toast.success(`TPAC-STAT-104 Pathway assigned to ${user?.name || 'Official'}!`)}
-                        className="px-3 py-1.5 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] text-white text-xs font-bold shrink-0 cursor-pointer"
-                      >
-                        Mandate Course
-                      </button>
-                    </div>
+                    {(skillGaps.length > 0
+                      ? skillGaps.slice(0, 5)
+                      : [
+                          {
+                            competencyCode: 'FRAC-STAT-ANALYSIS',
+                            competencyName: 'Statistical Analysis & Inference',
+                            currentLevel: 3.6,
+                            targetLevel: 4.0,
+                            gap: 0.4,
+                            priority: 'LOW',
+                          },
+                          {
+                            competencyCode: 'FRAC-STAT-NATIONAL-ACCOUNTS',
+                            competencyName: 'National Accounts Statistics (SNA 2008)',
+                            currentLevel: 2.4,
+                            targetLevel: 4.0,
+                            gap: 1.6,
+                            priority: 'MEDIUM',
+                          },
+                          {
+                            competencyCode: 'FRAC-TECH-PYTHON-ANALYTICS',
+                            competencyName: 'Python for Data Analytics (NSS Microdata)',
+                            currentLevel: 1.4,
+                            targetLevel: 4.0,
+                            gap: 2.6,
+                            priority: 'CRITICAL',
+                          },
+                        ]
+                    ).map((g, idx) => {
+                      const gapVal = Number(g.gap ?? ((g.targetLevel || 4.0) - (g.currentLevel || 0))).toFixed(1);
+                      const isCrit = Number(gapVal) >= 2.0 || g.priority === 'CRITICAL';
+                      const isMod = Number(gapVal) >= 1.0 && !isCrit;
+                      const badgeClass = isCrit
+                        ? 'border-red-200 bg-red-50/40'
+                        : isMod
+                        ? 'border-amber-200 bg-amber-50/40'
+                        : 'border-emerald-200 bg-emerald-50/40';
 
-                    {/* Comp 2 */}
-                    <div className="p-4 rounded-2xl border border-amber-200 bg-amber-50/40 flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[9.5px] font-mono font-bold text-amber-800 bg-white px-2 py-0.5 rounded border border-amber-200">
-                            FRAC-STAT-NATIONAL-ACCOUNTS
-                          </span>
-                          <span className="text-[10px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                            L2.4 / L4.0 (Deficit: -1.6)
-                          </span>
+                      return (
+                        <div
+                          key={idx}
+                          className={`p-4 rounded-2xl border flex items-center justify-between ${badgeClass}`}
+                        >
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[9.5px] font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
+                                {g.competencyCode || g.code || `COMP-${idx + 1}`}
+                              </span>
+                              <span
+                                className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${
+                                  isCrit ? 'text-red-800 bg-red-100' : isMod ? 'text-amber-800 bg-amber-100' : 'text-emerald-800 bg-emerald-100'
+                                }`}
+                              >
+                                L{Number(g.currentLevel || 0).toFixed(1)} / L{Number(g.targetLevel || 4.0).toFixed(1)} (Deficit: -{gapVal})
+                              </span>
+                            </div>
+                            <h5 className="text-xs font-bold text-slate-900">{g.competencyName || g.name}</h5>
+                            <p className="text-[11px] text-slate-500 font-medium">
+                              {isCrit
+                                ? 'Critical Skill Deficit • Prioritized for TPAC Mandatory Course'
+                                : 'Evaluated via Verified Evidence • In Alignment with FRAC Target'}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() =>
+                              toast.success(
+                                `Targeted ACBP Pathway assigned for ${g.competencyName || 'Official'}!`
+                              )
+                            }
+                            className={`px-3 py-1.5 rounded-xl text-white text-xs font-bold shrink-0 cursor-pointer shadow-xs ${
+                              isCrit ? 'bg-red-700 hover:bg-red-800' : 'bg-[#1E3A8A] hover:bg-[#1e40af]'
+                            }`}
+                          >
+                            Mandate Course
+                          </button>
                         </div>
-                        <h5 className="text-xs font-bold text-slate-900">National Accounts Statistics (SNA 2008)</h5>
-                        <p className="text-[11px] text-slate-500 font-medium">iGOT Course Enrolment Active • Pending Final Evaluation</p>
-                      </div>
-                      <button
-                        onClick={() => toast.success(`TPAC-SNA-208 Pathway assigned to ${user?.name || 'Official'}!`)}
-                        className="px-3 py-1.5 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] text-white text-xs font-bold shrink-0 cursor-pointer"
-                      >
-                        Mandate Course
-                      </button>
-                    </div>
-
-                    {/* Comp 3 */}
-                    <div className="p-4 rounded-2xl border border-red-200 bg-red-50/40 flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[9.5px] font-mono font-bold text-red-800 bg-white px-2 py-0.5 rounded border border-red-200">
-                            FRAC-TECH-PYTHON-ANALYTICS
-                          </span>
-                          <span className="text-[10px] font-extrabold text-red-800 bg-red-100 px-2 py-0.5 rounded">
-                            L1.4 / L4.0 (Critical Deficit: -2.6)
-                          </span>
-                        </div>
-                        <h5 className="text-xs font-bold text-slate-900">Python for Data Analytics (NSS Microdata)</h5>
-                        <p className="text-[11px] text-slate-500 font-medium">No Evidence Found • Mandated TPAC Course Recommended</p>
-                      </div>
-                      <button
-                        onClick={() => toast.success(`TPAC-PYTHON-302 Pathway assigned to ${user?.name || 'Official'}!`)}
-                        className="px-3 py-1.5 rounded-xl bg-red-700 hover:bg-red-800 text-white text-xs font-bold shrink-0 shadow-xs cursor-pointer"
-                      >
-                        Mandate Course
-                      </button>
-                    </div>
+                      );
+                    })}
                   </div>
                 </div>
 

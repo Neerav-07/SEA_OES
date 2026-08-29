@@ -18,19 +18,47 @@ export async function startAssessmentAttemptController(req, res, next) {
       return res.status(404).json({ message: 'Official profile not found.' });
     }
 
-    const [assessment] = await db.select().from(assessments).where(eq(assessments.id, assessmentId));
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(assessmentId);
+    let resolvedAssessmentId = assessmentId;
+    let assessment = null;
+
+    if (isUuid) {
+      const [found] = await db.select().from(assessments).where(eq(assessments.id, assessmentId));
+      assessment = found;
+    }
+
     if (!assessment) {
-      return res.status(404).json({ message: 'Assessment not found.' });
+      // Find an existing diagnostic assessment or create one
+      const [existingDiag] = await db
+        .select()
+        .from(assessments)
+        .where(eq(assessments.title, 'MoSPI Diagnostic Assessment: Survey & Statistical Competencies'));
+      if (existingDiag) {
+        assessment = existingDiag;
+        resolvedAssessmentId = existingDiag.id;
+      } else {
+        const [anyComp] = await db.select().from(competencies).limit(1);
+        const [newAssessment] = await db
+          .insert(assessments)
+          .values({
+            title: 'MoSPI Diagnostic Assessment: Survey & Statistical Competencies',
+            competencyId: anyComp?.id || null,
+            totalQuestions: 5,
+          })
+          .returning();
+        assessment = newAssessment;
+        resolvedAssessmentId = newAssessment.id;
+      }
     }
 
     // Fetch questions for this assessment
-    let qList = await db.select().from(questions).where(eq(questions.assessmentId, assessmentId));
+    let qList = await db.select().from(questions).where(eq(questions.assessmentId, resolvedAssessmentId));
 
     // If assessment has no seeded questions yet, auto-populate deep MoSPI case study questions across Bloom's taxonomy levels
     if (!qList || qList.length === 0) {
       const caseStudyQuestions = [
         {
-          assessmentId,
+          assessmentId: resolvedAssessmentId,
           stem: 'CASE STUDY: NSS 79th Round Domestic Tourism Survey Audit\n\nDuring the data validation audit of the 79th Round National Sample Survey (NSS) covering domestic tourism expenditure, the Field Operations Division (FOD) reported a 14.2% unit non-response in rural sub-strata of Region IX. Preliminary analysis reveals that the non-response is concentrated among high-income agricultural households. As the Senior Statistical Officer in charge of data quality assurance, which weighting adjustment and calibration procedure must be applied to prevent downward bias in national expenditure estimates without inflating variance beyond acceptable design limits?',
           options: [
             { text: 'Execute GREG (Generalized Regression Estimator) calibration using land holding size and tractor ownership as auxiliary benchmark variables to adjust sample weights.', is_correct: true },
@@ -43,7 +71,7 @@ export async function startAssessmentAttemptController(req, res, next) {
           bloomLevel: 'EVALUATE'
         },
         {
-          assessmentId,
+          assessmentId: resolvedAssessmentId,
           stem: 'CASE STUDY: Consumer Price Index (CPI) Base-Year Revision & Deflation\n\nThe National Accounts Division (NAD) is revising the base year of the Consumer Price Index (Rural/Urban). During sectoral GVA estimation for the Unorganized Retail Trade sector, price deflators computed from the new CPI series indicate an anomalous 8.5% divergence when compared against the Wholesale Price Index (WPI) manufacturing deflator. Evaluating the methodological impact under SNA 2008 standards, how should the statistical analyst resolve this deflation discrepancy?',
           options: [
             { text: 'Construct a double-deflation index separating trade margins from physical output using sector-specific CPI service sub-indices.', is_correct: true },
@@ -56,7 +84,7 @@ export async function startAssessmentAttemptController(req, res, next) {
           bloomLevel: 'ANALYZE'
         },
         {
-          assessmentId,
+          assessmentId: resolvedAssessmentId,
           stem: 'CASE STUDY: Python & R Microdata Cleaning Pipeline for Large-Scale Surveys\n\nA data informatics team at MoSPI DIID is building an automated ETL pipeline in Python (Pandas/Statsmodels) to ingest 5 million raw CAPI records from the Periodic Labour Force Survey (PLFS). The dataset exhibits structural outliers in weekly hours worked (values exceeding 168 hours) and inconsistent occupation codes (NCO-2015). Which programmatic validation rule enforces data integrity while preserving valid extreme values?',
           options: [
             { text: 'Implement winsorization at 99th percentile combined with regex verification against NCO-2015 official master lookup dictionaries.', is_correct: true },
@@ -69,7 +97,7 @@ export async function startAssessmentAttemptController(req, res, next) {
           bloomLevel: 'APPLY'
         },
         {
-          assessmentId,
+          assessmentId: resolvedAssessmentId,
           stem: 'CASE STUDY: Microdata Anonymization & Statistical Disclosure Control (SDC)\n\nPrior to releasing the public-use microdata file (PUMF) for the Annual Survey of Unincorporated Sector Enterprises (ASUSE), the Data Governance Committee requires strict compliance with NDSAP privacy directives. A risk audit reveals that certain enterprise units in niche 4-digit NIC codes can be re-identified using district location and turnover capital. What SDC technique balances disclosure protection with analytical utility for economic researchers?',
           options: [
             { text: 'Apply k-anonymity (k>=5) combined with microaggregation on turnover variables and top-coding on extreme revenue categories.', is_correct: true },
@@ -82,7 +110,7 @@ export async function startAssessmentAttemptController(req, res, next) {
           bloomLevel: 'EVALUATE'
         },
         {
-          assessmentId,
+          assessmentId: resolvedAssessmentId,
           stem: 'CASE STUDY: Multi-Stage Stratified Sampling Variance Estimation\n\nIn a two-stage stratified sampling design for rural household surveys, Primary Sampling Units (PSUs) are selected with Probability Proportional to Size (PPSWR), and Ultimate Sampling Units (USUs) are selected via systematic sampling. The calculated design effect (DEFF) is 2.85, indicating substantial intra-cluster correlation. To achieve a target margin of error of +/- 2.5% at 95% confidence, how must the sampling design be adjusted?',
           options: [
             { text: 'Increase the number of selected PSUs while decreasing the number of USUs sampled per PSU to reduce intra-cluster variance contribution.', is_correct: true },
@@ -102,7 +130,7 @@ export async function startAssessmentAttemptController(req, res, next) {
     // Check if an in-progress attempt already exists (interruption recovery)
     const existingResult = await db.execute(`
       SELECT * FROM assessment_attempts
-      WHERE official_id = '${official.id}' AND assessment_id = '${assessmentId}' AND status = 'IN_PROGRESS'
+      WHERE official_id = '${official.id}' AND assessment_id = '${resolvedAssessmentId}' AND status = 'IN_PROGRESS'
       ORDER BY started_at DESC LIMIT 1
     `);
 
@@ -120,7 +148,7 @@ export async function startAssessmentAttemptController(req, res, next) {
     // Create new assessment attempt
     const newAttemptResult = await db.execute(`
       INSERT INTO assessment_attempts (assessment_id, official_id, status, time_limit_seconds, current_question_index, responses)
-      VALUES ('${assessmentId}', '${official.id}', 'IN_PROGRESS', 1800, 0, '[]'::jsonb)
+      VALUES ('${resolvedAssessmentId}', '${official.id}', 'IN_PROGRESS', 1800, 0, '[]'::jsonb)
       RETURNING *
     `);
 
@@ -182,30 +210,45 @@ export async function submitAssessmentAttemptController(req, res, next) {
 
     const userResponses = responses || attempt.responses || [];
 
-    for (const q of qList) {
-      const uResp = userResponses.find(r => r.questionId === q.id);
-      const selectedOption = uResp?.selectedOption;
-      
-      // Determine correctness
-      const correctOptionIndex = typeof q.correctAnswer === 'number' 
-        ? q.correctAnswer 
-        : (q.options || []).findIndex(o => o.isCorrect || o.correct);
-      
-      const isCorrect = selectedOption !== undefined && selectedOption === (correctOptionIndex >= 0 ? correctOptionIndex : 0);
-      if (isCorrect) correctCount++;
+    if (qList && qList.length > 0) {
+      for (let i = 0; i < qList.length; i++) {
+        const q = qList[i];
+        const uResp = userResponses.find((r) => r.questionId === q.id) || userResponses[i];
+        const selectedOption = uResp?.selectedOption;
 
-      finalResponses.push({
-        questionId: q.id,
-        stem: q.stem,
-        options: q.options,
-        selectedOption,
-        correctOptionIndex,
-        isCorrect,
-        explanation: q.explanation,
-      });
+        // Determine correctness
+        const correctOptionIndex =
+          typeof q.correctAnswer === 'number'
+            ? q.correctAnswer
+            : (q.options || []).findIndex((o) => o.isCorrect || o.correct);
+
+        const isCorrect =
+          selectedOption !== undefined && selectedOption === (correctOptionIndex >= 0 ? correctOptionIndex : 0);
+        if (isCorrect) correctCount++;
+
+        finalResponses.push({
+          questionId: q.id,
+          stem: q.stem,
+          options: q.options,
+          selectedOption,
+          correctOptionIndex,
+          isCorrect,
+          explanation: q.explanation,
+        });
+      }
+    } else {
+      for (let i = 0; i < userResponses.length; i++) {
+        const u = userResponses[i];
+        const isCorrect = u.isCorrect ?? (u.selectedOption === (u.correctAnswer ?? 0));
+        if (isCorrect) correctCount++;
+        finalResponses.push({
+          ...u,
+          isCorrect,
+        });
+      }
     }
 
-    const totalQuestions = qList.length || 1;
+    const totalQuestions = qList && qList.length > 0 ? qList.length : userResponses.length || 1;
     const score = Number(((correctCount / totalQuestions) * 5.0).toFixed(1));
 
     // Update attempt
@@ -222,21 +265,30 @@ export async function submitAssessmentAttemptController(req, res, next) {
     // Fetch assessment to find competencyId
     const [assessment] = await db.select().from(assessments).where(eq(assessments.id, attempt.assessment_id));
 
-    if (assessment?.competencyId) {
+    let targetCompetencyId = assessment?.competencyId;
+    if (!targetCompetencyId) {
+      const [comp] = await db.select().from(competencies).limit(1);
+      targetCompetencyId = comp?.id;
+    }
+
+    if (targetCompetencyId) {
       // Record evidence
-      await db.insert(evidence).values({
-        officialId: attempt.official_id,
-        competencyId: assessment.competencyId,
-        evidenceType: 'KNOWLEDGE',
-        score,
-        maxScore: 5.0,
-        weight: 0.4,
-        confidence: 0.88,
-        provenance: `Assessment Attempt (${correctCount}/${totalQuestions} correct)`,
-      }).onConflictDoNothing();
+      await db
+        .insert(evidence)
+        .values({
+          officialId: attempt.official_id,
+          competencyId: targetCompetencyId,
+          evidenceType: 'KNOWLEDGE',
+          score,
+          maxScore: 5.0,
+          weight: 0.4,
+          confidence: 0.88,
+          provenance: `Assessment Attempt (${correctCount}/${totalQuestions} correct)`,
+        })
+        .onConflictDoNothing();
 
       // Trigger auto-automation gap recalculation and recommendation updates
-      await triggerAutoGapAndRecommendations(attempt.official_id);
+      await triggerAutoGapAndRecommendations(attempt.official_id).catch(() => null);
     }
 
     return res.status(200).json({
@@ -264,9 +316,15 @@ export async function getAttemptHistoryController(req, res, next) {
     }
 
     const result = await db.execute(`
-      SELECT aa.*, a.title AS assessment_title
+      SELECT 
+        aa.*, 
+        COALESCE(a.title, 'MoSPI Diagnostic Assessment') AS assessment_title,
+        COALESCE(c.code, 'STATISTICAL_ANALYSIS') AS competency_code,
+        COALESCE(c.name, 'Statistical Analysis & Inference') AS competency_name,
+        COALESCE(c.category, 'Statistical') AS category
       FROM assessment_attempts aa
-      JOIN assessments a ON aa.assessment_id = a.id
+      LEFT JOIN assessments a ON aa.assessment_id = a.id
+      LEFT JOIN competencies c ON a.competency_id = c.id
       WHERE aa.official_id = '${official.id}'
       ORDER BY aa.started_at DESC
     `);
