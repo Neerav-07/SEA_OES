@@ -10,6 +10,7 @@ import {
   listSources,
   listVersions,
   updateSource,
+  deleteSource,
 } from '../../services/source.service.js';
 
 export async function listSourcesController(req, res, next) {
@@ -23,6 +24,9 @@ export async function getSourceController(req, res, next) {
 }
 export async function updateSourceController(req, res, next) {
   try { return res.status(200).json({ source: await updateSource(req.params.sourceId, req.body) }); } catch (error) { return next(error); }
+}
+export async function deleteSourceController(req, res, next) {
+  try { return res.status(200).json({ success: true, deleted: await deleteSource(req.params.sourceId) }); } catch (error) { return next(error); }
 }
 export async function createVersionController(req, res, next) {
   try { return res.status(201).json({ version: await createVersion(req.params.sourceId, req.body) }); } catch (error) { return next(error); }

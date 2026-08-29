@@ -15,6 +15,11 @@ export async function getSource(sourceId) {
   return data;
 }
 
+export async function deleteSource(sourceId) {
+  const { data } = await api.delete(`/sources/${sourceId}`);
+  return data;
+}
+
 export async function ingestSource(sourceId, payload) {
   const { data } = await api.post(`/sources/${sourceId}/versions/ingest`, payload);
   return data;
@@ -22,6 +27,11 @@ export async function ingestSource(sourceId, payload) {
 
 export async function getVersionEvidence(sourceId, versionId) {
   const { data } = await api.get(`/sources/${sourceId}/versions/${versionId}/evidence`);
+  return data;
+}
+
+export async function listChunks(sourceId, versionId) {
+  const { data } = await api.get(`/sources/${sourceId}/versions/${versionId}/chunks`);
   return data;
 }
 

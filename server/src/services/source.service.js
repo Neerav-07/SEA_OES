@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { and, asc, desc, eq, ilike, max } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, max, sql } from 'drizzle-orm';
 
 import { getDb } from '../db/index.js';
 import { sourceChunks, sourceDocumentVersions, sourceDocuments } from '../db/schema/index.js';
@@ -119,8 +119,31 @@ export async function createSource(payload = {}) {
 
 export async function listSources(search = '') {
   const db = getDb();
-  const query = db.select().from(sourceDocuments).orderBy(desc(sourceDocuments.createdAt));
-  return search ? query.where(ilike(sourceDocuments.name, `%${search}%`)) : query;
+  const docs = await (search
+    ? db.select().from(sourceDocuments).where(ilike(sourceDocuments.name, `%${search}%`)).orderBy(desc(sourceDocuments.createdAt))
+    : db.select().from(sourceDocuments).orderBy(desc(sourceDocuments.createdAt)));
+
+  if (!docs || docs.length === 0) return [];
+
+  // Fetch chunk counts per document
+  const chunkCountRows = await db
+    .select({
+      documentId: sourceDocumentVersions.documentId,
+      count: sql`COUNT(${sourceChunks.id})::int`,
+    })
+    .from(sourceDocumentVersions)
+    .leftJoin(sourceChunks, eq(sourceChunks.documentVersionId, sourceDocumentVersions.id))
+    .groupBy(sourceDocumentVersions.documentId);
+
+  const countMap = {};
+  for (const row of chunkCountRows) {
+    countMap[row.documentId] = (countMap[row.documentId] || 0) + Number(row.count || 0);
+  }
+
+  return docs.map((d) => ({
+    ...d,
+    chunksCount: countMap[d.id] || 0,
+  }));
 }
 
 export async function getSource(sourceId) {
@@ -147,6 +170,14 @@ export async function updateSource(sourceId, payload = {}) {
   }
   const [updated] = await db.update(sourceDocuments).set(input).where(eq(sourceDocuments.id, sourceId)).returning();
   return updated;
+}
+
+export async function deleteSource(sourceId) {
+  assertValidUuid(sourceId, 'sourceId');
+  const db = getDb();
+  await getSourceRecord(db, sourceId);
+  const [deleted] = await db.delete(sourceDocuments).where(eq(sourceDocuments.id, sourceId)).returning();
+  return deleted;
 }
 
 export async function createVersion(sourceId, payload = {}) {
