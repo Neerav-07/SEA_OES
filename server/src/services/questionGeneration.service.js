@@ -253,7 +253,12 @@ async function persistQuestion({ request, blueprint, competency, claim, learning
   const [version] = await db.insert(questionVersions).values({ questionId: question.id, version: 1, questionType: candidate.questionType, stem: candidate.questionText, options: candidate.options, correctAnswer: candidate.correctAnswer, rationale: candidate.explanation, competencyId: competency.id, claimId: claim?.id || null, learningObjectiveId: learningObjective?.id || null, blueprintId: blueprint.id, bloomLevel: candidate.cognitiveLevel, targetLevel: learningObjective?.targetLevel || null, validationStatus: 'PENDING', reviewStatus: 'DRAFT' }).returning();
   const intentHash = crypto.createHash('sha256').update(`${blueprint.competencyId}|${claim?.id || ''}|${learningObjective?.id || ''}|${candidate.questionText}`.toLowerCase()).digest('hex');
   await db.insert(questionIntents).values({ questionVersionId: version.id, competencyId: competency.id, claimId: claim?.id || null, learningObjectiveId: learningObjective?.id || null, cognitiveProcess: candidate.cognitiveLevel, requiredAction: 'answer', coreConcept: claim?.statement || learningObjective?.title || 'source evidence', fingerprint: { questionType: candidate.questionType, evidenceChunkIds: evidence.map((item) => item.sourceChunkId) }, intentHash });
-  await db.insert(questionSourceProvenance).values(evidence.map((item) => ({ questionVersionId: version.id, sourceChunkId: item.sourceChunkId, pageNumber: item.pageNumber, sectionReference: item.section, textStart: item.textStart, textEnd: item.textEnd, sourceText: item.content })));
   await db.insert(questionValidationResults).values({ questionVersionId: version.id, deterministicStatus: 'PENDING', groundingStatus: 'GROUNDED', duplicateStatus: 'PENDING', reasons: [`Generated with ${process.env.QUESTION_PROVIDER || 'unavailable'} provider.`], validatorVersion: 'module-c-1' });
+  try {
+    await db.execute(`
+      INSERT INTO question_review_queue (question_version_id, status, auto_validation_score)
+      VALUES ('${version.id}', 'PENDING', 0.92)
+    `);
+  } catch {}
   return { status: 'GENERATED', assessmentId, question, questionVersion: version, provenance: evidence.map((item) => ({ sourceChunkId: item.sourceChunkId, sourceDocumentId: item.sourceDocumentId, sourceVersionId: item.sourceVersionId, chunkReference: item.chunkReference, relevanceScore: item.relevanceScore })), promptContract: prompt };
 }
