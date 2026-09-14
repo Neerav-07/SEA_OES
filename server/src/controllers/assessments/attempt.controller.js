@@ -3,6 +3,7 @@ import { officials, assessments, questions, evidence, users, competencies } from
 import { eq, and, sql } from 'drizzle-orm';
 import { triggerAutoGapAndRecommendations } from '../../services/autoAutomation.service.js';
 import { LEETCODE_CASE_STUDIES } from '../../data/leetcodeCaseStudies.js';
+import { invalidateAnalyticsCache } from '../governance/analytics.controller.js';
 
 async function ensureOfficialForUser(db, userId) {
   let [official] = await db.select({ id: officials.id }).from(officials).where(eq(officials.userId, userId));
@@ -25,7 +26,7 @@ async function ensureOfficialForUser(db, userId) {
 export async function startAssessmentAttemptController(req, res, next) {
   try {
     const userId = req.auth.userId;
-    const { assessmentId } = req.body;
+    const { assessmentId } = req.body || {};
 
     if (!assessmentId) {
       return res.status(400).json({ message: 'assessmentId is required.' });
@@ -125,7 +126,7 @@ export async function startAssessmentAttemptController(req, res, next) {
 export async function saveAttemptProgressController(req, res, next) {
   try {
     const { attemptId } = req.params;
-    const { currentQuestionIndex, responses } = req.body;
+    const { currentQuestionIndex, responses } = req.body || {};
     const db = getDb();
 
     await db.execute(sql`
@@ -144,7 +145,7 @@ export async function saveAttemptProgressController(req, res, next) {
 export async function submitAssessmentAttemptController(req, res, next) {
   try {
     const { attemptId } = req.params;
-    const { responses } = req.body;
+    const { responses } = req.body || {};
     const db = getDb();
     const userId = req.auth.userId;
 
@@ -281,6 +282,9 @@ export async function submitAssessmentAttemptController(req, res, next) {
 
       // Trigger auto-automation gap recalculation and recommendation updates
       await triggerAutoGapAndRecommendations(official.id).catch(() => null);
+
+      // Invalidate workforce analytics cache so admin dashboard shows fresh data immediately
+      invalidateAnalyticsCache();
     }
 
     return res.status(200).json({
@@ -305,7 +309,7 @@ export async function getAttemptHistoryController(req, res, next) {
     const db = getDb();
     const official = await ensureOfficialForUser(db, userId);
 
-    const result = await db.execute(`
+    const result = await db.execute(sql`
       SELECT 
         aa.*, 
         COALESCE(a.title, 'MoSPI Diagnostic Assessment') AS assessment_title,
@@ -315,14 +319,39 @@ export async function getAttemptHistoryController(req, res, next) {
       FROM assessment_attempts aa
       LEFT JOIN assessments a ON aa.assessment_id = a.id
       LEFT JOIN competencies c ON a.competency_id = c.id
-      WHERE aa.official_id = '${official.id}'
-      ORDER BY aa.started_at DESC
+      WHERE aa.official_id = ${official.id} AND aa.status = 'COMPLETED'
+      ORDER BY COALESCE(aa.submitted_at, aa.started_at, aa.created_at) DESC
     `);
 
+    const rows = result?.rows || (Array.isArray(result) ? result : []);
     return res.status(200).json({
-      attempts: result.rows || result,
+      attempts: rows,
     });
   } catch (error) {
     return next(error);
   }
 }
+
+export async function abandonAssessmentAttemptController(req, res, next) {
+  try {
+    const { attemptId } = req.params;
+    const userId = req.auth.userId;
+    const db = getDb();
+    const official = await ensureOfficialForUser(db, userId);
+
+    if (attemptId) {
+      await db.execute(sql`
+        DELETE FROM assessment_attempts
+        WHERE id = ${attemptId} AND official_id = ${official.id} AND status = 'IN_PROGRESS'
+      `);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'In-progress assessment attempt discarded cleanly.',
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+

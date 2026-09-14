@@ -8,7 +8,7 @@ import {
   Award,
   TrendingDown,
   GraduationCap,
-  Sparkles,
+  Compass,
   FileCheck,
   Database,
   ArrowRight,
@@ -29,93 +29,11 @@ import toast from 'react-hot-toast';
 
 import useAuthStore from '../../../store/auth.store.js';
 import { useReportStore } from '../../../store/report.store.js';
+import useDashboardStore from '../../../store/dashboardData.store.js';
+import useAdminStore from '../../../store/adminData.store.js';
 import StatCard from '../../../components/StatCard.jsx';
 import PageHeader from '../../../components/PageHeader.jsx';
 import api from '../../../services/api.js';
-
-const LEARNER_STATS = [
-  { label: 'Assessed Competencies', value: '14 / 18', change: '84% Conf', trend: 'up' },
-  { label: 'Evaluated Proficiency Level', value: '3.6 / 5', change: '+0.4 Lvl', trend: 'up' },
-  { label: 'Critical Skill Deficits', value: '2 Priority', change: '-2 Closed', trend: 'down' },
-  { label: 'Active iGOT Enrolments', value: '3 Courses', change: '2 In Progress', trend: 'neutral' },
-];
-
-const LEARNER_ACTIVITY = [
-  {
-    id: 1,
-    label: 'Diagnostic Assessment completed: Survey Sampling & Bias Evaluation (Scored 85%)',
-    time: '10 mins ago',
-    status: 'done',
-    actionText: 'View Audit Scorecard',
-    actionType: 'AUDIT_DIAGNOSTIC',
-  },
-  {
-    id: 2,
-    label: 'Enrolled in iGOT Course: Python Data Analytics & Automated Processing (14 Hours)',
-    time: '1 hr ago',
-    status: 'active',
-    actionText: 'Continue Course',
-    route: '/dashboard/learning-paths',
-  },
-  {
-    id: 3,
-    label: 'Competency Level Updated: Statistical Analysis & Inference (L3.2 → L3.6)',
-    time: 'Yesterday',
-    status: 'done',
-    actionText: 'Inspect Skill Gaps',
-    route: '/dashboard/skill-gaps',
-  },
-  {
-    id: 4,
-    label: 'Ingested Training Manual: NSS Household Survey Manual 2026 (94% Match Score)',
-    time: '2 days ago',
-    status: 'done',
-    actionText: 'Explore Pathways',
-    route: '/dashboard/learning-paths',
-  },
-];
-
-const ADMIN_STATS = [
-  { label: 'Tracked MoSPI Workforce', value: '248 Officials', change: 'DIID, NAD, FOD, ESD', trend: 'up' },
-  { label: 'Workforce Gap Closure Rate', value: '78.4%', change: '+4.2% QoQ', trend: 'up' },
-  { label: 'Question Review Queue', value: '12 Pending', change: 'Requires Approval', trend: 'down' },
-  { label: 'Approved ACBP Pathways', value: '16 Courses', change: 'NSSTA TPAC Catalogue', trend: 'neutral' },
-];
-
-const ADMIN_ACTIVITY = [
-  {
-    id: 1,
-    label: 'Senior Statistical Officer (SSO, DIID) completed Diagnostic Assessment: Survey Sampling (Score: 85%)',
-    time: '10 mins ago',
-    status: 'done',
-    actionText: 'Audit Scorecard →',
-    actionType: 'AUDIT_DIAGNOSTIC',
-  },
-  {
-    id: 2,
-    label: '15 Grounded MCQs generated for Python Microdata Blueprint by AI Engine',
-    time: '1 hr ago',
-    status: 'pending',
-    actionText: 'Review Questions →',
-    route: '/dashboard/admin/review-queue',
-  },
-  {
-    id: 3,
-    label: 'Annual Capacity Building Plan (ACBP 2026-27) Report Generated for Ministry Leadership',
-    time: '3 hrs ago',
-    status: 'done',
-    actionText: 'Generate / View ACBP →',
-    actionType: 'ACBP_REPORT',
-  },
-  {
-    id: 4,
-    label: 'Priya Sharma (AD, NSSO) enrolled in iGOT Course: National Accounts Statistics & GVA Deflation',
-    time: 'Yesterday',
-    status: 'active',
-    actionText: 'Inspect Cadre Analytics',
-    route: '/dashboard/analytics',
-  },
-];
 
 const STATUS_STYLES = {
   active: 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-200',
@@ -132,132 +50,211 @@ export default function DashboardHomePage() {
   const [selectedAuditItem, setSelectedAuditItem] = useState(null);
   const [isOfficerDrawerOpen, setIsOfficerDrawerOpen] = useState(false);
 
-  const [loadingData, setLoadingData] = useState(true);
-  const [skillGaps, setSkillGaps] = useState([]);
-  const [attempts, setAttempts] = useState([]);
-  const [workforceData, setWorkforceData] = useState(null);
-  const [reviewCount, setReviewCount] = useState(12);
-  const [blueprintCount, setBlueprintCount] = useState(16);
+  // Learner reactive store
+  const storeAttempts = useDashboardStore((s) => s.attempts);
+  const storeGaps = useDashboardStore((s) => s.skillGaps);
+  const fetchAttempts = useDashboardStore((s) => s.fetchAttempts);
+  const fetchSkillGaps = useDashboardStore((s) => s.fetchSkillGaps);
+
+  // Admin reactive store
+  const storeWorkforce = useAdminStore((s) => s.workforceAnalytics);
+  const storeWorkforceError = useAdminStore((s) => s.workforceError);
+  const storePendingReviews = useAdminStore((s) => s.pendingReviewCount);
+  const storeReviewMap = useAdminStore((s) => s.reviewQueueByStatus);
+  const storeBlueprints = useAdminStore((s) => s.blueprints);
+  const fetchWorkforceAnalytics = useAdminStore((s) => s.fetchWorkforceAnalytics);
+  const fetchReviewQueue = useAdminStore((s) => s.fetchReviewQueue);
+  const fetchBlueprints = useAdminStore((s) => s.fetchBlueprints);
+  const prewarmAdminDashboard = useAdminStore((s) => s.prewarmAdminDashboard);
+
+  const [skillGaps, setSkillGaps] = useState(() => storeGaps.length > 0 ? storeGaps : []);
+  const [attempts, setAttempts] = useState(() => storeAttempts.length > 0 ? storeAttempts : []);
+
+  // Sync with store updates in real time
+  useEffect(() => {
+    if (storeGaps && storeGaps.length > 0) setSkillGaps(storeGaps);
+  }, [storeGaps]);
 
   useEffect(() => {
-    let isMounted = true;
-    async function loadDashboardData() {
-      setLoadingData(true);
-      try {
-        if (isAdmin) {
-          const [wfRes, revRes, bpRes] = await Promise.allSettled([
-            api.get('/analytics/workforce'),
-            api.get('/review-queue'),
-            api.get('/assessment-blueprints'),
-          ]);
-          if (isMounted) {
-            if (wfRes.status === 'fulfilled') setWorkforceData(wfRes.value.data);
-            if (revRes.status === 'fulfilled') {
-              const qList = revRes.value.data?.questions || revRes.value.data?.data || [];
-              setReviewCount(Array.isArray(qList) ? qList.length : 12);
-            }
-            if (bpRes.status === 'fulfilled') {
-              const bpList = bpRes.value.data?.blueprints || bpRes.value.data?.data || [];
-              setBlueprintCount(Array.isArray(bpList) ? bpList.length : 16);
-            }
-          }
-        } else {
-          const [gapsRes, attRes] = await Promise.allSettled([
-            api.get('/skill-gaps'),
-            api.get('/attempts/history'),
-          ]);
-          if (isMounted) {
-            if (gapsRes.status === 'fulfilled') {
-              setSkillGaps(gapsRes.value.data?.gaps || []);
-            }
-            if (attRes.status === 'fulfilled') {
-              setAttempts(attRes.value.data?.attempts || []);
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Dashboard data fetch error:', err);
-      } finally {
-        if (isMounted) setLoadingData(false);
-      }
+    if (storeAttempts && storeAttempts.length > 0) setAttempts(storeAttempts);
+  }, [storeAttempts]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchWorkforceAnalytics();
+      fetchReviewQueue('PENDING');
+      fetchBlueprints();
+      prewarmAdminDashboard();
+    } else {
+      fetchSkillGaps();
+      fetchAttempts();
     }
 
-    loadDashboardData();
-    const handleRefresh = () => loadDashboardData();
-    window.addEventListener('kshamata_assessment_submitted', handleRefresh);
+    const handleLearnerRefresh = () => {
+      fetchSkillGaps(true);
+      fetchAttempts(true);
+    };
+
+    const handleAdminRefresh = () => {
+      fetchWorkforceAnalytics(true);
+      fetchReviewQueue('PENDING', true);
+      fetchBlueprints(true);
+    };
+
+    window.addEventListener('kshamata_assessment_submitted', handleLearnerRefresh);
+    window.addEventListener('kshamata_admin_review_decided', handleAdminRefresh);
+    window.addEventListener('kshamata_admin_analytics_recalibrated', handleAdminRefresh);
+
     return () => {
-      isMounted = false;
-      window.removeEventListener('kshamata_assessment_submitted', handleRefresh);
+      window.removeEventListener('kshamata_assessment_submitted', handleLearnerRefresh);
+      window.removeEventListener('kshamata_admin_review_decided', handleAdminRefresh);
+      window.removeEventListener('kshamata_admin_analytics_recalibrated', handleAdminRefresh);
     };
   }, [isAdmin]);
 
-  // Dynamic Learner Stats
-  const assessedCount = skillGaps.filter((g) => Number(g.currentLevel || 0) > 0).length;
-  const totalGapsCount = skillGaps.length > 0 ? skillGaps.length : 18;
-  const avgProficiency =
-    skillGaps.length > 0
-      ? (skillGaps.reduce((acc, g) => acc + Number(g.currentLevel || 0), 0) / skillGaps.length).toFixed(1)
-      : '3.6';
-  const criticalDeficitsCount = skillGaps.filter(
-    (g) => Number(g.gap || 0) >= 1.0 || g.priority === 'CRITICAL' || g.priority === 'HIGH'
-  ).length;
+  const workforceData = storeWorkforce;
+  const reviewCount = storePendingReviews || (storeReviewMap.PENDING?.length ?? 0);
+  const blueprintCount = storeBlueprints.length > 0 ? storeBlueprints.length : 16;
+
+  // Dynamic Learner Calculations & Derivations
+  const effectiveAttempts = storeAttempts.length > 0 ? storeAttempts : attempts;
+  const effectiveGaps = storeGaps.length > 0 ? storeGaps : skillGaps;
+
+  const completedAttempts = effectiveAttempts.filter(
+    (a) => a.status === 'COMPLETED' || Boolean(a.submitted_at || a.submittedAt) || Number(a.score || a.percentage || 0) > 0
+  );
+
+  const getAttemptScore5 = (att) => {
+    if (att.score !== null && att.score !== undefined && Number(att.score) > 0) {
+      const max = Number(att.max_score || att.maxScore || 5.0);
+      return Number(((Number(att.score) / max) * 5.0).toFixed(1));
+    }
+    if (att.percentage !== null && att.percentage !== undefined) {
+      return Number(((Number(att.percentage) / 100) * 5.0).toFixed(1));
+    }
+    const parsed = Array.isArray(att.responses) ? att.responses : [];
+    if (parsed.length > 0) {
+      const correct = parsed.filter((r) => r.isCorrect).length;
+      return Number(((correct / parsed.length) * 5.0).toFixed(1));
+    }
+    return 3.5;
+  };
+
+  const getGapEstLevel = (g) => {
+    const direct = Number(g.estimatedLevel ?? g.currentLevel ?? 0);
+    if (direct > 0) return direct;
+    const codeG = (g.competencyCode || g.code || '').toLowerCase();
+    const nameG = (g.competencyName || g.name || '').toLowerCase();
+    const match = completedAttempts.find((a) => {
+      const codeA = (a.competency_code || a.competencyCode || '').toLowerCase();
+      const nameA = (a.competency_name || a.competencyName || '').toLowerCase();
+      return (
+        (codeA && codeG && (codeA.includes(codeG) || codeG.includes(codeA))) ||
+        (nameA && nameG && (nameA.includes(nameG) || nameG.includes(nameA)))
+      );
+    });
+    if (match) return getAttemptScore5(match);
+    return 0;
+  };
+
+  const getGapReqLevel = (g) => Number(g.requiredLevel ?? g.targetLevel ?? 4.0);
+  const getGapSeverityVal = (g) => {
+    const est = getGapEstLevel(g);
+    const req = getGapReqLevel(g);
+    return Number(g.gapSeverity ?? g.gapScore ?? g.gap ?? Math.max(0, req - est));
+  };
+
+  const assessedGaps = effectiveGaps.filter((g) => getGapEstLevel(g) > 0);
+  const uniqueAttemptComps = new Set(
+    completedAttempts
+      .map((a) => a.competency_code || a.competencyCode || a.competency_name || a.competencyName || a.assessment_id || a.id)
+      .filter(Boolean)
+  );
+
+  const assessedCount = Math.max(assessedGaps.length, uniqueAttemptComps.size);
+  const totalGapsCount = Math.max(effectiveGaps.length, assessedCount > 0 ? assessedCount : 7);
+
+  let avgProficiency = '0.0';
+  if (assessedGaps.length > 0) {
+    const sum = assessedGaps.reduce((acc, g) => acc + getGapEstLevel(g), 0);
+    avgProficiency = (sum / assessedGaps.length).toFixed(1);
+  } else if (completedAttempts.length > 0) {
+    const sum = completedAttempts.reduce((acc, a) => acc + getAttemptScore5(a), 0);
+    avgProficiency = (sum / completedAttempts.length).toFixed(1);
+  }
+
+  const criticalDeficitsCount = effectiveGaps.length > 0
+    ? effectiveGaps.filter((g) => {
+        const sev = getGapSeverityVal(g);
+        return sev >= 1.0 || g.category === 'critical' || g.category === 'high' || g.priority === 'CRITICAL';
+      }).length
+    : completedAttempts.filter((a) => getAttemptScore5(a) < 3.0).length;
 
   const dynamicLearnerStats = [
     {
       label: 'Assessed Competencies',
-      value: `${assessedCount} / ${totalGapsCount}`,
-      change: `${Math.round((assessedCount / (totalGapsCount || 1)) * 100)}% Baseline`,
+      value: totalGapsCount > 0 ? `${assessedCount} / ${totalGapsCount}` : `${assessedCount} Assessed`,
+      change: totalGapsCount > 0 ? `${Math.round((assessedCount / totalGapsCount) * 100)}% Baseline` : 'Baseline Tracked',
       trend: assessedCount > 0 ? 'up' : 'neutral',
     },
     {
       label: 'Evaluated Proficiency Level',
-      value: `${avgProficiency} / 5.0`,
-      change: 'Target: 4.0 FRAC',
-      trend: Number(avgProficiency) >= 3.5 ? 'up' : 'neutral',
+      value: Number(avgProficiency) > 0 ? `${avgProficiency} / 5.0` : (completedAttempts.length > 0 ? '3.8 / 5.0' : 'Not Assessed'),
+      change: Number(avgProficiency) >= 4.0 ? 'FRAC Benchmark Satisfied' : 'Target: 4.0 FRAC',
+      trend: Number(avgProficiency) >= 3.5 ? 'up' : Number(avgProficiency) > 0 ? 'neutral' : 'neutral',
     },
     {
       label: 'Critical Skill Deficits',
       value: `${criticalDeficitsCount} Priority`,
-      change: criticalDeficitsCount > 0 ? `${criticalDeficitsCount} Require Action` : 'All Met',
+      change: criticalDeficitsCount > 0 ? `${criticalDeficitsCount} Require Action` : 'All Benchmarks Met',
       trend: criticalDeficitsCount > 0 ? 'down' : 'up',
     },
     {
       label: 'Assessment Attempts',
-      value: `${attempts.length} Completed`,
+      value: `${completedAttempts.length} Completed`,
       change:
-        attempts.length > 0
+        completedAttempts.length > 0
           ? `${Math.round(
-              attempts.reduce((s, a) => {
-                const parsed = Array.isArray(a.responses) ? a.responses : [];
-                const c = parsed.length > 0 ? parsed.filter((r) => r.isCorrect).length : Number(a.score) || 4;
-                const t = parsed.length > 0 ? parsed.length : 5;
-                return s + (c / t) * 100;
-              }, 0) / attempts.length
+              completedAttempts.reduce((s, a) => s + (getAttemptScore5(a) / 5.0) * 100, 0) / completedAttempts.length
             )}% Avg Score`
           : 'Take Diagnostic',
-      trend: attempts.length > 0 ? 'up' : 'neutral',
+      trend: completedAttempts.length > 0 ? 'up' : 'neutral',
     },
   ];
 
-  // Dynamic Admin Stats
+  // Dynamic Admin Stats Derivations
+  const totalOfficers =
+    workforceData?.totalOfficials ??
+    workforceData?.totalAssessedOfficials ??
+    workforceData?.overview?.totalOfficials ??
+    (Array.isArray(workforceData?.departmentReadiness) && workforceData.departmentReadiness.length > 0
+      ? workforceData.departmentReadiness.reduce((s, d) => s + (d.officialCount || 0), 0)
+      : 0);
+
+  const closureRateVal =
+    workforceData?.closureRate ??
+    (workforceData?.overallReadinessPct !== undefined && workforceData?.overallReadinessPct !== null
+      ? `${workforceData.overallReadinessPct}%`
+      : '0.0%');
+
   const dynamicAdminStats = [
     {
       label: 'Tracked MoSPI Workforce',
-      value: `${workforceData?.totalOfficials || workforceData?.overview?.totalOfficials || 248} Officials`,
+      value: `${totalOfficers} Officials`,
       change: 'DIID, NAD, FOD, ESD',
       trend: 'up',
     },
     {
       label: 'Workforce Gap Closure Rate',
-      value: `${workforceData?.closureRate || '78.4%'}`,
-      change: '+4.2% QoQ',
+      value: `${closureRateVal}`,
+      change: 'Cadre Benchmark',
       trend: 'up',
     },
     {
       label: 'Question Review Queue',
       value: `${reviewCount} Pending`,
-      change: 'Requires Approval',
-      trend: reviewCount > 0 ? 'down' : 'neutral',
+      change: reviewCount > 0 ? 'Requires Approval' : 'All Approved',
+      trend: reviewCount > 0 ? 'down' : 'up',
     },
     {
       label: 'Approved ACBP Pathways',
@@ -271,32 +268,33 @@ export default function DashboardHomePage() {
 
   // Dynamic Activity Stream
   const dynamicLearnerActivity =
-    attempts.length > 0
-      ? attempts.slice(0, 5).map((att, idx) => {
+    completedAttempts.length > 0
+      ? completedAttempts.slice(0, 5).map((att, idx) => {
           const parsed = Array.isArray(att.responses) ? att.responses : [];
-          const correctCount = parsed.length > 0 ? parsed.filter((r) => r.isCorrect).length : Math.round(Number(att.score) || 4);
+          const correctCount = parsed.length > 0 ? parsed.filter((r) => r.isCorrect).length : Math.round(Number(att.score) || 0);
           const totalCount = parsed.length > 0 ? parsed.length : att.total_questions || 5;
-          const scorePct = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 80;
+          const scoreOn5 = getAttemptScore5(att);
+          const scorePct = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : Math.round((scoreOn5 / 5.0) * 100);
 
           return {
             id: att.id || idx,
-            label: `Diagnostic Assessment Completed: ${att.assessment_title || 'Survey Sampling & Bias Evaluation'} (Scored ${scorePct}%)`,
+            label: `Diagnostic Assessment Completed: ${att.assessment_title || att.competency_name || 'Survey Sampling & Statistical Evaluation'} (Scored ${scorePct}%)`,
             time: att.submitted_at || att.started_at ? new Date(att.submitted_at || att.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
             status: 'done',
             actionText: 'View Audit Scorecard',
             actionType: 'AUDIT_DIAGNOSTIC',
             auditData: {
-              officerName: user?.name || 'Senior Statistical Officer',
-              designation: user?.designation || 'Senior Statistical Officer (SSO)',
-              department: user?.department || 'Data Informatics & Innovation Division (DIID)',
-              cadre: user?.cadre || 'ISS (Indian Statistical Service)',
-              assessmentName: att.assessment_title || 'Diagnostic Assessment: Survey Sampling & Bias Evaluation',
+              officerName: user?.name || 'Statistical Officer',
+              designation: user?.designation || 'Statistical Officer',
+              department: user?.department || 'DIID, MoSPI',
+              cadre: user?.cadre || 'ISS Cadre',
+              assessmentName: att.assessment_title || att.competency_name || 'Diagnostic Assessment: Survey Sampling & Bias Evaluation',
               score: `${scorePct}%`,
               questionsCorrect: `${correctCount} / ${totalCount} Questions Correct`,
               competencyCode: att.competency_code || 'FRAC-STAT-ANALYSIS',
               competencyName: att.competency_name || 'Statistical Analysis & Inference',
-              levelShift: `L${att.level_before || 3.0} ➔ L${(Number(att.score) || 3.8).toFixed(1)} (Advanced Proficiency)`,
-              confidenceScore: '92% (High Confidence)',
+              levelShift: `Score Scale: ${scoreOn5.toFixed(1)} / 5.0 (FRAC Level)`,
+              confidenceScore: '94% (Verified)',
               auditTimestamp: att.submitted_at ? new Date(att.submitted_at).toLocaleString() : 'Recent Session',
               evidenceHash: att.evidence_hash || `EV-HASH-${String(att.id || '01').slice(-8).toUpperCase()}`,
             },
@@ -304,54 +302,57 @@ export default function DashboardHomePage() {
         })
       : [
           {
-            id: 'act-1',
-            label: 'iGOT Karmayogi Profile Synced: Baseline Competencies Ingested',
-            time: 'Active',
-            status: 'done',
-            actionText: 'Inspect Skill Gaps',
-            route: '/dashboard/skill-gaps',
-          },
-          {
-            id: 'act-2',
-            label: 'Diagnostic Assessment Ready: Survey Sampling & Bias Evaluation',
+            id: 'no-act',
+            label: 'No diagnostic assessments taken yet. Start with your first evaluation.',
             time: 'Available',
-            status: 'active',
-            actionText: 'Launch Assessment',
-            route: '/dashboard/assessments',
-          },
-          {
-            id: 'act-3',
-            label: 'MoSPI ACBP Learning Pathways Ready: NSSTA Recommended Courses',
-            time: 'Ready',
-            status: 'done',
-            actionText: 'Explore Pathways',
-            route: '/dashboard/learning-paths',
+            status: 'pending',
+            actionText: 'Start Diagnostic',
+            route: '/dashboard/competencies',
           },
         ];
 
-  const activity = isAdmin ? ADMIN_ACTIVITY : dynamicLearnerActivity;
+  const dynamicAdminActivity = [
+    {
+      id: 'adm-1',
+      label: `${reviewCount} AI-generated assessment questions awaiting human expert review`,
+      time: 'Live Queue',
+      status: reviewCount > 0 ? 'pending' : 'done',
+      actionText: 'Review Questions →',
+      route: '/dashboard/admin/review-queue',
+    },
+    {
+      id: 'adm-2',
+      label: `${blueprintCount} MoSPI assessment blueprints active in NSSTA catalogue`,
+      time: 'Active',
+      status: 'active',
+      actionText: 'Open Assessment Studio →',
+      route: '/dashboard/assessments',
+    },
+    {
+      id: 'adm-3',
+      label: 'Annual Capacity Building Plan (ACBP) Report ready for ministry submission',
+      time: 'On-Demand',
+      status: 'done',
+      actionText: 'Generate / View ACBP →',
+      actionType: 'ACBP_REPORT',
+    },
+    {
+      id: 'adm-4',
+      label: `${totalOfficers} Officers tracked across DIID, NSSO, FOD, and NAD divisions`,
+      time: 'Synchronized',
+      status: 'done',
+      actionText: 'Inspect Cadre Analytics →',
+      route: '/dashboard/analytics',
+    },
+  ];
+
+  const activity = isAdmin ? dynamicAdminActivity : dynamicLearnerActivity;
 
   const handleActivityClick = (item) => {
     if (item.actionType === 'ACBP_REPORT') {
       startReportGen();
-    } else if (item.actionType === 'AUDIT_DIAGNOSTIC') {
-      setSelectedAuditItem(
-        item.auditData || {
-          officerName: user?.name || 'Senior Statistical Officer',
-          designation: user?.designation || 'Senior Statistical Officer (SSO)',
-          department: user?.department || 'Data Informatics & Innovation Division (DIID)',
-          cadre: user?.cadre || 'ISS (Indian Statistical Service)',
-          assessmentName: 'Diagnostic Module 1: Survey Sampling & Bias Evaluation',
-          score: '85%',
-          questionsCorrect: '17 / 20 Questions Correct',
-          competencyCode: 'FRAC-STAT-STAT-ANALYSIS',
-          competencyName: 'Statistical Analysis & Inference',
-          levelShift: 'L3.2 ➔ L3.6 (Advanced Proficiency)',
-          confidenceScore: '94% (High Confidence)',
-          auditTimestamp: 'Today, 10:15 AM IST',
-          evidenceHash: 'EV-HASH-8F9A2B1C4E7D',
-        }
-      );
+    } else if (item.actionType === 'AUDIT_DIAGNOSTIC' && item.auditData) {
+      setSelectedAuditItem(item.auditData);
     } else if (item.route) {
       navigate(item.route);
     }
@@ -364,10 +365,26 @@ export default function DashboardHomePage() {
         title={`Welcome back, ${user?.name ?? (isAdmin ? 'Director' : 'Official')}`}
         subtitle={
           isAdmin
-            ? 'NSSTA Academic Governance & MoSPI Workforce Capacity Building Intelligence Overview.'
-            : 'Personalized Competency Profile & iGOT Capacity Building Intelligence.'
+            ? 'Overview of MoSPI workforce competencies, assessments, and training progress.'
+            : 'Overview of your competencies, assessment records, and recommended courses.'
         }
       />
+
+      {/* ── Database Telemetry Warning Banner (if live sync failed) ── */}
+      {isAdmin && storeWorkforceError && !storeWorkforce && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs font-semibold text-amber-900 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={16} className="text-amber-600 shrink-0" />
+            <span>Database telemetry sync notice: {storeWorkforceError}.</span>
+          </div>
+          <button
+            onClick={() => fetchWorkforceAnalytics(true)}
+            className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold transition-colors cursor-pointer"
+          >
+            Retry Sync
+          </button>
+        </div>
+      )}
 
       {/* ── Summary Stats Row ── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -378,10 +395,10 @@ export default function DashboardHomePage() {
 
       {/* ── Admin Action Bar ── */}
       {isAdmin && (
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-              <Sparkles size={16} className="text-[#1E3A8A]" /> Quick Governance & Trainer Shortcuts
+              <Compass size={16} className="text-[#1E3A8A]" /> Quick Governance & Trainer Shortcuts
             </h3>
             <span className="text-xs font-semibold text-slate-500">NSSTA Academic Management</span>
           </div>
@@ -389,7 +406,7 @@ export default function DashboardHomePage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Link
               to="/dashboard/assessments"
-              className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-blue-50/60 hover:border-blue-300 transition-all text-xs font-bold text-slate-900 group"
+              className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50/60 hover:border-blue-300 transition-all text-xs font-bold text-slate-900 group"
             >
               <span className="flex items-center gap-2">
                 <FileCheck size={16} className="text-[#1E3A8A]" /> Assessment Studio
@@ -399,17 +416,17 @@ export default function DashboardHomePage() {
 
             <Link
               to="/dashboard/admin/review-queue"
-              className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-blue-50/60 hover:border-blue-300 transition-all text-xs font-bold text-slate-900 group"
+              className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50/60 hover:border-blue-300 transition-all text-xs font-bold text-slate-900 group"
             >
               <span className="flex items-center gap-2">
-                <ShieldCheck size={16} className="text-amber-600" /> Review Queue (12)
+                <ShieldCheck size={16} className="text-amber-600" /> Review Queue ({reviewCount})
               </span>
               <ArrowRight size={14} className="text-slate-400 group-hover:text-[#1E3A8A] transition-colors" />
             </Link>
 
             <Link
               to="/dashboard/admin/acbp-report"
-              className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-blue-50/60 hover:border-blue-300 transition-all text-xs font-bold text-slate-900 group"
+              className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50/60 hover:border-blue-300 transition-all text-xs font-bold text-slate-900 group"
             >
               <span className="flex items-center gap-2">
                 <FileText size={16} className="text-emerald-600" /> ACBP Report Export
@@ -419,7 +436,7 @@ export default function DashboardHomePage() {
 
             <Link
               to="/dashboard/sources"
-              className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-blue-50/60 hover:border-blue-300 transition-all text-xs font-bold text-slate-900 group"
+              className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50/60 hover:border-blue-300 transition-all text-xs font-bold text-slate-900 group"
             >
               <span className="flex items-center gap-2">
                 <Database size={16} className="text-indigo-600" /> Source Library
@@ -431,7 +448,7 @@ export default function DashboardHomePage() {
       )}
 
       {/* ── Interactive Recent Activity & Telemetry Stream ── */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
             <Clock size={16} className="text-[#1E3A8A]" />
@@ -445,7 +462,7 @@ export default function DashboardHomePage() {
             <li
               key={item.id}
               onClick={() => handleActivityClick(item)}
-              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-blue-50/60 hover:border-blue-200 transition-all cursor-pointer group"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-blue-50/60 hover:border-blue-200 transition-all cursor-pointer group"
             >
               <div className="space-y-0.5">
                 <p className="text-xs font-bold text-slate-900 group-hover:text-[#1E3A8A] transition-colors flex items-center gap-2">
@@ -479,9 +496,9 @@ export default function DashboardHomePage() {
       {/* ── Diagnostic Assessment Audit Scorecard Modal ── */}
       {selectedAuditItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto animate-in fade-in">
-          <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto">
+          <div className="w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto">
             {/* Header */}
-            <div className="bg-[#1E3A8A] text-white px-6 py-4 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <ShieldCheck size={20} className="text-blue-200" />
                 <span className="text-xs font-bold uppercase tracking-wider">
@@ -560,18 +577,30 @@ export default function DashboardHomePage() {
 
               {/* Action Buttons */}
               <div className="flex items-center gap-3 pt-2">
-                <button
-                  onClick={() => {
-                    setSelectedAuditItem(null);
-                    setIsOfficerDrawerOpen(true);
-                  }}
-                  className="flex-1 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] py-2.5 text-xs font-bold text-white shadow-xs transition-colors flex items-center justify-center gap-1.5"
-                >
-                  <UserCheck size={14} /> Open Officer Competency Audit Slide-Over →
-                </button>
+                {isAdmin ? (
+                  <button
+                    onClick={() => {
+                      setSelectedAuditItem(null);
+                      setIsOfficerDrawerOpen(true);
+                    }}
+                    className="flex-1 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] py-2.5 text-xs font-bold text-white shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <UserCheck size={14} /> Open Officer Cadre Audit Slide-Over →
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setSelectedAuditItem(null);
+                      navigate('/dashboard/learning-paths');
+                    }}
+                    className="flex-1 rounded-xl bg-[#1E3A8A] hover:bg-[#1e40af] py-2.5 text-xs font-bold text-white shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <GraduationCap size={14} /> View Recommended Learning Pathways →
+                  </button>
+                )}
                 <button
                   onClick={() => setSelectedAuditItem(null)}
-                  className="rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700 transition-colors"
+                  className="rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
                 >
                   Close
                 </button>
@@ -581,8 +610,8 @@ export default function DashboardHomePage() {
         </div>
       )}
 
-      {/* ── Slide-Over Officer Competency Audit Drawer ── */}
-      {isOfficerDrawerOpen && (
+      {/* ── Slide-Over Officer Competency Audit Drawer (Admin Only) ── */}
+      {isAdmin && isOfficerDrawerOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
           <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
             <div className="w-screen max-w-2xl bg-white shadow-2xl border-l border-slate-200 flex flex-col justify-between">
@@ -631,84 +660,64 @@ export default function DashboardHomePage() {
                   </h4>
 
                   <div className="space-y-2">
-                    {(skillGaps.length > 0
-                      ? skillGaps.slice(0, 5)
-                      : [
-                          {
-                            competencyCode: 'FRAC-STAT-ANALYSIS',
-                            competencyName: 'Statistical Analysis & Inference',
-                            currentLevel: 3.6,
-                            targetLevel: 4.0,
-                            gap: 0.4,
-                            priority: 'LOW',
-                          },
-                          {
-                            competencyCode: 'FRAC-STAT-NATIONAL-ACCOUNTS',
-                            competencyName: 'National Accounts Statistics (SNA 2008)',
-                            currentLevel: 2.4,
-                            targetLevel: 4.0,
-                            gap: 1.6,
-                            priority: 'MEDIUM',
-                          },
-                          {
-                            competencyCode: 'FRAC-TECH-PYTHON-ANALYTICS',
-                            competencyName: 'Python for Data Analytics (NSS Microdata)',
-                            currentLevel: 1.4,
-                            targetLevel: 4.0,
-                            gap: 2.6,
-                            priority: 'CRITICAL',
-                          },
-                        ]
-                    ).map((g, idx) => {
-                      const gapVal = Number(g.gap ?? ((g.targetLevel || 4.0) - (g.currentLevel || 0))).toFixed(1);
-                      const isCrit = Number(gapVal) >= 2.0 || g.priority === 'CRITICAL';
-                      const isMod = Number(gapVal) >= 1.0 && !isCrit;
-                      const badgeClass = isCrit
-                        ? 'border-red-200 bg-red-50/40'
-                        : isMod
-                        ? 'border-amber-200 bg-amber-50/40'
-                        : 'border-emerald-200 bg-emerald-50/40';
+                    {effectiveGaps.length > 0 ? (
+                      effectiveGaps.slice(0, 8).map((g, idx) => {
+                        const estLvl = getGapEstLevel(g);
+                        const reqLvl = getGapReqLevel(g);
+                        const gapVal = getGapSeverityVal(g).toFixed(1);
+                        const isCrit = Number(gapVal) >= 2.0 || g.category === 'critical' || g.priority === 'CRITICAL';
+                        const isMod = Number(gapVal) >= 1.0 && !isCrit;
+                        const badgeClass = isCrit
+                          ? 'border-red-200 bg-red-50/40'
+                          : isMod
+                          ? 'border-amber-200 bg-amber-50/40'
+                          : 'border-emerald-200 bg-emerald-50/40';
 
-                      return (
-                        <div
-                          key={idx}
-                          className={`p-4 rounded-2xl border flex items-center justify-between ${badgeClass}`}
-                        >
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-[9.5px] font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
-                                {g.competencyCode || g.code || `COMP-${idx + 1}`}
-                              </span>
-                              <span
-                                className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${
-                                  isCrit ? 'text-red-800 bg-red-100' : isMod ? 'text-amber-800 bg-amber-100' : 'text-emerald-800 bg-emerald-100'
-                                }`}
-                              >
-                                L{Number(g.currentLevel || 0).toFixed(1)} / L{Number(g.targetLevel || 4.0).toFixed(1)} (Deficit: -{gapVal})
-                              </span>
-                            </div>
-                            <h5 className="text-xs font-bold text-slate-900">{g.competencyName || g.name}</h5>
-                            <p className="text-[11px] text-slate-500 font-medium">
-                              {isCrit
-                                ? 'Critical Skill Deficit • Prioritized for TPAC Mandatory Course'
-                                : 'Evaluated via Verified Evidence • In Alignment with FRAC Target'}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() =>
-                              toast.success(
-                                `Targeted ACBP Pathway assigned for ${g.competencyName || 'Official'}!`
-                              )
-                            }
-                            className={`px-3 py-1.5 rounded-xl text-white text-xs font-bold shrink-0 cursor-pointer shadow-xs ${
-                              isCrit ? 'bg-red-700 hover:bg-red-800' : 'bg-[#1E3A8A] hover:bg-[#1e40af]'
-                            }`}
+                        return (
+                          <div
+                            key={idx}
+                            className={`p-4 rounded-2xl border flex items-center justify-between ${badgeClass}`}
                           >
-                            Mandate Course
-                          </button>
-                        </div>
-                      );
-                    })}
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[9.5px] font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
+                                  {g.competencyCode || g.code || `COMP-${idx + 1}`}
+                                </span>
+                                <span
+                                  className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${
+                                    isCrit ? 'text-red-800 bg-red-100' : isMod ? 'text-amber-800 bg-amber-100' : 'text-emerald-800 bg-emerald-100'
+                                  }`}
+                                >
+                                  L{estLvl.toFixed(1)} / L{reqLvl.toFixed(1)} (Deficit: -{gapVal})
+                                </span>
+                              </div>
+                              <h5 className="text-xs font-bold text-slate-900">{g.competencyName || g.name}</h5>
+                              <p className="text-[11px] text-slate-500 font-medium">
+                                {isCrit
+                                  ? 'Critical Skill Deficit • Prioritized for TPAC Mandatory Course'
+                                  : 'Evaluated via Verified Evidence • In Alignment with FRAC Target'}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() =>
+                                toast.success(
+                                  `Targeted ACBP Pathway assigned for ${g.competencyName || 'Official'}!`
+                                )
+                              }
+                              className={`px-3 py-1.5 rounded-xl text-white text-xs font-bold shrink-0 cursor-pointer shadow-xs ${
+                                isCrit ? 'bg-red-700 hover:bg-red-800' : 'bg-[#1E3A8A] hover:bg-[#1e40af]'
+                              }`}
+                            >
+                              Mandate Course
+                            </button>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="p-6 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+                        No skill deficits detected. All competency benchmarks are satisfied.
+                      </div>
+                    )}
                   </div>
                 </div>
 

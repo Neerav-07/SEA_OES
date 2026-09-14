@@ -45,6 +45,11 @@ export const getOfficialProfile = asyncHandler(async (req, res) => {
     return sendError(res, "Official profile not found", 404);
   }
 
+  // IDOR & RBAC Protection: Non-admin users can only view their own official profile
+  if (req.auth?.platformRole !== 'ADMIN' && off.userId !== req.auth?.userId) {
+    return sendError(res, "Access denied. You may only view your own official profile.", 403);
+  }
+
   const [user] = await db.select().from(users).where(eq(users.id, off.userId));
   const [role] = off.roleId
     ? await db.select().from(roles).where(eq(roles.id, off.roleId))
@@ -124,7 +129,12 @@ export const getOfficialProfile = asyncHandler(async (req, res) => {
  */
 export const updateOfficialRole = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { roleId } = req.body;
+  const { roleId } = req.body || {};
+
+  // RBAC Protection: Only ADMIN can assign official FRAC roles
+  if (req.auth?.platformRole !== 'ADMIN') {
+    return sendError(res, "Access denied. Only administrators can assign official FRAC roles.", 403);
+  }
 
   const [off] = await db.select().from(officials).where(eq(officials.id, id));
   if (!off) {
@@ -154,7 +164,7 @@ export const updateOfficialRole = asyncHandler(async (req, res) => {
  */
 export const updateMyProfile = asyncHandler(async (req, res) => {
   const userId = req.auth.userId;
-  const { designation, department, cadre, experienceYears, education, preferredLanguage } = req.body;
+  const { designation, department, cadre, experienceYears, education, preferredLanguage } = req.body || {};
 
   let [off] = await db.select().from(officials).where(eq(officials.userId, userId));
   if (!off) {

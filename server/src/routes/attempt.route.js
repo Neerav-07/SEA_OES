@@ -5,6 +5,7 @@ import {
   saveAttemptProgressController,
   submitAssessmentAttemptController,
   getAttemptHistoryController,
+  abandonAssessmentAttemptController,
 } from '../controllers/assessments/attempt.controller.js';
 
 const router = Router();
@@ -17,6 +18,9 @@ router.post('/:attemptId/save-progress', verifyToken, saveAttemptProgressControl
 
 // Finalize and submit assessment attempt
 router.post('/:attemptId/submit', verifyToken, submitAssessmentAttemptController);
+
+// Abandon in-progress attempt cleanly (discards without recording in history or score)
+router.post('/:attemptId/abandon', verifyToken, abandonAssessmentAttemptController);
 
 // Get attempt history for current official
 router.get('/history', verifyToken, getAttemptHistoryController);

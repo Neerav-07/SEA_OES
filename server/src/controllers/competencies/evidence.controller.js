@@ -8,12 +8,22 @@ import {
   calculateConfidenceScore,
   DEFAULT_TYPE_WEIGHTS,
 } from "../../utils/evidenceFusion.js";
+import { invalidateAnalyticsCache } from "../governance/analytics.controller.js";
 
 /**
  * Get all evidence for an official with calculated fused estimates
  */
 export const getOfficialEvidence = asyncHandler(async (req, res) => {
   const { officialId } = req.params;
+
+  // IDOR & RBAC Protection: Non-admins may only view their own evidence portfolio
+  if (req.auth?.platformRole !== 'ADMIN') {
+    const [myOff] = await db.select({ id: officials.id }).from(officials).where(eq(officials.userId, req.auth.userId));
+    if (!myOff || myOff.id !== officialId) {
+      return sendError(res, "Access denied. You may only inspect your own evidence portfolio.", 403);
+    }
+  }
+
   const offEvidence = await db
     .select()
     .from(evidence)
@@ -63,6 +73,14 @@ export const recordEvidence = asyncHandler(async (req, res) => {
     weight,
   } = req.body;
 
+  // IDOR & RBAC Protection: Non-admins may only record evidence for their own profile
+  if (req.auth?.platformRole !== 'ADMIN') {
+    const [myOff] = await db.select({ id: officials.id }).from(officials).where(eq(officials.userId, req.auth.userId));
+    if (!myOff || myOff.id !== officialId) {
+      return sendError(res, "Access denied. You may only record evidence for your own profile.", 403);
+    }
+  }
+
   if (!officialId || !competencyId || !evidenceType || score === undefined) {
     return sendError(
       res,
@@ -104,6 +122,9 @@ export const recordEvidence = asyncHandler(async (req, res) => {
         `Diagnostic evaluation on ${new Date().toLocaleDateString()}`,
     })
     .returning();
+
+  // Invalidate workforce analytics cache on new evidence record
+  invalidateAnalyticsCache();
 
   return sendSuccess(
     res,

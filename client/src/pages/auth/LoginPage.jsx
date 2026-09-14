@@ -92,8 +92,8 @@ export default function LoginPage() {
           >
             <div className="noise-overlay pointer-events-none opacity-20" />
             <div className="relative z-10 flex flex-col items-center">
-              <div className="flex flex-col items-center gap-6">
-                <KshamataLogo size="xl" className="bg-white/95 p-4 rounded-2xl shadow-xl backdrop-blur" />
+              <div className="flex flex-col items-center gap-4">
+                <KshamataLogo size="lg" boxed />
                 <div className="h-[3px] w-16 rounded-full bg-[#2563EB]" />
               </div>
               <div className="mt-6">
@@ -114,9 +114,9 @@ export default function LoginPage() {
                 ))}
               </div>
             </div>
-            <div className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-between px-10 text-[9px] font-black uppercase tracking-[0.3em] text-white/70">
-              <p>© 2026 Kshamata (MoSPI DIID & NSSTA)</p>
-              <p>PS 26101 Portal</p>
+            <div className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-between px-10 text-[10px] font-semibold text-white/70 tracking-wider">
+              <p>© {new Date().getFullYear()} Ministry of Statistics and Programme Implementation</p>
+              <p>Government of India</p>
             </div>
           </section>
 
@@ -127,7 +127,7 @@ export default function LoginPage() {
           >
             <div className="mx-auto w-full max-w-md">
               <div className="lg:hidden flex justify-center mb-6">
-                <KshamataLogo size="md" className="bg-white p-3 rounded-xl shadow-md border border-slate-200" />
+                <KshamataLogo size="md" />
               </div>
               <div className="mb-6 text-center lg:text-left">
                 <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-(--app-color-text)">Welcome back</h2>

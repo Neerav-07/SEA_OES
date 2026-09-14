@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Sparkles,
+  FileCheck2,
   X,
   Eye,
   Download,
@@ -278,7 +278,7 @@ export default function GlobalReportModal() {
           className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-slate-900 text-white p-3.5 shadow-2xl border border-slate-700 cursor-pointer hover:bg-slate-800 transition-all animate-in slide-in-from-bottom-4"
         >
           <div className="p-2 rounded-xl bg-[#1E3A8A] text-white">
-            <Sparkles size={16} />
+            <FileCheck2 size={16} />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -294,12 +294,12 @@ export default function GlobalReportModal() {
       {/* ── 1. GENERATION POPUP MODAL ── */}
       {isGenerating && !isMinimized && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 lg:p-8 shadow-2xl relative border border-slate-200 space-y-6">
+          <div className="w-full max-w-md bg-white rounded-2xl p-6 lg:p-8 shadow-2xl relative border border-slate-200 space-y-6">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-2xl bg-blue-50 text-[#1E3A8A] border border-blue-100">
-                  <Sparkles size={20} />
+                  <FileCheck2 size={20} />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">ACBP Report Generation</h3>
@@ -392,7 +392,7 @@ export default function GlobalReportModal() {
       {/* ── 2. ULTRA-REALISTIC OFFICIAL MOSPI GOVERNMENT ACBP REPORT VIEWER MODAL ── */}
       {isReportViewerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4 overflow-y-auto animate-in fade-in">
-          <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto">
+          <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto">
             {/* Navigation Header */}
             <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2.5">

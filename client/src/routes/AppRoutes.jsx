@@ -16,6 +16,7 @@ import DashboardHomePage from '../pages/dashboard/overview/DashboardHomePage.jsx
 import CompetenciesPage from '../pages/dashboard/competencies/CompetenciesPage.jsx';
 import SkillGapsPage from '../pages/dashboard/skill-gaps/SkillGapsPage.jsx';
 import LearningPathsPage from '../pages/dashboard/learning-paths/LearningPathsPage.jsx';
+import IGOTExplorePage from '../pages/dashboard/igot/IGOTExplorePage.jsx';
 import AssessmentHistoryPage from '../pages/dashboard/history/AssessmentHistoryPage.jsx';
 import AssessmentsPage from '../pages/dashboard/assessments/AssessmentsPage.jsx';
 import AnalyticsPage from '../pages/dashboard/analytics/AnalyticsPage.jsx';
@@ -23,6 +24,7 @@ import SourcesPage from '../pages/dashboard/sources/SourcesPage.jsx';
 import ReviewQueuePage from '../pages/dashboard/admin/ReviewQueuePage.jsx';
 import PredictiveAnalyticsPage from '../pages/dashboard/admin/PredictiveAnalyticsPage.jsx';
 import ACBPReportPage from '../pages/dashboard/admin/ACBPReportPage.jsx';
+import NSSTANoticesPage from '../pages/dashboard/admin/NSSTANoticesPage.jsx';
 import SettingsPage from '../pages/dashboard/settings/SettingsPage.jsx';
 
 import useAuthStore from '../store/auth.store.js';
@@ -30,6 +32,12 @@ import useAuthStore from '../store/auth.store.js';
 function PrivateRoute() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   return isLoggedIn ? <Outlet /> : <Navigate to="/login" replace />;
+}
+
+function AdminRoute() {
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.platformRole === 'ADMIN';
+  return isAdmin ? <Outlet /> : <Navigate to="/dashboard" replace />;
 }
 
 export default function AppRoutes() {
@@ -64,19 +72,27 @@ export default function AppRoutes() {
         <Route path="/register" element={<RegisterPage />} />
         <Route element={<PrivateRoute />}>
           <Route element={<DashboardLayout />}>
+            {/* Learner / Official Accessible Routes */}
             <Route path="/dashboard" element={<DashboardHomePage />} />
             <Route path="/dashboard/competencies" element={<CompetenciesPage />} />
             <Route path="/dashboard/skill-gaps" element={<SkillGapsPage />} />
+            <Route path="/dashboard/igot-explore" element={<IGOTExplorePage />} />
             <Route path="/dashboard/learning-paths" element={<LearningPathsPage />} />
             <Route path="/dashboard/assessment-history" element={<AssessmentHistoryPage />} />
-            <Route path="/dashboard/assessments" element={<AssessmentsPage />} />
-            <Route path="/dashboard/analytics" element={<AnalyticsPage />} />
-            <Route path="/dashboard/sources" element={<SourcesPage />} />
             <Route path="/dashboard/settings" element={<SettingsPage />} />
-            <Route path="/dashboard/admin/review-queue" element={<ReviewQueuePage />} />
-            <Route path="/dashboard/review-queue" element={<Navigate to="/dashboard/admin/review-queue" replace />} />
-            <Route path="/dashboard/admin/predictions" element={<PredictiveAnalyticsPage />} />
-            <Route path="/dashboard/admin/acbp-report" element={<ACBPReportPage />} />
+
+            {/* Strict Admin-Only Routes */}
+            <Route element={<AdminRoute />}>
+              <Route path="/dashboard/assessments" element={<AssessmentsPage />} />
+              <Route path="/dashboard/analytics" element={<AnalyticsPage />} />
+              <Route path="/dashboard/sources" element={<SourcesPage />} />
+              <Route path="/dashboard/admin/review-queue" element={<ReviewQueuePage />} />
+              <Route path="/dashboard/review-queue" element={<Navigate to="/dashboard/admin/review-queue" replace />} />
+              <Route path="/dashboard/admin/predictions" element={<PredictiveAnalyticsPage />} />
+              <Route path="/dashboard/admin/acbp-report" element={<ACBPReportPage />} />
+              <Route path="/dashboard/admin/nssta-notices" element={<NSSTANoticesPage />} />
+              <Route path="/dashboard/nssta-notices" element={<Navigate to="/dashboard/admin/nssta-notices" replace />} />
+            </Route>
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

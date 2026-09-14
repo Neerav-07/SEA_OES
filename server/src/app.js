@@ -12,25 +12,27 @@ app.use(helmet({
   crossOriginResourcePolicy: false,
 }));
 
-// Robust CORS Middleware supporting local dev, Vercel deployments, and production
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []),
+].filter(Boolean);
+
+// Robust CORS Middleware supporting local dev, Vercel deployments, and production allow-list
 app.use(cors({
   origin: function (origin, callback) {
     // Allow non-browser requests (Postman, curl, server-to-server)
     if (!origin) return callback(null, true);
     
-    // Always allow localhost, vercel deployments, and custom CLIENT_URL
-    if (
-      origin.startsWith('http://localhost') ||
-      origin.startsWith('http://127.0.0.1') ||
-      origin.endsWith('.vercel.app') ||
-      origin.includes('vercel.app') ||
-      (process.env.CLIENT_URL && origin === process.env.CLIENT_URL)
-    ) {
+    // Allow localhost, 127.0.0.1, official Vercel preview/prod deployments, and explicit CLIENT_URL
+    const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    const isVercel = /\.vercel\.app$/.test(origin);
+    const isExplicitlyAllowed = allowedOrigins.some((allowed) => origin === allowed || origin.startsWith(allowed));
+
+    if (isLocalhost || isVercel || isExplicitlyAllowed) {
       return callback(null, true);
     }
     
-    // Default fallback: allow origin to ensure live deployments never fail preflight checks
-    return callback(null, true);
+    return callback(new Error(`Origin ${origin} not allowed by CORS policy.`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

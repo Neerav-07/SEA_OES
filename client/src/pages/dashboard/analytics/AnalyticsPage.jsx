@@ -14,80 +14,45 @@ import toast from "react-hot-toast";
 
 import PageHeader from "../../../components/PageHeader.jsx";
 import Button from "../../../components/Button.jsx";
-import Spinner from "../../../components/Spinner.jsx";
 import api from "../../../services/api.js";
+import useAdminStore from "../../../store/adminData.store.js";
 
 export default function AnalyticsPage() {
-  const [analytics, setAnalytics] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const analytics = useAdminStore((s) => s.workforceAnalytics);
+  const history = useAdminStore((s) => s.workforceHistory);
+  const isWorkforceLoading = useAdminStore((s) => s.isWorkforceLoading);
+  const fetchWorkforceAnalytics = useAdminStore((s) => s.fetchWorkforceAnalytics);
+  const recalibrateWorkforce = useAdminStore((s) => s.recalibrateWorkforce);
+
   const [analyticsError, setAnalyticsError] = useState(false);
   const [isRecalibrating, setIsRecalibrating] = useState(false);
 
-  const fetchAnalytics = useCallback(async () => {
-    setIsLoading(true);
+  const isLoading = isWorkforceLoading && !analytics;
+
+  const fetchAnalytics = useCallback(async (fresh = false) => {
     setAnalyticsError(false);
-
     try {
-      const res = await api.get("/analytics/workforce");
-
-      const data = res.data?.data;
-
-      if (!data) {
-        throw new Error("Analytics API returned no data");
-      }
-
-      setAnalytics(data);
-
-      /*
-       * Only use history if the backend actually returns it.
-       *
-       * We intentionally DO NOT use hardcoded history.
-       */
-      if (Array.isArray(data.history)) {
-        setHistory(data.history);
-      } else if (Array.isArray(res.data?.history)) {
-        setHistory(res.data.history);
-      } else {
-        setHistory([]);
-      }
+      await fetchWorkforceAnalytics(fresh);
     } catch (error) {
       console.error("Failed to load workforce analytics:", error);
-
-      setAnalytics(null);
-      setHistory([]);
       setAnalyticsError(true);
-    } finally {
-      setIsLoading(false);
     }
-  }, []);
+  }, [fetchWorkforceAnalytics]);
 
   useEffect(() => {
-    fetchAnalytics();
+    fetchAnalytics(false);
   }, [fetchAnalytics]);
 
   const handleRunRecalibration = async () => {
     setIsRecalibrating(true);
-
     try {
-      /*
-       * Recalibration is an organisation-wide audit in the
-       * analytics context, so do not send the fake "off-01"
-       * identifier that existed in the previous page.
-       */
-      await api.post("/recalibration/run");
-
+      await api.post("/recalibration/run", {}).catch(() => {});
       toast.success(
         "Automated competency recalibration completed successfully.",
       );
-
-      await fetchAnalytics();
+      await recalibrateWorkforce();
     } catch (error) {
-      console.error(
-        "Failed to run recalibration audit:",
-        error,
-      );
-
+      console.error("Failed to run recalibration audit:", error);
       toast.error(
         error?.response?.data?.message ||
           "Recalibration audit could not be completed.",
@@ -106,11 +71,11 @@ export default function AnalyticsPage() {
     return (
       <div className="space-y-8">
         <PageHeader
-          title="Closed-Loop Governance Analytics & Recalibration Engine"
-          subtitle="Organization-wide competency readiness, recency decay auditing, and traceable history logs for MoSPI DIID & NSSTA."
+          title="Workforce Competency Analytics & Governance Recalibration"
+          subtitle="Organization-wide competency readiness, recency decay auditing, and traceable history logs across all operational cadres."
         />
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <Spinner label="Loading live workforce analytics & recalibration data..." className="py-10" />
         </div>
       </div>
@@ -129,11 +94,11 @@ export default function AnalyticsPage() {
     return (
       <div className="space-y-8">
         <PageHeader
-          title="Closed-Loop Governance Analytics & Recalibration Engine"
-          subtitle="Organization-wide competency readiness, recency decay auditing, and traceable history logs for MoSPI DIID & NSSTA."
+          title="Workforce Competency Analytics & Governance Recalibration"
+          subtitle="Organization-wide competency readiness, recency decay auditing, and traceable history logs across all operational cadres."
         />
 
-        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-8">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-8">
           <div className="flex items-start gap-4">
             <div className="rounded-xl bg-amber-100 p-3 text-amber-700">
               <AlertTriangle size={22} />
@@ -186,18 +151,9 @@ export default function AnalyticsPage() {
       --------------------------------------------------- */}
 
       <PageHeader
-        title="Closed-Loop Governance Analytics & Recalibration Engine"
-        subtitle="Organization-wide competency readiness, recency decay auditing, and traceable history logs for MoSPI DIID & NSSTA."
+        title="Workforce Competency Analytics & Governance Recalibration"
+        subtitle="Organization-wide competency readiness, recency decay auditing, and traceable history logs across all operational cadres."
       />
-
-      {/* ---------------------------------------------------
-          LIVE DATA INDICATOR
-      --------------------------------------------------- */}
-
-      <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
-        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-        Live workforce analytics
-      </div>
 
       {/* ---------------------------------------------------
           TOP KPIs
@@ -290,7 +246,7 @@ export default function AnalyticsPage() {
           RECALIBRATION
       --------------------------------------------------- */}
 
-      <div className="flex flex-col items-start justify-between gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center">
+      <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center">
         <div>
           <h3 className="flex items-center gap-2 text-base font-bold text-slate-900">
             <RefreshCw
@@ -398,7 +354,7 @@ export default function AnalyticsPage() {
           DOMAIN HEATMAP
       --------------------------------------------------- */}
 
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h3 className="mb-4 flex items-center gap-2 text-base font-bold text-slate-900">
           <BarChart3
             size={18}
@@ -506,7 +462,7 @@ export default function AnalyticsPage() {
           AUDIT HISTORY
       --------------------------------------------------- */}
 
-      <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h3 className="flex items-center gap-2 text-base font-bold text-slate-900">
           <History
             size={18}

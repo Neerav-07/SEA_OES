@@ -1,6 +1,8 @@
 import { pgTable, text, timestamp, uuid, real, integer, jsonb } from 'drizzle-orm/pg-core';
 import { officials } from '../core/officials.js';
 import { competencies } from '../core/competencies.js';
+import { roles } from '../core/roles.js';
+import { nsstaNotices } from './nssta.js';
 
 export const recommendations = pgTable('recommendations', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -26,4 +28,21 @@ export const learningMaterials = pgTable('learning_materials', {
   mappedObjectives: jsonb('mapped_objectives'),
   matchConfidence: real('match_confidence').default(0.88).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Persisted, explainable output of approved-notice course ranking.
+export const noticeCourseRecommendations = pgTable('notice_course_recommendations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  officialId: uuid('official_id').references(() => officials.id, { onDelete: 'cascade' }).notNull(),
+  noticeId: uuid('notice_id').references(() => nsstaNotices.id, { onDelete: 'cascade' }).notNull(),
+  roleId: uuid('role_id').references(() => roles.id, { onDelete: 'set null' }),
+  competencyId: uuid('competency_id').references(() => competencies.id, { onDelete: 'set null' }),
+  courseId: text('course_id').notNull(),
+  score: real('score').notNull(),
+  scoringFactors: jsonb('scoring_factors').notNull(),
+  formulaVersion: text('formula_version').notNull(),
+  status: text('status').default('RECOMMENDED').notNull(),
+  provenance: jsonb('provenance').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

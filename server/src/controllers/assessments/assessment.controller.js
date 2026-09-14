@@ -293,7 +293,7 @@ export const getAssessmentById = asyncHandler(async (req, res) => {
  * Create Assessment Blueprint and Generate Questions
  */
 export const createAssessment = asyncHandler(async (req, res) => {
-  const { title, competencyId, totalQuestions = 5, bloomDistribution = {}, difficultyDistribution = {} } = req.body;
+  const { title, competencyId, totalQuestions = 5, bloomDistribution = {}, difficultyDistribution = {} } = req.body || {};
 
   if (!title) {
     return sendError(res, 'Assessment title is required', 400);

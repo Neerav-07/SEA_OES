@@ -128,9 +128,30 @@ const FALLBACK_COMPETENCIES = [
 ];
 
 const FALLBACK_ROLES = [
-  { id: 'role-01', title: 'Statistical Officer (SO)', department: 'MoSPI DIID', description: 'Survey collection design, statistical analysis, and audit.' },
-  { id: 'role-02', title: 'Assistant Director (Surveys)', department: 'NSSO', description: 'Leads survey operations and sampling validation.' },
-  { id: 'role-03', title: 'Director (Data Informatics)', department: 'MoSPI DIID HQ', description: 'Digital data architecture and capacity building.' },
+  {
+    id: 'role-01',
+    title: 'Statistical Officer (SO)',
+    department: 'Data Informatics & Innovation Division (DIID)',
+    cadreLevel: 'Subordinate Statistical Service (SSS) - Gr. I',
+    targetLevel: 'Level 3.5 - 4.0 (Operational)',
+    description: 'Responsible for survey data collection design, statistical analysis, quality audits, and official report generation.',
+  },
+  {
+    id: 'role-02',
+    title: 'Assistant Director (Surveys)',
+    department: 'National Sample Survey Office (NSSO)',
+    cadreLevel: 'Indian Statistical Service (ISS) - Junior Time Scale',
+    targetLevel: 'Level 4.0 - 4.5 (Advanced)',
+    description: 'Leads field survey operations, sampling validation, data tabulation, and technical survey reports.',
+  },
+  {
+    id: 'role-03',
+    title: 'Director (Data Informatics)',
+    department: 'MoSPI DIID Headquarters',
+    cadreLevel: 'Indian Statistical Service (ISS) - Junior Administrative Grade',
+    targetLevel: 'Level 4.5 - 5.0 (Strategic Expert)',
+    description: 'Strategic oversight of digital data architecture, automated statistical pipelines, and capacity building.',
+  },
 ];
 
 export default function CompetenciesPage() {
@@ -213,12 +234,32 @@ export default function CompetenciesPage() {
   const handleRoleUpdated = async (newRoleId) => {
     const matchedRole = roles.find((r) => r.id === newRoleId);
     if (matchedRole) {
+      const isDirector = matchedRole.title.toLowerCase().includes('director') && !matchedRole.title.toLowerCase().includes('assistant');
+      const isAssistantDir = matchedRole.title.toLowerCase().includes('assistant');
+      const targetReqDelta = isDirector ? 0.6 : isAssistantDir ? 0.3 : 0.0;
+
       setOfficial((prev) => ({
         ...prev,
         roleId: newRoleId,
         roleTitle: matchedRole.title,
       }));
-      toast.success(`Role updated to ${matchedRole.title}. Competency gaps recalculated!`);
+
+      // Dynamically recalculate required level and deficit gaps across competencies
+      setCompetencies((prev) =>
+        prev.map((c) => {
+          const baseReq = c.code === 'STAT_ANALYSIS' ? 4.0 : c.code === 'NATIONAL_ACCOUNTS' ? 4.0 : 3.8;
+          const newReq = Number(Math.min(5.0, baseReq + targetReqDelta).toFixed(1));
+          const estLvl = Number(c.estimatedLevel ?? 1.0);
+          const newGap = Math.max(0, Number((newReq - estLvl).toFixed(1)));
+          return {
+            ...c,
+            requiredLevel: newReq,
+            gap: newGap,
+          };
+        })
+      );
+
+      toast.success(`Cadre benchmark updated to ${matchedRole.title}. Competency gaps recalculated!`);
     }
   };
 
@@ -252,25 +293,25 @@ export default function CompetenciesPage() {
     <div className="space-y-8">
       {/* ── Page Header ── */}
       <PageHeader
-        title={isAdmin ? "Workforce Competency Audit & Evidence Verification Engine" : "Official Competency Profiles & Evidence Engine"}
+        title={isAdmin ? "Workforce Competency Profiles" : "Competency Profile"}
         subtitle={
           isAdmin
-            ? "Inspect MoSPI cadre competency baselines, diagnostic evidence trails, and FRAC benchmark alignment for academic governance."
-            : "Authoritative role competency requirements, diagnostic evidence fusion, and confidence scoring for India's Official Statistical System (MoSPI DIID)."
+            ? "Review cadre competency baselines, official assessments, and benchmark alignment across divisions."
+            : "View your role competencies, evaluated proficiency levels, and cadre requirements."
         }
       />
 
       {/* ── Official Profile Banner ── */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm relative overflow-hidden">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#020617] via-[#1E3A8A] to-[#1D4ED8]" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-4 min-w-0">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#1E3A8A] text-white shadow-md">
               <UserCheck size={28} className="!text-white" />
             </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <span className="rounded-md bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-[#1E3A8A] border border-blue-100">
                   {official.cadre}
                 </span>
@@ -281,56 +322,62 @@ export default function CompetenciesPage() {
                   </span>
                 )}
               </div>
-              <h3 className="text-xl font-bold text-slate-900">{official.userName}</h3>
-              <p className="text-xs text-slate-600 font-medium">
-                {official.designation} • {official.experienceYears} Years Experience • {official.education}
-              </p>
+              <h3 className="text-xl font-bold text-slate-900 leading-tight">{official.userName}</h3>
+              {/* Clean 2-line details with controlled width */}
+              <div className="mt-1 max-w-sm space-y-0.5 text-xs text-slate-600 font-medium">
+                <p className="font-semibold text-slate-800">{official.designation}</p>
+                <p className="text-[11px] text-slate-500">
+                  {official.experienceYears} Years Experience • {official.education}
+                </p>
+              </div>
             </div>
           </div>
 
           {isAdmin ? (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-blue-50/60 p-4 rounded-2xl border border-blue-200">
-              <div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-blue-50/60 p-4 sm:px-5 sm:py-3.5 rounded-2xl border border-blue-200 shrink-0">
+              <div className="min-w-0">
                 <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#1E3A8A]">
                   🛡️ Target FRAC Benchmark
                 </span>
                 <span className="text-sm font-bold text-slate-900 flex items-center gap-1.5 mt-0.5">
-                  <Briefcase size={14} className="text-[#1E3A8A]" /> {official.roleTitle}
+                  <Briefcase size={14} className="text-[#1E3A8A] shrink-0" /> {official.roleTitle}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm" onClick={() => setIsRoleDrawerOpen(true)} className="text-xs">
-                  <RefreshCw size={14} className="mr-1" /> Change Benchmark
+              <div className="flex items-center gap-2.5 shrink-0">
+                <Button variant="secondary" size="sm" onClick={() => setIsRoleDrawerOpen(true)} className="text-xs px-3.5 py-2">
+                  <RefreshCw size={13} className="shrink-0" /> Change Benchmark
                 </Button>
                 <Button
                   variant="primary"
                   size="sm"
                   onClick={() => useReportStore.getState().startGeneration()}
-                  className="text-xs !text-white"
+                  className="text-xs !text-white px-3.5 py-2"
                 >
-                  <FileText size={14} className="mr-1 !text-white" /> Export ACBP Audit
+                  <FileText size={13} className="shrink-0 !text-white" /> Export ACBP Audit
                 </Button>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
-              <div>
-                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Target FRAC Benchmark</span>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-50/90 p-4 sm:px-5 sm:py-3.5 rounded-2xl border border-slate-200/80 shrink-0">
+              <div className="min-w-0">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Target FRAC Benchmark
+                </span>
                 <span className="text-sm font-bold text-[#1E3A8A] flex items-center gap-1.5 mt-0.5">
-                  <Briefcase size={14} /> {official.roleTitle}
+                  <Briefcase size={14} className="shrink-0" /> {official.roleTitle}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm" onClick={() => setIsRoleDrawerOpen(true)} className="text-xs">
-                  <RefreshCw size={14} className="mr-1" /> Select Target Role
+              <div className="flex items-center gap-2.5 shrink-0">
+                <Button variant="secondary" size="sm" onClick={() => setIsRoleDrawerOpen(true)} className="text-xs px-3.5 py-2">
+                  <RefreshCw size={13} className="shrink-0" /> Select Target Role
                 </Button>
                 <Button
                   variant="primary"
                   size="sm"
                   onClick={() => setIsDiagnosticOpen(true)}
-                  className="text-xs !text-white"
+                  className="text-xs !text-white px-3.5 py-2"
                 >
-                  <FileCheck size={14} className="mr-1 !text-white" /> Start Diagnostic
+                  <FileCheck size={13} className="shrink-0 !text-white" /> Start Diagnostic
                 </Button>
               </div>
             </div>
@@ -391,12 +438,20 @@ export default function CompetenciesPage() {
                 id: 'ev-01',
                 competencyName: c.name,
                 competencyCode: c.code,
-                assessmentDate: 'August 26, 2026',
-                scorePct: 85,
-                evaluator: 'AI Diagnostic Engine (Module 1)',
+                assessmentDate: '26 Aug 2026, 11:30 AM',
+                recordedAt: '2026-08-26T11:30:00.000Z',
+                score: 4.2,
+                maxScore: 5.0,
+                scorePct: 84,
+                correctCount: 4,
+                totalCount: 5,
+                evaluator: 'MoSPI DIID Diagnostic Engine (Module 1)',
                 evidenceHash: 'EV-HASH-8F9A2B1C4E7D',
-                confidenceScore: '94% (High Confidence)',
+                evidenceType: 'KNOWLEDGE',
+                weight: 0.4,
+                confidence: 0.94,
                 sourceType: 'DIAGNOSTIC_ASSESSMENT',
+                provenance: 'MoSPI / NSSTA Statistical Diagnostic Assessment Portal',
               })}
             />
           ))
@@ -404,7 +459,7 @@ export default function CompetenciesPage() {
       </div>
 
       {/* ── Level Semantics Reference Legend ── */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h4 className="text-xs font-black uppercase tracking-widest text-[#1E3A8A] mb-4 flex items-center gap-1.5">
           <Info size={14} /> Official Competency Level Semantics (Levels 1–5 Policy)
         </h4>

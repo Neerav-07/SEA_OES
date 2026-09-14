@@ -13,6 +13,7 @@ import {
   deleteSource,
   generateAssessmentFromSource,
   publishAssessment,
+  cleanupDuplicateSources,
 } from '../../services/source.service.js';
 
 export async function listSourcesController(req, res, next) {
@@ -56,4 +57,7 @@ export async function generateAssessmentFromSourceController(req, res, next) {
 }
 export async function publishAssessmentController(req, res, next) {
   try { return res.status(200).json(await publishAssessment(req.params.assessmentId)); } catch (error) { return next(error); }
+}
+export async function cleanupDuplicatesController(req, res, next) {
+  try { return res.status(200).json(await cleanupDuplicateSources()); } catch (error) { return next(error); }
 }

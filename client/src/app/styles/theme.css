@@ -26,6 +26,9 @@
 	--app-gradient-auth-login: linear-gradient(140deg, #020617 0%, #0A1128 40%, #1E3A8A 80%, #1D4ED8 100%);
 	--app-gradient-auth-register: linear-gradient(140deg, #020617 0%, #0A1128 50%, #1E3A8A 100%);
 	--app-shadow-elevated: 0 20px 45px -12px rgba(2, 6, 23, 0.16);
+	--z-backdrop: 500;
+	--z-dialog: 600;
+	--z-toast: 900;
 }
 
 @theme{

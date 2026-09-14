@@ -17,6 +17,7 @@ export * from "./assessment/assessments.js";
 export * from "./assessment/assessmentAssembly.js";
 export * from "./assessment/assessmentBlueprints.js";
 export * from "./assessment/questionIntelligence.js";
+export * from "./assessment/aiGovernance.js";
 
 // ─── Integrations (iGOT Karmayogi & NSSTA TPAC) ──────────────────────────────
 export * from "./integrations/igot.js";
@@ -29,3 +30,4 @@ export * from "./sources/sourceProvenance.js";
 
 // ─── Workforce Analytics Schema ──────────────────────────────────────────────
 export * from "./analytics/analytics.js";
+export * from "./governance/predictions.js";

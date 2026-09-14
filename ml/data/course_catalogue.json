@@ -1,79 +1,282 @@
 [
   {
-    "course_id": "NSSTA-TPAC-102",
-    "title": "Sampling Design and Survey Methods",
-    "provider": "NSSTA",
+    "course_id": "IGOT-CSV-001",
+    "title": "Know Your Ministry-Ministry of Statistics and Programme Implementation",
+    "description": "Overview of the Ministry of Statistics and Programme Implementation and how its programmes, statistical systems, and governance structures support official data and policymaking in India.",
     "competency_codes": [
-      "SURVEY_SAMPLING"
-    ],
-    "level": "Intermediate",
-    "duration_hours": 12,
-    "url": null
-  },
-  {
-    "course_id": "IGOT-STAT-401",
-    "title": "Applied Statistical Analysis",
-    "provider": "iGOT",
-    "competency_codes": [
+      "SURVEY_SAMPLING",
       "STATISTICAL_ANALYSIS"
     ],
-    "level": "Advanced",
-    "duration_hours": 16,
-    "url": null
+    "provider": "MoSPI",
+    "level": "Beginner",
+    "duration_hours": 1,
+    "url": null,
+    "level_numeric": 1.0
   },
   {
-    "course_id": "IGOT-PYTHON-204",
-    "title": "Python for Data Analysis",
-    "provider": "iGOT",
+    "course_id": "IGOT-CSV-002",
+    "title": "Introduction to Statistical Tools for Data-Driven Decision-Making",
+    "description": "Introduces practical statistical methods and tools for evidence-based decision-making in public administration and official statistical work.",
     "competency_codes": [
-      "PYTHON_DATA"
-    ],
-    "level": "Intermediate",
-    "duration_hours": 14,
-    "url": null
-  },
-  {
-    "course_id": "IGOT-DP-301",
-    "title": "Data Privacy and Responsible Data Handling",
-    "provider": "iGOT",
-    "competency_codes": [
-      "DATA_PRIVACY"
-    ],
-    "level": "Intermediate",
-    "duration_hours": 10,
-    "url": null
-  },
-  {
-    "course_id": "IGOT-SQL-205",
-    "title": "SQL for Official Statistics",
-    "provider": "iGOT",
-    "competency_codes": [
-      "SQL_DATA"
-    ],
-    "level": "Intermediate",
-    "duration_hours": 12,
-    "url": null
-  },
-  {
-    "course_id": "NSSTA-GIS-110",
-    "title": "GIS and Statistical Visualization",
-    "provider": "NSSTA",
-    "competency_codes": [
+      "STATISTICAL_ANALYSIS",
       "GIS_VISUALIZATION"
     ],
+    "provider": "MoSPI",
     "level": "Intermediate",
-    "duration_hours": 10,
-    "url": null
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 2.5
   },
   {
-    "course_id": "IGOT-CLOUD-220",
-    "title": "Cloud APIs and Digital Government",
-    "provider": "iGOT",
+    "course_id": "IGOT-CSV-003",
+    "title": "Introduction to Statistical Tools and Data Analysis",
+    "description": "Builds foundational knowledge in statistical analysis for exploring data, summarizing trends, and supporting official statistics functions.",
     "competency_codes": [
+      "PYTHON_DATA",
+      "SQL_DATA"
+    ],
+    "provider": "MoSPI",
+    "level": "Beginner",
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 1.0
+  },
+  {
+    "course_id": "IGOT-CSV-004",
+    "title": "Data Analysis and Visualization Using Microsoft Excel",
+    "description": "Covers spreadsheet-based data cleaning, pivot analysis, charting, and dashboard-style presentation for official statistical datasets.",
+    "competency_codes": [
+      "GIS_VISUALIZATION",
+      "SQL_DATA"
+    ],
+    "provider": "NIC",
+    "level": "Intermediate",
+    "duration_hours": 3,
+    "url": null,
+    "level_numeric": 2.5
+  },
+  {
+    "course_id": "IGOT-CSV-005",
+    "title": "Data-Driven Decision-Making for Government",
+    "description": "Explains how structured evidence, dashboards, and analytical thinking improve governance decisions and policy implementation.",
+    "competency_codes": [
+      "STATISTICAL_ANALYSIS",
+      "SURVEY_SAMPLING"
+    ],
+    "provider": "DoPT",
+    "level": "Beginner",
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 1.0
+  },
+  {
+    "course_id": "IGOT-CSV-006",
+    "title": "Basics of Cloud Computing",
+    "description": "Introduces cloud models, service types, security considerations, and practical adoption pathways for government digital workflows.",
+    "competency_codes": [
+      "CLOUD_APIS",
+      "DATA_PRIVACY"
+    ],
+    "provider": "NIC",
+    "level": "Beginner",
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 1.0
+  },
+  {
+    "course_id": "IGOT-CSV-007",
+    "title": "Data Security in Cloud Computing",
+    "description": "Explains confidentiality, access control, and data protection for cloud-hosted public datasets and administrative systems.",
+    "competency_codes": [
+      "DATA_PRIVACY",
       "CLOUD_APIS"
     ],
+    "provider": "NIC",
     "level": "Intermediate",
-    "duration_hours": 12,
-    "url": null
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 2.5
+  },
+  {
+    "course_id": "IGOT-CSV-008",
+    "title": "Cyber Rakshak: Fundamentals of Cyber Security for Public Officials",
+    "description": "Covers cyber hygiene, threat awareness, phishing prevention, and safe handling of digital information in public service delivery.",
+    "competency_codes": [
+      "DATA_PRIVACY",
+      "CLOUD_APIS"
+    ],
+    "provider": "CERT-In",
+    "level": "Beginner",
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 1.0
+  },
+  {
+    "course_id": "IGOT-CSV-009",
+    "title": "Responsible Data Management: Privacy and Security and Compliance",
+    "description": "Introduces privacy, security, and compliance obligations for handling public data, including practical governance checks for data custodians.",
+    "competency_codes": [
+      "DATA_PRIVACY",
+      "SQL_DATA"
+    ],
+    "provider": "MeitY",
+    "level": "Intermediate",
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 2.5
+  },
+  {
+    "course_id": "IGOT-CSV-010",
+    "title": "Understanding the Digital Personal Data Protection Act 2023 and Rules",
+    "description": "Explains key legal provisions, accountability mechanisms, and data-processing obligations under India’s Digital Personal Data Protection framework.",
+    "competency_codes": [
+      "DATA_PRIVACY",
+      "SURVEY_SAMPLING"
+    ],
+    "provider": "MeitY",
+    "level": "Intermediate",
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 2.5
+  },
+  {
+    "course_id": "IGOT-CSV-011",
+    "title": "Fundamentals of Project Management",
+    "description": "Introduces project planning, governance, and execution concepts relevant to statistical and digital transformation initiatives in government.",
+    "competency_codes": [
+      "STATISTICAL_ANALYSIS",
+      "SURVEY_SAMPLING"
+    ],
+    "provider": "DoPT",
+    "level": "Beginner",
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 1.0
+  },
+  {
+    "course_id": "IGOT-CSV-012",
+    "title": "Introduction to Decision-Making",
+    "description": "Examines structured methods for making sound administrative and operational decisions using evidence, risk awareness, and stakeholder consideration.",
+    "competency_codes": [
+      "STATISTICAL_ANALYSIS",
+      "SURVEY_SAMPLING"
+    ],
+    "provider": "DoPT",
+    "level": "Beginner",
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 1.0
+  },
+  {
+    "course_id": "IGOT-CSV-013",
+    "title": "Understanding Bharat's Artificial Intelligence Stack",
+    "description": "Introduces India's AI ecosystem and the building blocks that support responsible digital transformation in public services.",
+    "competency_codes": [
+      "PYTHON_DATA",
+      "CLOUD_APIS"
+    ],
+    "provider": "MeitY",
+    "level": "Beginner",
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 1.0
+  },
+  {
+    "course_id": "IGOT-CSV-014",
+    "title": "AI for Digital Transformation with Machine Learning and Deep Learning",
+    "description": "Explores machine learning and deep learning concepts through the lens of public-sector digital transformation.",
+    "competency_codes": [
+      "PYTHON_DATA",
+      "STATISTICAL_ANALYSIS"
+    ],
+    "provider": "MeitY",
+    "level": "Intermediate",
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 2.5
+  },
+  {
+    "course_id": "IGOT-CSV-015",
+    "title": "Data Security in Cloud Computing",
+    "description": "Covers cloud data protection, access controls, and secure operational practices for public digital services.",
+    "competency_codes": [
+      "DATA_PRIVACY",
+      "CLOUD_APIS"
+    ],
+    "provider": "NIC",
+    "level": "Intermediate",
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 2.5
+  },
+  {
+    "course_id": "IGOT-CSV-016",
+    "title": "Cyber Security Audit of Government Websites",
+    "description": "Introduces practical security review and audit considerations for government websites and citizen-facing services.",
+    "competency_codes": [
+      "DATA_PRIVACY",
+      "CLOUD_APIS"
+    ],
+    "provider": "CERT-In",
+    "level": "Intermediate",
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 2.5
+  },
+  {
+    "course_id": "IGOT-CSV-017",
+    "title": "Data Analysis and Visualization Using Microsoft Excel",
+    "description": "Builds practical skills in spreadsheet-based data cleaning, analysis, charts, and dashboards for government reporting.",
+    "competency_codes": [
+      "GIS_VISUALIZATION",
+      "STATISTICAL_ANALYSIS"
+    ],
+    "provider": "NIC",
+    "level": "Intermediate",
+    "duration_hours": 3,
+    "url": null,
+    "level_numeric": 2.5
+  },
+  {
+    "course_id": "IGOT-CSV-018",
+    "title": "Visual Intelligence and Data Storytelling Essentials",
+    "description": "Teaches how to turn complex public-sector data into accurate, accessible, and decision-ready narratives.",
+    "competency_codes": [
+      "GIS_VISUALIZATION",
+      "STATISTICAL_ANALYSIS"
+    ],
+    "provider": "DoPT",
+    "level": "Beginner",
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 1.0
+  },
+  {
+    "course_id": "IGOT-CSV-019",
+    "title": "Foundations of Cyber Safety in Public Service",
+    "description": "Provides practical cyber hygiene guidance for officials handling government systems, communications, and data.",
+    "competency_codes": [
+      "DATA_PRIVACY",
+      "CLOUD_APIS"
+    ],
+    "provider": "CERT-In",
+    "level": "Beginner",
+    "duration_hours": 1,
+    "url": null,
+    "level_numeric": 1.0
+  },
+  {
+    "course_id": "IGOT-CSV-020",
+    "title": "Artificial Intelligence for Government Officers",
+    "description": "Introduces AI opportunities, limitations, and responsible adoption patterns for government officers.",
+    "competency_codes": [
+      "PYTHON_DATA",
+      "DATA_PRIVACY"
+    ],
+    "provider": "MeitY",
+    "level": "Beginner",
+    "duration_hours": 2,
+    "url": null,
+    "level_numeric": 1.0
   }
 ]

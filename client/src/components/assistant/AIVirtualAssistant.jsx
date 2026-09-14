@@ -3,7 +3,7 @@ import {
   Bot,
   X,
   Send,
-  Sparkles,
+  GraduationCap,
   HelpCircle,
   BookOpen,
   Target,
@@ -173,7 +173,7 @@ export default function AIVirtualAssistant() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "Namaste! I am your **Kshamata AI Capacity Building Mentor** for India's Official Statistical System (MoSPI DIID & NSSTA).\n\nHow can I assist your statistical competency development or course pathways today?",
+      content: "Namaste! I am **Sahayak (सहायक)** — your Kshamata AI Statistical Capacity Mentor for India's Official Statistical System.\n\n**What I can help with:**\n- Diagnosing competency gaps & role targets\n- Socratic learning & statistical quiz walkthroughs\n- iGOT courses & NSSTA TPAC programme pathways\n- Official statistical concepts (SNA 2008, NSS Sampling, CPI/WPI, NQAF)\n\n**Governance Safeguards:**\n- Strict guardrails: No administrative HR actions or policy decisions\n- Grounded responses based on approved MoSPI authorities\n- Zero-PII leakage with pseudonymized audit trails\n\nHow can I assist your statistical learning journey today?",
       ts: new Date().toISOString(),
     },
   ]);
@@ -314,19 +314,49 @@ export default function AIVirtualAssistant() {
 
     try {
       const res = await api.post('/assistant/chat', { message: textToSend });
+      
+      // Extract response data
+      const reply = res.data.reply || 'I am processing your query.';
+      const citations = res.data.citations || [];
+      const refusal = res.data.refusal || false;
+      const scopeClassification = res.data.scopeClassification || 'unknown';
+      const safePrompts = res.data.safePrompts || [];
+
+      // Build response content with citations if available
+      let responseContent = reply;
+      if (citations && citations.length > 0) {
+        const citationsBlock = citations
+          .map(c => `- **${c.title}** ${c.url ? `([Link](${c.url}))` : ''}`)
+          .join('\n');
+        responseContent = `${reply}\n\n---\n**Sources:**\n${citationsBlock}`;
+      }
+
       const assistantMsgObj = {
         role: 'assistant',
-        content: res.data.reply || 'I am processing your query.',
+        content: responseContent,
+        refusal,
+        scopeClassification,
+        safePrompts,
         ts: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, assistantMsgObj]);
     } catch (err) {
       console.error('AI assistant chat failed:', err);
+      
+      // Handle different error types
+      let errorMessage = 'I encountered an error processing your request. Please try again shortly.';
+      if (err.response?.status === 429) {
+        errorMessage = 'You\'ve sent too many messages. Please wait a moment before sending another.';
+      } else if (err.response?.status === 413) {
+        errorMessage = 'Your message is too long. Please keep it under 5KB.';
+      }
+
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: 'Apologies, I am experiencing temporary connectivity issues with the ML service. Please try again shortly.',
+          content: errorMessage,
+          refusal: true,
           ts: new Date().toISOString(),
         },
       ]);
@@ -336,9 +366,10 @@ export default function AIVirtualAssistant() {
   };
 
   const quickPrompts = [
-    { label: 'Explain my top skill gap', icon: Target, text: 'What is my top competency gap and why?' },
-    { label: 'How is my score calculated?', icon: HelpCircle, text: 'How is my competency score calculated?' },
-    { label: 'Recommend iGOT courses', icon: BookOpen, text: 'Recommend the best iGOT courses for my role.' },
+    { label: 'My priority skill gaps & role targets', icon: Target, text: 'What is my top skill gap?' },
+    { label: 'Test my knowledge: NSS Stratified Sampling (Socratic)', icon: HelpCircle, text: 'Test my understanding of Stratified Sampling' },
+    { label: 'Explain SNA 2008 GVA deflation methodology', icon: BookOpen, text: 'Explain SNA 2008 GVA deflation' },
+    { label: 'Recommend upcoming NSSTA programmes', icon: GraduationCap, text: 'Which courses and NSSTA programmes are recommended for me?' },
   ];
 
   if (!isOpen) {
@@ -350,7 +381,7 @@ export default function AIVirtualAssistant() {
         <button
           onClick={() => setIsOpen(true)}
           className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-slate-950 via-slate-900 to-blue-950 text-white shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center border-2 border-blue-500/60 shadow-blue-950/50 group cursor-pointer"
-          title="Open Kshamata AI Assistant"
+          title="Open Sahayak (सहायक) AI Statistical Mentor"
         >
           <Bot className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
         </button>
@@ -441,9 +472,9 @@ export default function AIVirtualAssistant() {
           </div>
           <div>
             <h3 className="text-xs font-bold text-white flex items-center gap-1.5 tracking-tight">
-              Kshamata AI Assistant
+              Sahayak (सहायक) <span className="text-[10px] px-1.5 py-0.2 bg-blue-500/30 text-blue-200 rounded font-semibold border border-blue-400/30">AI Mentor</span>
             </h3>
-            <p className="text-[10px] text-slate-300 font-medium">MoSPI Competency Intelligence</p>
+            <p className="text-[10px] text-slate-300 font-medium">MoSPI Statistical Capacity Assistant</p>
           </div>
         </div>
 
@@ -565,7 +596,7 @@ export default function AIVirtualAssistant() {
               value={inputMsg}
               onChange={(e) => setInputMsg(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Ask AI Assistant anything..."
+              placeholder="Ask about skills, courses, or scores..."
               className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button

@@ -36,8 +36,8 @@ In India's Official Statistical System, the traditional training paradigm often 
 **Kshamata (क्षमता)** bridges this critical governance gap with an end-to-end AI-enabled competency intelligence, diagnostic assessment, and annual capacity-building orchestration engine:
 
 1. **FRAC Competency Alignment** — Maps every official's role to granular statistical, technical, digital governance, and managerial competencies (Levels 1 to 5).
-2. **Zero-Hallucination Grounded AI Assessments** — Generates diagnostic MCQs strictly retrieved from official MoSPI survey manuals, statistical guidelines, and NSSTA video transcripts.
-3. **Evidence-Driven Skill Gap Analysis** — Fuses diagnostic test results, past attempt trajectories, and training records with verifiable cryptographic hashes (`EV-HASH-8F9A2B1C4E7D`).
+2. **Deterministic Evidence-Grounded AI Assessments** — Generates diagnostic MCQs strictly retrieved from official MoSPI survey manuals, statistical guidelines, and NSSTA training documents with configurable token-overlap thresholds and zero-tolerance numeric claim verification.
+3. **Evidence-Driven Skill Gap Analysis** — Fuses diagnostic test results, scenario judgments, and training records using audit-traceable Bayesian weights with temporal recency decay factors.
 4. **Adaptive iGOT & NSSTA Pathways** — Dynamically prescribes and re-ranks personalized iGOT Karmayogi modules and NSSTA TPAC courses based on real deficit gaps.
 5. **Official ACBP Report Generation** — Compiles executive Annual Capacity Building Plans (ACBP) into high-fidelity A4 vector PDF documents with customizable official digital signatures and NIC e-Sign DSC verification stamps.
 
@@ -47,8 +47,8 @@ In India's Official Statistical System, the traditional training paradigm often 
 
 Kshamata transforms government workforce development from a reactive, certificate-collecting exercise into an auditable, proactive capacity engine:
 
-- **Continuous Evidence Fusion (Course Completion ≠ Competency)** — Evaluates capabilities through multi-layered diagnostic evidence, confidence intervals (e.g., `85% Score • 94% High Confidence`), and immutable provenance logs.
-- **RAG-Grounded Question Engine** — Eliminates LLM hallucinations by enforcing strict vector grounding against ingested MoSPI manuals and NSSTA course transcripts with exact citation footnotes.
+- **Continuous Evidence Fusion (Course Completion ≠ Competency)** — Evaluates capabilities through multi-layered diagnostic evidence, multi-factor confidence scores (e.g., `85% Score • 94% High Confidence`), and immutable provenance audit trails.
+- **Evidence-Grounded Question Engine** — Intercepts hallucinations by enforcing deterministic lexical grounding against ingested MoSPI manuals and NSSTA course materials with exact chunk provenance and zero-tolerance numeric verification.
 - **On-the-Spot Slide-Over Audit Experience** — Enables ministry administrators and trainers to inspect individual officer competency radars, evidence chains, and mandate course assignments without disruptive page switching.
 - **Official Digital Signature & NIC e-Sign Governance** — Integrates configurable DSC signatory metadata, live cursive signature generation, and NIC verification stamps on government ACBP documents.
 - **Predictive Workforce Capacity Forecasting** — Uses ML time-series forecasting to predict future cadre skill deficits before quarterly survey cycles begin.
@@ -77,14 +77,14 @@ Kshamata transforms government workforce development from a reactive, certificat
 
 ### 📉 Evidence-Driven Skill Gap Analysis
 - **Deficit Prioritization**: Ranks skill deficits into Critical (`-2.6`), High Priority (`-1.6`), and Moderate (`-0.4`) gaps.
-- **Explainable Evidence Drawer**: Displays cryptographic evidence hashes, evaluator models, confidence scores, and time-decay factors.
+- **Explainable Evidence Drawer**: Displays verifiable evidence records, evaluator models, confidence scores, and temporal decay factors.
 
 ### 🎓 Personalized iGOT & NSSTA Pathways
 - **Adaptive Course Prescription**: Matches identified competency deficits directly to official iGOT Karmayogi modules and NSSTA TPAC courses.
 - **Dynamic Re-Ranking**: Automatically updates course recommendations based on real-time diagnostic test scores and past attempt trajectories.
 
 ### 📜 Assessment History & Attempt Ledger
-- **Permanent Evidence Log**: Dedicated `/dashboard/assessment-history` portal tracking every diagnostic attempt, score accuracy, time spent, and evidence hash.
+- **Permanent Evidence Log**: Dedicated `/dashboard/assessment-history` portal tracking every diagnostic attempt, score accuracy, time spent, and source provenance record.
 - **Proficiency Shift Tracking**: Visualizes historical level progression (e.g., `L3.2 ➔ L3.6`) and personalized recommendation impacts.
 
 ### 📄 Annual Capacity Building Plan (ACBP) Report Generator
@@ -245,6 +245,8 @@ npm run dev         # Starts Vite Dev Server at http://localhost:5173
 ---
 
 ## 🤝 Contributing
+
+AI generation and assistant safety requirements are documented in [AI Guardrails and LLM Output Evaluation](docs/AI_GUARDRAILS_AND_EVALUATION.md).
 
 Contributions to **Kshamata** are welcome! Please review our standard pull request workflow:
 1. Fork the repository.

@@ -41,7 +41,7 @@ const BLOOM_DISTRIBUTION = {
  * It does not call the ML/LLM service.
  */
 export const generateDiagnosticBlueprint = asyncHandler(async (req, res) => {
-  const { officialId } = req.body;
+  const { officialId } = req.body || {};
 
   if (!officialId) {
     return sendError(res, "Official ID is required", 400);
@@ -340,7 +340,7 @@ export const generateDiagnosticAssessment = asyncHandler(async (req, res) => {
  * Answers are converted into competency evidence.
  */
 export const submitDiagnosticAttempt = asyncHandler(async (req, res) => {
-  const { officialId, answers = [] } = req.body;
+  const { officialId, answers = [] } = req.body || {};
 
   if (!officialId || !answers.length) {
     return sendError(res, "Official ID and answers are required", 400);

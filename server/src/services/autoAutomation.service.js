@@ -38,7 +38,7 @@ export async function triggerAutoGapAndRecommendations(officialId) {
     const createdRecs = [];
 
     for (const gap of activeGaps) {
-      const [comp] = await db.select({ code: competencies.code, name: competencies.name }).from(competencies).where(eq(competencies.id, gap.competencyId));
+      const [comp] = await db.select({ id: competencies.id, code: competencies.code, name: competencies.name }).from(competencies).where(eq(competencies.id, gap.competencyId));
       if (!comp) continue;
 
       // A. Query iGOT courses for this competency

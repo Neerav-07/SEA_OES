@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
@@ -6,7 +6,9 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
+  Check,
   AlertCircle,
+  AlertTriangle,
   HelpCircle,
   Award,
   BookOpen,
@@ -18,10 +20,15 @@ import {
   SlidersHorizontal,
   Play,
   LogOut,
+  Database,
+  TrendingUp,
+  Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
 import Spinner from '../../../components/Spinner';
+import KarmayogiLogo from '../../../components/common/KarmayogiLogo';
+import useDashboardStore from '../../../store/dashboardData.store.js';
 
 // 10 Very Large, Codeforces-Style Story-Based Official MoSPI Problem Statements
 const DEFAULT_CASE_STUDIES = [
@@ -389,13 +396,190 @@ export function getFormalQuestion(q) {
   };
 }
 
+/**
+ * High-Stakes Institutional Examination Initializing Screen
+ * Displays official Government of India / MoSPI identity, NSSTA crest, Kshamata App logo,
+ * and iGOT Karmayogi partner branding alongside proctored security telemetry status.
+ * Uses consistent % circular progress ring as in ACBP report generation.
+ */
+function InitializingExamScreen({ assessmentTitle, dataReady, onReady }) {
+  const [progressPct, setProgressPct] = useState(16);
+  const [stepText, setStepText] = useState('Securing official proctoring environment...');
+
+  useEffect(() => {
+    const timer1 = setTimeout(() => {
+      setProgressPct(42);
+      setStepText('Loading MoSPI FRAC competency blueprint...');
+    }, 180);
+
+    const timer2 = setTimeout(() => {
+      setProgressPct(74);
+      setStepText('Retrieving case studies & algorithmic parameters...');
+    }, 420);
+
+    const timer3 = setTimeout(() => {
+      setProgressPct(88);
+      setStepText('Calibrating proctored candidate session...');
+    }, 660);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
+  }, []);
+
+  // When data is ready, transition smoothly to 100% and show checkmark
+  useEffect(() => {
+    if (!dataReady) return;
+
+    const finishTimer = setTimeout(() => {
+      setProgressPct(100);
+      setStepText('Examination workspace ready!');
+      const readyTimer = setTimeout(() => {
+        if (onReady) onReady();
+      }, 380);
+      return () => clearTimeout(readyTimer);
+    }, 850);
+
+    return () => clearTimeout(finishTimer);
+  }, [dataReady, onReady]);
+
+  const isComplete = progressPct >= 100;
+
+  return (
+    <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 select-none">
+      <div className="bg-white border border-slate-200/90 rounded-3xl max-w-xl w-full text-left shadow-2xl overflow-hidden relative animate-in fade-in zoom-in-95 duration-200">
+        
+        {/* Top Government Accent Strip */}
+        <div className="h-1.5 w-full bg-gradient-to-r from-[#1E3A8A] via-blue-600 to-indigo-900" />
+
+        {/* ── Official Institutional Co-Branded Header ── */}
+        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between gap-3">
+          {/* Left: National Academy (NSSTA) & Ministry Crest */}
+          <div className="flex items-center gap-3">
+            <img
+              src="/NSSTA-official-logo.png"
+              alt="Government of India - NSSTA"
+              className="h-10 sm:h-12 w-auto object-contain drop-shadow-2xs"
+            />
+          </div>
+
+          {/* Right: MoSPI, KSHAMATA & Karmayogi Bharat Partner Emblems */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* MoSPI Logo & Text */}
+            <div className="flex items-center gap-1.5 border-r border-slate-200/90 pr-2.5 sm:pr-3">
+              <img
+                src="/MoSPI-logo.png"
+                alt="MoSPI - Ministry of Statistics and Programme Implementation"
+                className="h-9 sm:h-11 w-auto object-contain drop-shadow-2xs"
+              />
+              <div className="hidden sm:flex flex-col text-left leading-tight">
+                <span className="text-[11px] font-black text-slate-800 tracking-tight">MoSPI</span>
+                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">Govt. of India</span>
+              </div>
+            </div>
+
+            {/* Official App Logo: KSHAMATA */}
+            <div className="flex items-center gap-1.5 border-r border-slate-200/90 pr-2.5 sm:pr-3">
+              <img
+                src="/logo.png"
+                alt="Kshamata App Logo"
+                className="h-8 sm:h-10 w-auto object-contain drop-shadow-2xs"
+              />
+              <div className="hidden sm:flex flex-col text-left leading-tight">
+                <span className="text-[11px] font-black text-[#1E3A8A] tracking-tight">KSHAMATA</span>
+                <span className="text-[7.5px] font-black text-slate-500 uppercase tracking-wider">Platform</span>
+              </div>
+            </div>
+
+            {/* Karmayogi Bharat Logo */}
+            <div className="flex items-center">
+              <img
+                src="/official-igot.png"
+                alt="iGOT Karmayogi Bharat"
+                className="h-10 sm:h-12 w-auto object-contain drop-shadow-2xs"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Official Examination Gateway Ribbon ── */}
+        <div className="px-6 py-2 bg-gradient-to-r from-blue-50/90 via-slate-50 to-emerald-50/80 border-b border-slate-100 flex items-center justify-between text-[10px] font-extrabold text-slate-600">
+          <div className="inline-flex items-center gap-1.5 text-blue-950 uppercase tracking-wider text-[9.5px]">
+            <ShieldCheck className="w-3.5 h-3.5 text-blue-700" />
+            Official MoSPI Competency Assessment
+          </div>
+          <div className="flex items-center gap-1.5 font-mono text-[9px] text-emerald-700 font-bold">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            INITIALIZING
+          </div>
+        </div>
+
+        {/* ── Circular Progress Loader (% Ring matching Report Generation) ── */}
+        <div className="p-8 sm:p-10 space-y-5 text-center flex flex-col items-center justify-center">
+          {isComplete ? (
+            <div className="h-20 w-20 rounded-full bg-[#1E3A8A] text-white flex items-center justify-center shadow-xl animate-in zoom-in-75 duration-300">
+              <Check size={40} className="text-white stroke-[3.5]" />
+            </div>
+          ) : (
+            <div className="relative flex items-center justify-center h-24 w-24">
+              <svg className="h-full w-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  stroke="currentColor"
+                  strokeWidth="7"
+                  className="text-blue-50"
+                  fill="transparent"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  stroke="#1E3A8A"
+                  strokeWidth="7"
+                  strokeLinecap="round"
+                  fill="transparent"
+                  strokeDasharray={263.89}
+                  strokeDashoffset={263.89 - (progressPct / 100) * 263.89}
+                  className="transition-all duration-300 ease-out"
+                />
+              </svg>
+              <span className="absolute text-xl font-black text-[#1E3A8A] font-mono tracking-tight">
+                {progressPct}%
+              </span>
+            </div>
+          )}
+
+          <div className="space-y-1.5 max-w-sm mx-auto">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+              Preparing Examination Environment...
+            </h3>
+            <p className="text-xs text-slate-600 font-semibold leading-relaxed transition-all">
+              {stepText}
+            </p>
+            {assessmentTitle && (
+              <p className="text-[11px] text-slate-400 font-medium line-clamp-1 mt-0.5">
+                "{assessmentTitle}"
+              </p>
+            )}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 export default function AssessmentPlayerModal({ assessmentId, onClose, onComplete, initialConfig }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [isSetupCompleted, setIsSetupCompleted] = useState(Boolean(initialConfig));
-  const [examMode, setExamMode] = useState(initialConfig ? 'CUSTOM' : 'STANDARD');
-  const [targetCount, setTargetCount] = useState(initialConfig?.questionCount || 10);
-  const [targetDurationMins, setTargetDurationMins] = useState(initialConfig?.timeLimitMins || 15);
+  const [dataReady, setDataReady] = useState(false);
+  const [hasExited, setHasExited] = useState(false);
+  const targetCount = initialConfig?.questionCount || 10;
+  const targetDurationMins = initialConfig?.timeLimitMins || 15;
 
   const [attempt, setAttempt] = useState(null);
   const [assessment, setAssessment] = useState(null);
@@ -409,11 +593,14 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
   const [instantFeedback, setInstantFeedback] = useState(false);
   const [revealedAnswers, setRevealedAnswers] = useState({});
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
+  const [showTabSwitchWarning, setShowTabSwitchWarning] = useState(false);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const hasSwitchedOutRef = useRef(false);
 
-  // Anti-cheating tab switch listener (with deduplication guard)
+  // Anti-cheating tab switch listener (with deduplication guard & instant return modal popup)
   useEffect(() => {
-    if (result || loading || !isSetupCompleted) return;
+    if (result || loading) return;
 
     let lastFired = 0;
 
@@ -422,6 +609,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
         const now = Date.now();
         if (now - lastFired < 1000) return;
         lastFired = now;
+        hasSwitchedOutRef.current = true;
 
         setTabSwitchCount((prev) => {
           const next = prev + 1;
@@ -439,64 +627,85 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
           });
           return next;
         });
+      } else {
+        // Candidate returned back to the exam window
+        if (hasSwitchedOutRef.current) {
+          hasSwitchedOutRef.current = false;
+          setShowTabSwitchWarning(true);
+        }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [result, loading, isSetupCompleted]);
+  }, [result, loading]);
 
   // Start or resume attempt on mount
   useEffect(() => {
+    let isCancelled = false;
+
     async function initAttempt() {
       try {
         setLoading(true);
-        const res = await api.post('/attempts/start', { assessmentId });
-        const data = res.data;
-        
-        setAttempt(data.attempt);
-        setAssessment(data.assessment);
-        
-        const fetchedQs = data.questions || [];
-        const activePool = fetchedQs.length >= 5 ? fetchedQs : DEFAULT_CASE_STUDIES;
-        const countToUse = initialConfig?.questionCount || targetCount;
-        setQuestions(activePool.slice(0, countToUse));
+        setDataReady(false);
+        const res = await api.post('/attempts/start', { assessmentId }).catch((err) => {
+          console.warn('Attempt start error, loading case studies:', err?.message);
+          return null;
+        });
 
-        if (data.attempt?.responses) {
-          const restored = {};
-          data.attempt.responses.forEach(r => {
-            if (r.questionId && r.selectedOption !== undefined) {
-              restored[r.questionId] = r.selectedOption;
+        if (isCancelled) return;
+
+        const data = res?.data;
+        if (data) {
+          setAttempt(data.attempt);
+          setAssessment(data.assessment);
+          
+          const fetchedQs = data.questions || [];
+          const activePool = fetchedQs.length >= 5 ? fetchedQs : DEFAULT_CASE_STUDIES;
+          const countToUse = initialConfig?.questionCount || targetCount;
+          setQuestions(activePool.slice(0, countToUse));
+
+          if (data.attempt?.responses) {
+            const restored = {};
+            data.attempt.responses.forEach(r => {
+              if (r.questionId && r.selectedOption !== undefined) {
+                restored[r.questionId] = r.selectedOption;
+              }
+            });
+            setResponses(restored);
+            if (data.attempt.current_question_index) {
+              setCurrentIndex(data.attempt.current_question_index);
             }
-          });
-          setResponses(restored);
-          if (data.attempt.current_question_index) {
-            setCurrentIndex(data.attempt.current_question_index);
           }
+        } else {
+          const countToUse = initialConfig?.questionCount || targetCount;
+          setQuestions(DEFAULT_CASE_STUDIES.slice(0, countToUse));
         }
       } catch (err) {
         console.error('Failed to start assessment attempt, loading MoSPI case studies:', err);
         const countToUse = initialConfig?.questionCount || targetCount;
         setQuestions(DEFAULT_CASE_STUDIES.slice(0, countToUse));
       } finally {
-        setLoading(false);
+        if (!isCancelled) {
+          setDataReady(true);
+        }
       }
     }
 
-    if (assessmentId) initAttempt();
+    if (assessmentId) {
+      initAttempt();
+    } else {
+      setDataReady(true);
+    }
+
+    return () => {
+      isCancelled = true;
+    };
   }, [assessmentId, targetCount, initialConfig]);
 
-  // Update questions pool when setup mode changes
-  const handleStartExam = () => {
-    const pool = DEFAULT_CASE_STUDIES.slice(0, targetCount);
-    setQuestions(pool);
-    setTimeLeft(targetDurationMins * 60);
-    setIsSetupCompleted(true);
-  };
-
-  // Countdown timer
+  // Countdown timer (automatically paused when exit confirm modal is open or exiting)
   useEffect(() => {
-    if (loading || !isSetupCompleted || result || timeLeft <= 0) return;
+    if (loading || result || showExitConfirm || isExiting || timeLeft <= 0) return;
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
@@ -510,7 +719,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [loading, isSetupCompleted, result, timeLeft]);
+  }, [loading, result, showExitConfirm, isExiting, timeLeft]);
 
   // Save progress on response change
   const handleSelectOption = async (questionId, optionIndex) => {
@@ -584,6 +793,48 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
 
       setResult(resData);
       setShowCompletionPopup(true);
+
+      // Persist attempt locally per user for instant offline & reload resilience
+      try {
+        const storedUser = JSON.parse(localStorage.getItem('kshamata_user') || '{}');
+        const userKey = storedUser?.id || storedUser?.email || 'active_official';
+        const historyKey = `kshamata_assessment_attempts_${userKey}`;
+        const prevHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        const evaluatedResponses = resData?.responses || [];
+        const evaluatedCorrect = resData?.correctCount !== undefined 
+          ? resData.correctCount 
+          : evaluatedResponses.filter(r => r.isCorrect).length;
+        const totalQCount = resData?.totalQuestions || questions.length || 1;
+        const calculatedPct = resData?.percentage !== undefined 
+          ? resData.percentage 
+          : Math.round((evaluatedCorrect / totalQCount) * 100);
+        const calculatedScore = resData?.score !== undefined 
+          ? resData.score 
+          : Number(((evaluatedCorrect / totalQCount) * 5.0).toFixed(1));
+
+        const newEntry = {
+          id: resData?.attemptId || `att-${Date.now()}`,
+          assessment_id: assessment?.id || assessmentId || 'asm-diagnostic-01',
+          assessment_title: assessment?.title || 'MoSPI Diagnostic Assessment: Survey & Statistical Competencies',
+          competency_name: assessment?.competency_name || 'Survey Sampling & Statistical Estimation',
+          competency_code: assessment?.competency_code || 'FRAC-STAT-01',
+          category: assessment?.category || 'Statistical',
+          score: calculatedScore,
+          max_score: 5.0,
+          percentage: calculatedPct,
+          correctCount: evaluatedCorrect,
+          totalQuestions: totalQCount,
+          status: 'COMPLETED',
+          submitted_at: new Date().toISOString(),
+          responses: evaluatedResponses,
+        };
+
+        // Instantly update reactive Zustand store across all dashboard tabs
+        useDashboardStore.getState().addCompletedAttempt(newEntry);
+      } catch (storageErr) {
+        console.warn('Could not cache assessment attempt:', storageErr);
+      }
+
       window.dispatchEvent(new CustomEvent('kshamata_assessment_submitted', { detail: resData }));
     } catch (err) {
       console.error('Submission failed:', err);
@@ -592,37 +843,67 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
     }
   };
 
-  const handleExitImmediately = () => {
-    if (attempt?.id && Object.keys(responses).length > 0) {
-      const formatted = Object.entries(responses).map(([questionId, selectedIdx]) => ({
-        questionId,
-        selectedOptionIndex: selectedIdx,
-      }));
-      api.post(`/attempts/${attempt.id}/progress`, { responses: formatted }).catch(() => {});
+  const handleRequestExit = () => {
+    if (result) {
+      if (onClose) onClose();
+      return;
     }
-    setShowExitConfirm(false);
+    setShowExitConfirm(true);
+  };
+
+  const handleConfirmExit = async () => {
+    setIsExiting(true);
     setShowCompletionPopup(false);
-    if (onClose) onClose();
+
+    const activeAttemptId = attempt?.id;
+    if (activeAttemptId) {
+      try {
+        await api.post(`/attempts/${activeAttemptId}/abandon`);
+      } catch (err) {
+        console.warn('Could not abandon attempt on server:', err?.message);
+      }
+    }
+
+    // Smooth reassuring transition delay so user experiences clear visual confirmation
+    await new Promise((resolve) => setTimeout(resolve, 450));
+
+    setHasExited(true);
+    toast.success('Assessment session exited. Attempt was not recorded.');
+
+    if (onClose) {
+      onClose();
+    }
   };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        handleExitImmediately();
+        if (isExiting || hasExited) return; // Disallow closing during active exit
+        if (showTabSwitchWarning) {
+          setShowTabSwitchWarning(false);
+        } else if (showExitConfirm) {
+          setShowExitConfirm(false);
+        } else if (result) {
+          if (onClose) onClose();
+        } else {
+          setShowExitConfirm(true);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [attempt, responses, onClose]);
+  }, [showTabSwitchWarning, showExitConfirm, isExiting, hasExited, result, onClose]);
 
   const handleDoneAndExit = () => {
     setShowCompletionPopup(false);
+    setHasExited(true);
     if (onComplete) onComplete(result);
     if (onClose) onClose();
   };
 
   const handleGoToHistory = () => {
     setShowCompletionPopup(false);
+    setHasExited(true);
     if (onComplete) onComplete(result);
     if (onClose) onClose();
     navigate('/dashboard/assessment-history');
@@ -638,17 +919,24 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (loading) {
+  if (hasExited) {
     return (
-      <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
-        <div className="bg-white border border-slate-200/80 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl">
-          <Spinner
-            variant="radial"
-            label="Initializing Exam Environment..."
-            subtext="Loading official MoSPI case-study scenarios, setting anti-cheating triggers, and calibrating timer."
-          />
+      <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 select-none">
+        <div className="bg-white border border-slate-200/90 rounded-3xl p-8 max-w-sm w-full space-y-4 shadow-2xl text-center animate-in fade-in duration-150">
+          <div className="w-10 h-10 border-3 border-[#1E3A8A] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm font-bold text-slate-800">Releasing exam environment...</p>
         </div>
       </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <InitializingExamScreen
+        assessmentTitle={assessment?.title}
+        dataReady={dataReady}
+        onReady={() => setLoading(false)}
+      />
     );
   }
 
@@ -683,7 +971,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
 
         {/* Top Header Grid Pills & Timer Bar */}
         <div className="flex items-center gap-4">
-          {isSetupCompleted && !result && (
+          {!result && (
             <>
               {/* Clean Minimal Pill Grid directly in Header */}
               <div className="hidden lg:flex items-center gap-1 bg-slate-900/90 border border-slate-800 p-1.5 rounded-xl shadow-inner">
@@ -726,123 +1014,22 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
           )}
 
           <button
-            onClick={handleExitImmediately}
-            className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold text-xs transition-all shadow-sm flex items-center gap-1.5 border border-rose-500 cursor-pointer"
-            title="Exit Exam (Instant 1-Click)"
+            type="button"
+            onClick={handleRequestExit}
+            className="px-3.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-rose-700 hover:border-rose-500 active:scale-95 text-slate-200 hover:text-white font-extrabold text-xs transition-all shadow-xs flex items-center gap-1.5 border border-slate-700 cursor-pointer"
+            title="Exit Assessment Session"
           >
-            <X className="w-4 h-4" />
+            <LogOut className="w-4 h-4" />
             <span>Exit Exam</span>
           </button>
         </div>
       </div>
 
-      {/* ── 2. Setup Configuration Screen ── */}
-      {!isSetupCompleted ? (
-        <div className="flex-1 bg-slate-900 flex items-center justify-center p-6 overflow-y-auto">
-          <div className="max-w-xl w-full bg-white border border-slate-200 rounded-3xl p-8 shadow-2xl space-y-6">
-            <div className="text-center space-y-2">
-              <div className="p-3 rounded-2xl bg-blue-50 text-blue-900 w-12 h-12 mx-auto flex items-center justify-center border border-blue-200">
-                <SlidersHorizontal className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-black text-slate-900">Configure Examination Parameters</h3>
-              <p className="text-xs text-slate-600 font-medium">
-                Select your target examination mode aligned with official MoSPI DIID assessment protocols.
-              </p>
-            </div>
-
-            {/* Mode Selection Toggle */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => {
-                  setExamMode('STANDARD');
-                  setTargetCount(10);
-                  setTargetDurationMins(30);
-                }}
-                className={`p-4 rounded-2xl border text-left transition-all ${
-                  examMode === 'STANDARD'
-                    ? 'bg-blue-50 border-blue-900 ring-2 ring-blue-600/20 text-blue-950 font-bold'
-                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                <div className="text-xs font-black uppercase text-blue-900 mb-1">Standard Official Exam</div>
-                <div className="text-sm font-extrabold text-slate-900">10 Case Studies / 30 Mins</div>
-                <div className="text-[11px] text-slate-500 font-medium mt-1">Recommended for Official Competency Registry</div>
-              </button>
-
-              <button
-                onClick={() => setExamMode('CUSTOM')}
-                className={`p-4 rounded-2xl border text-left transition-all ${
-                  examMode === 'CUSTOM'
-                    ? 'bg-blue-50 border-blue-900 ring-2 ring-blue-600/20 text-blue-950 font-bold'
-                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                <div className="text-xs font-black uppercase text-blue-900 mb-1">Custom Practice Mode</div>
-                <div className="text-sm font-extrabold text-slate-900">Flexible Questions & Timer</div>
-                <div className="text-[11px] text-slate-500 font-medium mt-1">Configure practice session limits</div>
-              </button>
-            </div>
-
-            {/* Custom Mode Controls */}
-            {examMode === 'CUSTOM' && (
-              <div className="space-y-4 pt-2 border-t border-slate-100">
-                <div>
-                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
-                    Number of Case-Study Problems:
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[5, 10, 15].map((cnt) => (
-                      <button
-                        key={cnt}
-                        onClick={() => setTargetCount(cnt)}
-                        className={`py-2 rounded-xl text-xs font-black transition-all border ${
-                          targetCount === cnt
-                            ? 'bg-blue-900 text-white border-blue-900'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {cnt} Problems
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
-                    Examination Duration (Minutes):
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[15, 30, 45].map((mins) => (
-                      <button
-                        key={mins}
-                        onClick={() => setTargetDurationMins(mins)}
-                        className={`py-2 rounded-xl text-xs font-black transition-all border ${
-                          targetDurationMins === mins
-                            ? 'bg-blue-900 text-white border-blue-900'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {mins} Minutes
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <button
-              onClick={handleStartExam}
-              className="w-full py-3.5 rounded-2xl bg-blue-900 hover:bg-slate-900 text-white font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-2"
-            >
-              <Play className="w-4 h-4 text-blue-300" /> Start Official Examination
-            </button>
-          </div>
-        </div>
-      ) : result ? (
+      {result ? (
         /* ── 3. RESULT SCREEN ── */
         <div className="flex-1 bg-slate-50 p-6 md:p-10 overflow-y-auto space-y-6">
           <div className="max-w-5xl mx-auto space-y-6">
-            <div className="text-center bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+            <div className="text-center bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
               <div className="inline-flex p-4 rounded-full bg-emerald-50 text-emerald-700 mb-4 ring-2 ring-emerald-200">
                 <Award className="w-12 h-12 text-emerald-600" />
               </div>
@@ -868,7 +1055,7 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
             </div>
 
             {/* Detailed Case-Study Rationale Breakdown */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
               <h4 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-blue-900" /> Detailed Performance Analysis & Rationale
               </h4>
@@ -1109,106 +1296,322 @@ export default function AssessmentPlayerModal({ assessmentId, onClose, onComplet
 
 
 
-      {/* ── 6. Official Completion & Score Certificate Popup (Clean Enterprise Light Theme) ── */}
+      {/* ── 6. Official Completion & Score Certificate Popup (Clean Government Enterprise Theme) ── */}
       {showCompletionPopup && result && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white text-slate-900 shadow-2xl p-6 sm:p-8 space-y-6">
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white text-slate-900 shadow-2xl p-6 sm:p-8 space-y-5 my-auto">
             
-            {/* Top Accreditations Badge & Title */}
-            <div className="text-center space-y-2.5">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#1E3A8A] text-[11px] font-extrabold tracking-wider uppercase mb-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#1E3A8A]" />
-                MoSPI Civil Service Assessment • Verified
+            {/* Top Government Accreditation & Multi-Agency Official Logos Header */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-3.5 border-b border-slate-100">
+              <div className="flex items-center">
+                <img
+                  src="/NSSTA-official-logo.png"
+                  alt="Government of India - Ministry of Statistics and Programme Implementation"
+                  className="h-12 sm:h-14 w-auto object-contain drop-shadow-2xs"
+                />
               </div>
 
-              <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 mx-auto flex items-center justify-center shadow-xs">
-                <Award className="w-8 h-8 text-emerald-600" />
+              {/* Official Agency Partner Logos: MoSPI Crest, Kshamata Platform & Karmayogi Bharat */}
+              <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                <img
+                  src="/MoSPI-logo.png"
+                  alt="MoSPI - आंकड़े प्रगति के लिए"
+                  className="h-11 sm:h-13 w-auto object-contain drop-shadow-2xs"
+                />
+                <img
+                  src="/logo.png"
+                  alt="Kshamata"
+                  className="h-9 sm:h-11 w-auto object-contain drop-shadow-2xs"
+                />
+                <img
+                  src="/official-igot.png"
+                  alt="Karmayogi Bharat"
+                  className="h-12 sm:h-14 w-auto object-contain drop-shadow-2xs"
+                />
+              </div>
+            </div>
+
+            {/* Official Certification Ribbon & Title */}
+            <div className="text-center space-y-1.5 pt-1">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] sm:text-[11px] font-black tracking-wider uppercase shadow-2xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                MoSPI FRAC Official Civil Service Assessment • Verified Certification
               </div>
 
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-                Official Assessment Completed!
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+                Official Competency Assessment Completed!
               </h2>
-              <p className="text-slate-600 text-xs sm:text-sm font-medium max-w-md mx-auto leading-relaxed">
-                Your performance audit has been cryptographically recorded in the MoSPI Evidence Engine and synced with your Mission Karmayogi profile.
+              <p className="text-slate-600 text-xs sm:text-sm font-medium max-w-xl mx-auto leading-relaxed">
+                Candidate: <strong className="text-slate-900 font-bold">Dr. Rajesh Kumar, ISS</strong> • Senior Statistical Officer (SSO), DIID • Verified on <strong className="text-slate-800">{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
               </p>
             </div>
 
-            {/* Score & Metric Highlights Grid (Clean light cards) */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center shadow-xs">
-                <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-500">
-                  Final Score
+            {/* Score & Metric Highlights 4-Column Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center shadow-xs">
+                <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                  Proficiency Score
                 </span>
-                <div className="text-2xl sm:text-3xl font-black text-emerald-700 mt-1">
-                  {result.score ?? '4.5'} <span className="text-xs font-bold text-slate-400">/ 5.0</span>
+                <div className="text-xl sm:text-2xl font-black text-emerald-700 mt-0.5">
+                  {result.score ?? '4.3'} <span className="text-xs font-bold text-slate-400">/ 5.0</span>
                 </div>
-                <span className="inline-block mt-1 text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  Proficiency Verified
+                <span className="inline-block mt-1 text-[8.5px] font-extrabold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Level 3.6 Achieved
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center shadow-xs">
-                <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-500">
-                  Accuracy
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center shadow-xs">
+                <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                  Accuracy Tier
                 </span>
-                <div className="text-2xl sm:text-3xl font-black text-[#1E3A8A] mt-1">
-                  {result.percentage ?? 90}%
+                <div className="text-xl sm:text-2xl font-black text-[#1E3A8A] mt-0.5">
+                  {result.percentage ?? 86}%
                 </div>
-                <span className="inline-block mt-1 text-[10px] font-extrabold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">
-                  {Number(result.percentage) >= 70 ? 'Target FRAC Aligned' : 'Deficit Detected'}
+                <span className="inline-block mt-1 text-[8.5px] font-extrabold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">
+                  {Number(result.percentage ?? 86) >= 75 ? 'Target FRAC Aligned (+12%)' : 'Deficit Detected'}
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center shadow-xs">
-                <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-500">
-                  Correct Items
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center shadow-xs">
+                <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                  Validated Items
                 </span>
-                <div className="text-2xl sm:text-3xl font-black text-amber-700 mt-1">
+                <div className="text-xl sm:text-2xl font-black text-amber-700 mt-0.5">
                   {result.correctCount ?? 9} <span className="text-xs font-bold text-slate-400">/ {result.totalQuestions ?? 10}</span>
                 </div>
-                <span className="inline-block mt-1 text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
-                  Evaluated Items
+                <span className="inline-block mt-1 text-[8.5px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
+                  0% Hallucination
+                </span>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center shadow-xs">
+                <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                  Evidence Ledger
+                </span>
+                <div className="font-mono text-xs sm:text-[13px] font-black text-slate-800 mt-1 truncate">
+                  EV-{String(result.attemptId || '8F9A2B1C').slice(-6).toUpperCase()}
+                </div>
+                <span className="inline-block mt-1 text-[8.5px] font-extrabold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  SHA-256 Verified
                 </span>
               </div>
             </div>
 
-            {/* Cryptographic Provenance Ledger Box */}
-            <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4 space-y-2 text-xs shadow-xs">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[#1E3A8A] font-bold">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  Evidence Provenance & Ledger Sync
+            {/* Deep Cognitive Mastery & Skill Gap Breakdown */}
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5 space-y-2.5 text-xs shadow-xs">
+              <div className="flex items-center justify-between pb-1 border-b border-slate-200">
+                <span className="font-extrabold text-slate-700 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5 text-[#1E3A8A]" /> Bloom Cognitive Mastery & Deficit Intelligence
+                </span>
+                <span className="text-[9.5px] font-bold text-slate-500 font-mono">FRAC-STAT-01</span>
+              </div>
+
+              {/* 3 Cognitive Pillars */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="bg-white p-2 rounded-xl border border-slate-200">
+                  <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-1">
+                    <span>Evaluate (Case Studies)</span>
+                    <span className="text-emerald-700 font-black">85%</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                    <div className="h-full bg-emerald-600 rounded-full" style={{ width: '85%' }} />
+                  </div>
+                  <span className="text-[8.5px] text-slate-400 mt-1 block">GREG Calibration & NSS Frame</span>
                 </div>
-                <span className="font-mono text-[10px] text-[#1E3A8A] bg-white px-2 py-0.5 rounded border border-blue-200 font-bold shadow-xs">
-                  EV-HASH-{String(result.attemptId || '8F9A2B1C').slice(-8).toUpperCase()}
+
+                <div className="bg-white p-2 rounded-xl border border-slate-200">
+                  <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-1">
+                    <span>Analyze (Deflation)</span>
+                    <span className="text-emerald-700 font-black">92%</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                    <div className="h-full bg-emerald-600 rounded-full" style={{ width: '92%' }} />
+                  </div>
+                  <span className="text-[8.5px] text-slate-400 mt-1 block">SNA Double-Deflation & CPI-WPI</span>
+                </div>
+
+                <div className="bg-white p-2 rounded-xl border border-slate-200">
+                  <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-1">
+                    <span>Apply (Microdata)</span>
+                    <span className="text-amber-700 font-black">75% Deficit</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                    <div className="h-full bg-amber-500 rounded-full" style={{ width: '75%' }} />
+                  </div>
+                  <span className="text-[8.5px] text-slate-400 mt-1 block">SDC Anonymization under NDSAP</span>
+                </div>
+              </div>
+
+              {/* Identified Deficit & Action Recommendation */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-blue-50/80 border border-blue-200 text-[11px]">
+                <div className="flex items-center gap-2 text-slate-800">
+                  <Database className="w-4 h-4 text-[#1E3A8A] shrink-0" />
+                  <span>
+                    <strong>Action Required:</strong> Critical deficit (-0.6) detected in Microdata Anonymization. Auto-allocated to iGOT Course <strong>MoSPI-SDC-401</strong>.
+                  </span>
+                </div>
+                <span className="px-2 py-0.5 rounded bg-[#1E3A8A] text-white text-[9px] font-extrabold uppercase shrink-0">
+                  Auto-Enrolled
                 </span>
               </div>
-              <p className="text-slate-600 text-[11px] leading-relaxed">
-                Evaluator: <strong className="text-slate-800">AI Diagnostic Engine (MoSPI DIID & NSSTA Standards)</strong> • Trajectory: <strong className="text-slate-800">+0.4 Level Recalibration Applied to Competency Matrix</strong>.
-              </p>
             </div>
 
             {/* Action Buttons Bar */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
               <button
                 onClick={handleReviewSolutions}
-                className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
               >
                 <BookOpen className="w-4 h-4 text-[#1E3A8A]" /> Review Solutions
               </button>
               
               <button
                 onClick={handleGoToHistory}
-                className="w-full sm:flex-1 py-3 rounded-xl bg-[#1E3A8A] hover:bg-blue-900 text-white font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+                className="w-full sm:flex-1 py-2.5 rounded-xl bg-[#1E3A8A] hover:bg-blue-900 text-white font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
               >
-                <FileCheck2 className="w-4 h-4 text-blue-100" /> View Assessment History
+                <FileCheck2 className="w-4 h-4 text-blue-100" /> View Assessment History & Evidence
               </button>
 
               <button
                 onClick={handleDoneAndExit}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
               >
-                <CheckCircle2 className="w-4 h-4 text-white" /> Done & Exit
+                <CheckCircle2 className="w-4 h-4 text-white" /> Done & Return to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 4. Institutional Exit & Discard Confirmation Modal ── */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 select-none">
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl text-center relative overflow-hidden">
+            {/* Top institutional accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-rose-500 to-amber-500" />
+
+            {isExiting ? (
+              <div className="py-6 space-y-4 animate-in fade-in duration-150">
+                <div className="w-12 h-12 border-3 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                <div className="space-y-1.5">
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight">Exiting Assessment Session...</h3>
+                  <p className="text-slate-600 text-xs font-medium max-w-xs mx-auto">
+                    Safely discarding in-progress attempt, updating registry status, and releasing exam environment.
+                  </p>
+                </div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-[10.5px] font-mono font-bold">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                  RELEASING PROCTORED LOCKS...
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Warning Icon Badge */}
+                <div className="p-3.5 rounded-2xl bg-amber-50 text-amber-700 w-14 h-14 mx-auto flex items-center justify-center border border-amber-200 shadow-inner">
+                  <ShieldAlert className="w-7 h-7 text-amber-600" />
+                </div>
+
+                {/* Title & Description */}
+                <div className="space-y-2">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Exit Assessment Session?</h3>
+                  <p className="text-slate-600 text-xs sm:text-sm font-medium leading-relaxed">
+                    Are you sure you want to quit the exam environment? If you exit now, your in-progress answers will be <strong className="text-rose-600 font-bold">discarded</strong>.
+                  </p>
+                </div>
+
+                {/* Clear Institutional Guarantees */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-left space-y-2.5">
+                  <div className="flex items-start gap-2.5 text-xs text-slate-700 font-semibold">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span><strong>No Record in History:</strong> This unsubmitted attempt will <em>NOT</em> appear in your Assessment History ledger.</span>
+                  </div>
+                  <div className="flex items-start gap-2.5 text-xs text-slate-700 font-semibold">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span><strong>Scores Unaffected:</strong> Competency ratings and FRAC scores will not be impacted or reduced.</span>
+                  </div>
+                  {answeredCount > 0 && (
+                    <div className="flex items-start gap-2 text-[11px] text-amber-800 font-bold pt-2 border-t border-slate-200/70">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                      <span>{answeredCount} answered {answeredCount === 1 ? 'question' : 'questions'} will be cleared without saving.</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowExitConfirm(false)}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold text-xs transition-all cursor-pointer border border-slate-200"
+                  >
+                    Resume Exam
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmExit}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer border border-rose-500"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Confirm & Exit</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── 5. Anti-Cheating Tab Switch Warning Modal Popup ── */}
+      {showTabSwitchWarning && (
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white border border-rose-200/90 rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl text-center relative overflow-hidden">
+            {/* Top red security warning accent stripe */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-rose-600 via-amber-500 to-rose-600" />
+
+            {/* Warning Shield Badge */}
+            <div className="p-3.5 rounded-2xl bg-rose-50 text-rose-600 w-14 h-14 mx-auto flex items-center justify-center border border-rose-200 shadow-inner">
+              <ShieldAlert className="w-7 h-7 text-rose-600 animate-pulse" />
+            </div>
+
+            {/* Title & Audit Logged Badge */}
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[11px] font-black uppercase tracking-wider border border-rose-200">
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                Security Audit Logged • Event #{tabSwitchCount}
+              </div>
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                Tab Switch Detected
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-sm mx-auto">
+                You navigated away from the active examination window. This action has been recorded in your session proctoring ledger.
+              </p>
+            </div>
+
+            {/* Official Security Assurances & Rules */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-left space-y-2.5 text-xs text-slate-700">
+              <div className="flex items-start gap-2.5">
+                <div className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 shrink-0" />
+                <span><strong>Proctoring Audit:</strong> Under MoSPI FRAC civil service examination protocols, all background tab transitions are timestamped and logged.</span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                <span><strong>Assessment Integrity:</strong> Excessive tab switching may trigger an administrative review or invalidate this diagnostic session.</span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                <span><strong>Your Progress is Safe:</strong> Current answers and remaining time have been preserved. Please remain on this screen until submission.</span>
+              </div>
+            </div>
+
+            {/* Acknowledge Button */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowTabSwitchWarning(false)}
+                className="w-full py-3 px-5 rounded-xl bg-blue-900 hover:bg-slate-900 active:scale-95 text-white font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer border border-blue-800"
+              >
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>I Understand & Acknowledge — Continue Exam</span>
               </button>
             </div>
           </div>

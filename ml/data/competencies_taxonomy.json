@@ -1,13 +1,28 @@
 [
   {
-    "code": "SURVEY_SAMPLING",
-    "name": "Survey Design and Sampling",
+    "code": "STAT_ANALYSIS",
+    "name": "Statistical Analysis & Inference",
     "category": "Statistical"
   },
   {
-    "code": "STATISTICAL_ANALYSIS",
-    "name": "Statistical Analysis",
+    "code": "SAMPLING_DESIGN",
+    "name": "Survey Design & Sampling Methodology",
     "category": "Statistical"
+  },
+  {
+    "code": "PYTHON_R_STATS",
+    "name": "Python & R for Data Analytics",
+    "category": "Technical"
+  },
+  {
+    "code": "SQL_DATA_MGMT",
+    "name": "SQL & Enterprise Data Management",
+    "category": "Technical"
+  },
+  {
+    "code": "DATA_QUALITY_GOV",
+    "name": "Metadata Standards & Data Governance",
+    "category": "Digital Governance"
   },
   {
     "code": "PYTHON_DATA",
@@ -15,9 +30,9 @@
     "category": "Technical"
   },
   {
-    "code": "DATA_PRIVACY",
-    "name": "Data Privacy and Cybersecurity",
-    "category": "Digital Governance"
+    "code": "LABOUR_STATISTICS",
+    "name": "Labour Statistics (PLFS)",
+    "category": "Statistical"
   },
   {
     "code": "SQL_DATA",
@@ -33,5 +48,155 @@
     "code": "CLOUD_APIS",
     "name": "Cloud Computing and APIs",
     "category": "Technical"
+  },
+  {
+    "code": "INDUSTRIAL_STATISTICS",
+    "name": "Industrial Statistics (ASI/IIP)",
+    "category": "Statistical"
+  },
+  {
+    "code": "SDG_INDICATORS",
+    "name": "SDG Indicators & Monitoring",
+    "category": "Statistical"
+  },
+  {
+    "code": "DATA_QUALITY",
+    "name": "Data Quality Frameworks (NQAF/SQAF)",
+    "category": "Statistical"
+  },
+  {
+    "code": "PYTHON_ANALYTICS",
+    "name": "Python for Data Analytics",
+    "category": "Technical"
+  },
+  {
+    "code": "R_PROGRAMMING",
+    "name": "R Programming for Statistics",
+    "category": "Technical"
+  },
+  {
+    "code": "STATA_SPSS",
+    "name": "Statistical Software (Stata/SPSS/SAS)",
+    "category": "Technical"
+  },
+  {
+    "code": "GIS_SPATIAL",
+    "name": "GIS & Spatial Data Analysis",
+    "category": "Technical"
+  },
+  {
+    "code": "DATA_VISUALIZATION",
+    "name": "Data Visualization & Dashboarding",
+    "category": "Technical"
+  },
+  {
+    "code": "AI_ML_FUNDAMENTALS",
+    "name": "AI/ML Fundamentals for Statistics",
+    "category": "Technical"
+  },
+  {
+    "code": "CLOUD_COMPUTING",
+    "name": "Cloud Computing (MeghRaj/GovCloud)",
+    "category": "Technical"
+  },
+  {
+    "code": "APIS_OPEN_DATA",
+    "name": "APIs & Open Government Data",
+    "category": "Technical"
+  },
+  {
+    "code": "CYBERSECURITY",
+    "name": "Cybersecurity & Information Security",
+    "category": "Digital Governance"
+  },
+  {
+    "code": "SQL_DATABASE",
+    "name": "SQL & Database Management",
+    "category": "Technical"
+  },
+  {
+    "code": "SURVEY_SAMPLING",
+    "name": "Survey Design and Sampling",
+    "category": "Statistical"
+  },
+  {
+    "code": "STATISTICAL_ANALYSIS",
+    "name": "Statistical Analysis",
+    "category": "Statistical"
+  },
+  {
+    "code": "DATA_PRIVACY",
+    "name": "Data Privacy and Cybersecurity",
+    "category": "Digital Governance"
+  },
+  {
+    "code": "SURVEY_DESIGN",
+    "name": "Survey Design & Methodology",
+    "category": "Statistical"
+  },
+  {
+    "code": "SAMPLING_METHODS",
+    "name": "Sampling Theory & Methods",
+    "category": "Statistical"
+  },
+  {
+    "code": "NATIONAL_ACCOUNTS",
+    "name": "National Accounts & Macroeconomic Stats",
+    "category": "Statistical"
+  },
+  {
+    "code": "PRICE_STATISTICS",
+    "name": "Price Statistics (CPI/WPI)",
+    "category": "Statistical"
+  },
+  {
+    "code": "AGRI_STATISTICS",
+    "name": "Agricultural Statistics",
+    "category": "Statistical"
+  },
+  {
+    "code": "METADATA_STANDARDS",
+    "name": "Metadata Standards & SDMX",
+    "category": "Statistical"
+  },
+  {
+    "code": "LEADERSHIP",
+    "name": "Leadership & Change Management",
+    "category": "Behavioural"
+  },
+  {
+    "code": "COMMUNICATION",
+    "name": "Communication & Data Storytelling",
+    "category": "Behavioural"
+  },
+  {
+    "code": "PROJECT_MANAGEMENT",
+    "name": "Project & Programme Management",
+    "category": "Behavioural"
+  },
+  {
+    "code": "ETHICS_INTEGRITY",
+    "name": "Ethics, Integrity & Statistical Ethics",
+    "category": "Behavioural"
+  },
+  {
+    "code": "DECISION_MAKING",
+    "name": "Evidence-Based Decision Making",
+    "category": "Behavioural"
+  },
+  {
+    "code": "DIGITAL_SIGNATURES",
+    "name": "Digital Signatures & PKI",
+    "category": "Digital Governance"
+  },
+  {
+    "code": "GOVT_CLOUD",
+    "name": "Government Cloud (MeghRaj)",
+    "category": "Digital Governance"
+  },
+  {
+    "code": "DIGITAL_PUBLIC_INFRA",
+    "name": "Digital Public Infrastructure (DPI)",
+    "category": "Digital Governance"
   }
 ]

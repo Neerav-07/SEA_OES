@@ -83,3 +83,16 @@ export const questionValidationResults = pgTable('question_validation_results', 
 }, (table) => ({
   questionVersionIdx: index('question_validation_results_question_version_idx').on(table.questionVersionId),
 }));
+
+export const questionAiEvaluations = pgTable('question_ai_evaluations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  questionVersionId: uuid('question_version_id').references(() => questionVersions.id, { onDelete: 'cascade' }).notNull(),
+  provider: text('provider').notNull(),
+  model: text('model'),
+  promptVersion: text('prompt_version').notNull(),
+  sourceIds: jsonb('source_ids').default([]).notNull(),
+  result: jsonb('result').notNull(),
+  failures: jsonb('failures').default([]).notNull(),
+  status: text('status').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({ questionVersionIdx: index('question_ai_evaluations_version_idx').on(table.questionVersionId) }));

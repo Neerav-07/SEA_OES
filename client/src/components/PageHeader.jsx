@@ -1,15 +1,20 @@
+import HowItWorksButton from './common/HowItWorksButton.jsx';
+
 /**
  * PageHeader Component
- * Standard page header with title, subtitle, and actions
+ * Standard page header with title, subtitle, actions, and How It Works guide
  */
-
 const PageHeader = ({
 	title,
 	subtitle = '',
 	action = null,
 	breadcrumbs = null,
 	className = '',
+	tabKey = null,
+	showHowItWorks = true,
 }) => {
+	const isSettings = typeof window !== 'undefined' && window.location.pathname.includes('/settings');
+
 	return (
 		<div className={`mb-8 ${className}`}>
 			{breadcrumbs && (
@@ -33,7 +38,10 @@ const PageHeader = ({
 					<h1 className='text-3xl font-bold text-[var(--app-color-text)]'>{title}</h1>
 					{subtitle && <p className='text-[var(--app-color-text-muted)] mt-2'>{subtitle}</p>}
 				</div>
-				{action && <div className='flex-shrink-0'>{action}</div>}
+				<div className='flex items-center gap-2 flex-shrink-0 pt-0.5'>
+					{action}
+					{showHowItWorks && !isSettings && <HowItWorksButton tabKey={tabKey} />}
+				</div>
 			</div>
 		</div>
 	);

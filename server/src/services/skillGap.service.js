@@ -22,6 +22,7 @@ import {
   calculateRecencyFactor,
   calculateWeightedEstimate,
 } from "../utils/evidenceFusion.js";
+import { isEligibleTargetRole } from '../utils/roleEligibility.js';
 
 export { calculateSkillGap, calculateSkillGaps };
 
@@ -65,27 +66,11 @@ export async function listSkillGaps({
   const db = getDb();
   
   let [official] = await db
-    .select({ id: officials.id, roleId: officials.roleId })
+    .select({ id: officials.id, roleId: officials.roleId, targetRoleId: officials.targetRoleId })
     .from(officials)
     .where(eq(officials.userId, userId));
 
-  if (!official) {
-    const rolesList = await db.select().from(roles).limit(1);
-    if (rolesList.length > 0) {
-      const [createdOff] = await db.insert(officials).values({
-        userId,
-        roleId: rolesList[0].id,
-        designation: 'Senior Statistical Officer',
-        department: 'DIID, MoSPI',
-        cadre: 'ISS',
-        experienceYears: 5,
-        education: 'M.Stat. (ISI Kolkata)',
-      }).returning();
-      official = createdOff;
-    } else {
-      return [];
-    }
-  }
+  if (!official) return [];
 
   const targetOfficialId = officialId || official.id;
   const conditions = [eq(skillGaps.officialId, targetOfficialId)];
@@ -125,7 +110,7 @@ export async function listSkillGaps({
 
   if (rawGaps.length === 0 && official) {
     try {
-      await recalculateSkillGaps({ userId, officialId: official.id, roleId: official.roleId });
+      await recalculateSkillGaps({ userId, officialId: official.id, roleId: official.targetRoleId || official.roleId });
     } catch (err) {
       console.warn('Auto-calculation fallback warning:', err.message);
     }
@@ -242,13 +227,18 @@ export async function recalculateSkillGaps({ userId, officialId, roleId }) {
 
   const db = getDb();
   const [official] = await db
-    .select({ id: officials.id, roleId: officials.roleId })
+    .select({ id: officials.id, userId: officials.userId, roleId: officials.roleId, targetRoleId: officials.targetRoleId, department: officials.department })
     .from(officials)
     .where(eq(officials.id, officialId));
   if (!official) throw notFound();
-  const resolvedRoleId = roleId || official.roleId;
+  if (official.userId !== userId) throw badRequest('Official does not belong to the authenticated user.');
+  const resolvedRoleId = roleId || official.targetRoleId || official.roleId;
   if (!resolvedRoleId)
     throw badRequest("A role is required for recalculation.");
+  const allRoles = await db.select().from(roles);
+  if (!isEligibleTargetRole({ official, roles: allRoles, targetRoleId: resolvedRoleId })) {
+    throw badRequest('Selected role is not eligible for this official context.');
+  }
 
   const now = new Date();
   let requirements = await db
@@ -281,29 +271,7 @@ export async function recalculateSkillGaps({ userId, officialId, roleId }) {
       }),
     );
   }
-  if (requirements.length === 0) {
-    const allCompetencies = await db.select().from(competencies).limit(6);
-    if (allCompetencies.length > 0) {
-      requirements = await Promise.all(
-        allCompetencies.map(async (comp) => {
-          const [created] = await db
-            .insert(competencyRequirements)
-            .values({
-              roleId: resolvedRoleId,
-              competencyId: comp.id,
-              requiredLevel: 4.0,
-              priority: 5,
-              urgency: 5,
-              mandatory: true,
-              frameworkVersion: "role-competencies-v1",
-              sourceReference: "Default MoSPI competency requirements",
-            })
-            .returning();
-          return created;
-        }),
-      );
-    }
-  }
+  if (requirements.length === 0) throw badRequest('No database-backed competency requirements exist for the selected target role.');
 
   const evidenceItems = await db
     .select()
@@ -424,5 +392,5 @@ export async function recalculateSkillGaps({ userId, officialId, roleId }) {
     persistedGaps.push(persisted);
   }
 
-  return persistedGaps;
+  return persistedGaps.map((gap) => ({ ...gap, frameworkVersion: requirements.find((item) => item.id === gap.requirementId)?.frameworkVersion || null }));
 }

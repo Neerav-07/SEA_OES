@@ -6,13 +6,13 @@ import {
   CheckCircle2,
   Calendar,
   ShieldCheck,
-  Sparkles,
   ExternalLink,
   ChevronRight,
   FileCheck,
   RefreshCw,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import KarmayogiLogo from '../common/KarmayogiLogo.jsx';
 
 const SEEDED_ATTEMPTS = [
   {
@@ -92,7 +92,7 @@ export default function AssessmentHistoryCard() {
   );
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
       {/* Title Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
         <div>
@@ -145,7 +145,7 @@ export default function AssessmentHistoryCard() {
         </div>
 
         <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1.5">
-          <Sparkles size={14} /> Synced with ML Recommendation Engine
+          <ShieldCheck size={14} className="text-emerald-700" /> Grounded in Official Assessment Evidence
         </span>
       </div>
 
@@ -178,7 +178,7 @@ export default function AssessmentHistoryCard() {
                   <span>Proficiency Shift: <strong className="text-[#1E3A8A]">{att.levelBefore} ➔ {att.levelAfter}</strong></span>
                 </p>
                 <div className="text-[10.5px] text-indigo-900 font-semibold flex items-center gap-1 mt-0.5">
-                  <Sparkles size={12} className="text-indigo-600" /> {att.recommendationImpact}
+                  <KarmayogiLogo className="h-3 w-3 inline-block shrink-0" /> {att.recommendationImpact}
                 </div>
               </div>
 

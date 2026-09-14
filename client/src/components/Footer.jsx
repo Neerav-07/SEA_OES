@@ -14,15 +14,15 @@ export default function Footer() {
 					{/* Brand Column */}
 					<div className='lg:col-span-2 space-y-6'>
 						<Link to='/' className='inline-block group'>
-							<KshamataLogo size="lg" className="bg-white/95 px-3 py-1.5 rounded-xl shadow-md" />
+							<KshamataLogo size="md" boxed />
 						</Link>
 						<p className='max-w-md text-sm leading-relaxed text-slate-300 font-medium'>
-							AI-enabled Competency Intelligence & Assessment Engine for India's Official Statistical System.
+							AI-enabled Competency Intelligence & Learning Platform for India's Official Statistical System.
 							Designed for MoSPI Data Informatics & Innovation Division (DIID) and National Statistical Systems Training Academy (NSSTA).
 						</p>
 						<div className="flex flex-wrap items-center gap-3 pt-2">
 							<span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-950/80 border border-blue-800/80 px-3 py-1 text-xs font-semibold text-blue-200">
-								<Shield size={14} className="text-blue-400" /> SIH 2026 PS 26101
+								<Shield size={14} className="text-blue-400" /> National Statistical System
 							</span>
 							<span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-950/80 border border-emerald-800/80 px-3 py-1 text-xs font-semibold text-emerald-200">
 								<CheckCircle2 size={14} className="text-emerald-400" /> GIGW Compliant
@@ -51,7 +51,7 @@ export default function Footer() {
 							</li>
 							<li>
 								<Link to="/dashboard/assessments" className='hover:text-white transition-colors flex items-center gap-1.5'>
-									Assessment Engine
+									Assessment Studio
 								</Link>
 							</li>
 							<li>
@@ -104,13 +104,13 @@ export default function Footer() {
 
 				{/* Bottom Bar */}
 				<div className='pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-medium'>
-					<p>© {new Date().getFullYear()} Ministry of Statistics and Programme Implementation (MoSPI). All rights reserved.</p>
+					<p>© {new Date().getFullYear()} Ministry of Statistics and Programme Implementation (MoSPI), Government of India.</p>
 					<div className="flex items-center gap-6">
 						<span>Security Audit Certified</span>
 						<span>•</span>
 						<span>GIGW Compliant</span>
 						<span>•</span>
-						<span className="text-slate-300">Team Esc(Reality);</span>
+						<span>Digital India Initiative</span>
 					</div>
 				</div>
 			</Container>

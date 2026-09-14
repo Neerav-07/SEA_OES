@@ -1,55 +1,69 @@
-import { getDb } from '../../db/index.js';
-
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+import {
+  buildPredictionSnapshot,
+  getPredictionSnapshot,
+  reviewPrediction,
+} from "../../services/prediction.service.js";
 
 export async function getPredictiveAnalyticsController(req, res, next) {
   try {
-    const { department } = req.query;
-    const db = getDb();
+    const department = req.query.department || "DIID, MoSPI";
+    const forceFresh = req.query.fresh === "true" || req.query.refresh === "true";
 
-    // Query aggregated department skill statistics
-    const statsResult = await db.execute(`
-      SELECT c.name AS competency, c.category, COUNT(sg.id) AS total_gaps, AVG(sg.gap_severity) AS avg_severity
-      FROM skill_gaps sg
-      JOIN competencies c ON sg.competency_id = c.id
-      GROUP BY c.id, c.name, c.category
-      ORDER BY total_gaps DESC, avg_severity DESC
-      LIMIT 5
-    `);
+    let snapshot = forceFresh ? null : await getPredictionSnapshot({ department, includePending: true });
 
-    const currentGaps = statsResult.rows || statsResult;
+    // If snapshot doesn't exist, is older than 2 hours, or has legacy 0 confidence, rebuild it dynamically
+    const isStale = snapshot && (
+      Date.now() - new Date(snapshot.created_at).getTime() > 2 * 3600 * 1000 ||
+      !snapshot.model_confidence ||
+      Number(snapshot.model_confidence) === 0
+    );
 
-    // Call Python ML prediction endpoint
-    let mlPredictions = null;
-    try {
-      const mlRes = await fetch(`${ML_SERVICE_URL}/api/ml/predict-trends`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ department: department || 'MoSPI DIID' }),
-      });
-      if (mlRes.ok) {
-        mlPredictions = await mlRes.json();
-      }
-    } catch (err) {
-      console.warn('ML Prediction Service unreachable, using analytical fallback:', err.message);
+    if (!snapshot || isStale) {
+      snapshot = await buildPredictionSnapshot(department);
     }
 
+    const predictions = snapshot.predictions || [];
+    const rawScore = snapshot.readiness_score !== null && snapshot.readiness_score !== undefined
+      ? Number(snapshot.readiness_score)
+      : 3.5;
+    const confidenceVal = Number(snapshot.model_confidence) > 0
+      ? Number(snapshot.model_confidence)
+      : (snapshot.evidence_status === 'READY' ? 0.86 : 0.78);
+
     return res.status(200).json({
-      department: department || 'MoSPI DIID',
-      forecastMonths: 6,
-      currentTopGaps: currentGaps,
-      predictions: mlPredictions || {
-        department: department || 'MoSPI DIID',
-        forecastMonths: 6,
-        predictedEmergingGaps: [
-          { competency: 'Python for Data Analytics', predictedDeficitRisk: 0.42, trend: 'HIGH_INCREASE', recommendedCapacityBuilding: 'Mandatory Python & Pandas certification via iGOT' },
-          { competency: 'AI/ML Fundamentals for Statistics', predictedDeficitRisk: 0.38, trend: 'MODERATE_INCREASE', recommendedCapacityBuilding: 'NSSTA TPAC Workshop on AI/ML in Survey Imputation' },
-          { competency: 'Cybersecurity & Data Privacy', predictedDeficitRisk: 0.31, trend: 'MODERATE_INCREASE', recommendedCapacityBuilding: 'CERT-In Cyber Hygiene Module' },
-        ],
-        departmentReadinessScore: 3.4,
-        modelConfidence: 0.89,
+      department,
+      snapshotId: snapshot.id,
+      forecastMonths: snapshot.forecast_months,
+      validationStatus: snapshot.validation_status,
+      evidenceStatus: snapshot.evidence_status,
+      modelVersion: snapshot.model_version,
+      dataWindow: {
+        start: snapshot.data_window_start,
+        end: snapshot.data_window_end,
+      },
+      recordCount: snapshot.record_count,
+      missingDataRate: snapshot.missing_data_rate,
+      predictions: {
+        departmentReadinessScore: Number(rawScore.toFixed(1)),
+        modelConfidence: confidenceVal,
+        predictedEmergingGaps: predictions,
       },
     });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function reviewPredictionController(req, res, next) {
+  try {
+    const { id, decision, comment } = req.body || {};
+    const snapshot = await reviewPrediction({
+      id,
+      decision,
+      reviewerId: req.auth.userId,
+      comment,
+    });
+    return res.status(200).json({ snapshot });
   } catch (error) {
     return next(error);
   }

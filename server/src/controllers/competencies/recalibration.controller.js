@@ -13,13 +13,14 @@ import {
   calculateConfidenceScore,
   calculateRecencyFactor,
 } from "../../utils/evidenceFusion.js";
+import { invalidateAnalyticsCache } from "../governance/analytics.controller.js";
 
-async function recalibrateOne(officialId, allComps) {
-  const offEvidence = await db
-    .select()
-    .from(evidence)
-    .where(eq(evidence.officialId, officialId));
+/**
+ * Pure in-memory recalibration computation for one official
+ */
+function computeRecalibration(officialId, allComps, offEvidence = []) {
   const results = [];
+  const historyBatch = [];
 
   for (const comp of allComps) {
     const compEv = offEvidence.filter((e) => e.competencyId === comp.id);
@@ -31,7 +32,7 @@ async function recalibrateOne(officialId, allComps) {
       compEv.reduce((acc, e) => acc + calculateRecencyFactor(e.recordedAt), 0) /
       compEv.length;
 
-    await db.insert(competencyHistory).values({
+    historyBatch.push({
       officialId,
       competencyId: comp.id,
       previousScore: previousEstimate,
@@ -48,7 +49,7 @@ async function recalibrateOne(officialId, allComps) {
     });
   }
 
-  return results;
+  return { results, historyBatch };
 }
 
 /**
@@ -59,19 +60,43 @@ async function recalibrateOne(officialId, allComps) {
  */
 export const recalibrateOfficialCompetencies = asyncHandler(
   async (req, res) => {
-    const { officialId } = req.body;
-    const allComps = await db.select().from(competencies);
+    const { officialId } = req.body || {};
 
     if (officialId) {
-      const [official] = await db
-        .select()
-        .from(officials)
-        .where(eq(officials.id, officialId));
+      const [[official], allComps, offEvidence] = await Promise.all([
+        db.select().from(officials).where(eq(officials.id, officialId)),
+        db.select({ id: competencies.id, code: competencies.code, name: competencies.name }).from(competencies),
+        db
+          .select({
+            id: evidence.id,
+            competencyId: evidence.competencyId,
+            score: evidence.score,
+            confidence: evidence.confidence,
+            recordedAt: evidence.recordedAt,
+            evidenceType: evidence.evidenceType,
+          })
+          .from(evidence)
+          .where(eq(evidence.officialId, officialId)),
+      ]);
+
       if (!official) {
         return sendError(res, "Official profile not found", 404);
       }
 
-      const recalibratedResults = await recalibrateOne(officialId, allComps);
+      const { results: recalibratedResults, historyBatch } = computeRecalibration(
+        officialId,
+        allComps,
+        offEvidence,
+      );
+
+      if (historyBatch.length > 0) {
+        await db.insert(competencyHistory).values(historyBatch).catch((err) => {
+          console.warn("[Recalibration] Failed to insert competency history:", err?.message);
+        });
+      }
+
+      // Invalidate analytics cache so fresh scores are calculated on next request
+      invalidateAnalyticsCache();
 
       return sendSuccess(
         res,
@@ -86,12 +111,45 @@ export const recalibrateOfficialCompetencies = asyncHandler(
       );
     }
 
-    const allOfficials = await db.select().from(officials);
+    // ── Organization-Wide Recalibration Audit ──
+    // Parallel projected queries fetch all necessary records in a single round-trip
+    const [allOfficials, allComps, allEvidence] = await Promise.all([
+      db.select({ id: officials.id, designation: officials.designation }).from(officials),
+      db.select({ id: competencies.id, code: competencies.code, name: competencies.name }).from(competencies),
+      db
+        .select({
+          id: evidence.id,
+          officialId: evidence.officialId,
+          competencyId: evidence.competencyId,
+          score: evidence.score,
+          confidence: evidence.confidence,
+          recordedAt: evidence.recordedAt,
+          evidenceType: evidence.evidenceType,
+        })
+        .from(evidence),
+    ]);
+
+    // Group evidence by officialId for instant in-memory lookup
+    const evidenceByOfficial = new Map();
+    for (const ev of allEvidence) {
+      if (!evidenceByOfficial.has(ev.officialId)) {
+        evidenceByOfficial.set(ev.officialId, []);
+      }
+      evidenceByOfficial.get(ev.officialId).push(ev);
+    }
+
     let totalRecalibrated = 0;
     const perOfficialSummary = [];
+    const allHistoryBatch = [];
 
     for (const official of allOfficials) {
-      const results = await recalibrateOne(official.id, allComps);
+      const offEvidence = evidenceByOfficial.get(official.id) || [];
+      const { results, historyBatch } = computeRecalibration(official.id, allComps, offEvidence);
+
+      if (historyBatch.length > 0) {
+        allHistoryBatch.push(...historyBatch);
+      }
+
       totalRecalibrated += results.length;
       if (results.length > 0) {
         perOfficialSummary.push({
@@ -101,6 +159,16 @@ export const recalibrateOfficialCompetencies = asyncHandler(
         });
       }
     }
+
+    // Single batch insert for all updated history records
+    if (allHistoryBatch.length > 0) {
+      await db.insert(competencyHistory).values(allHistoryBatch).catch((err) => {
+        console.warn("[Recalibration] Failed to batch insert competency history:", err?.message);
+      });
+    }
+
+    // Invalidate analytics cache so fresh organization-wide scores are computed
+    invalidateAnalyticsCache();
 
     return sendSuccess(
       res,

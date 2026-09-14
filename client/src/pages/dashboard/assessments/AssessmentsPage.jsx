@@ -15,7 +15,6 @@ import {
   Search,
   Eye,
   Layers,
-  Sparkles,
   ArrowRight,
   ChevronDown,
   ChevronUp,
@@ -47,6 +46,9 @@ import {
 } from '../../../services/assessmentBlueprint.api.js';
 import { assembleAssessment, generateQuestion, getAssessment, reviewQuestion, reviseQuestion, validateAssessment, validateQuestion } from '../../../services/source.api.js';
 import AssessmentPlayerModal from './AssessmentPlayerModal.jsx';
+import HowItWorksButton from '../../../components/common/HowItWorksButton.jsx';
+import useAdminStore from '../../../store/adminData.store.js';
+import useAuthStore from '../../../store/auth.store.js';
 
 const COGNITIVE_LEVELS = ['REMEMBER', 'UNDERSTAND', 'APPLY', 'ANALYZE', 'EVALUATE'];
 const QUESTION_TYPES = ['MCQ', 'SCENARIO'];
@@ -144,18 +146,23 @@ function errorForField(errors, field) {
 }
 
 export default function AssessmentsPage() {
-  const [blueprints, setBlueprints] = useState([]);
-  const [competencies, setCompetencies] = useState([]);
+  const blueprints = useAdminStore((s) => s.blueprints);
+  const competencies = useAdminStore((s) => s.blueprintCompetencies);
+  const officialAssessments = useAdminStore((s) => s.officialAssessments);
+  const isStudioLoading = useAdminStore((s) => s.isAssessmentStudioLoading);
+  const fetchAssessmentStudioData = useAdminStore((s) => s.fetchAssessmentStudioData);
+  const fetchOfficialAssessments = useAdminStore((s) => s.fetchOfficialAssessments);
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.platformRole === 'ADMIN';
+
   const [claims, setClaims] = useState([]);
   const [learningObjectives, setLearningObjectives] = useState([]);
   const [selectedBlueprintId, setSelectedBlueprintId] = useState('');
   const [form, setForm] = useState(emptyForm);
-  const [loading, setLoading] = useState(true);
   const [loadingBlueprint, setLoadingBlueprint] = useState(false);
   const [loadingLookups, setLoadingLookups] = useState(false);
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('PUBLISHED_ASSESSMENTS'); // 'PUBLISHED_ASSESSMENTS' | 'BLUEPRINT_STUDIO'
-  const [officialAssessments, setOfficialAssessments] = useState([]);
+  const [activeTab, setActiveTab] = useState('BLUEPRINT_STUDIO');
   const [loadingAssessments, setLoadingAssessments] = useState(false);
   const [assessmentSearch, setAssessmentSearch] = useState('');
   const [expandedAssessmentId, setExpandedAssessmentId] = useState(null);
@@ -179,8 +186,7 @@ export default function AssessmentsPage() {
   const refreshOfficialAssessments = async () => {
     try {
       setLoadingAssessments(true);
-      const list = await listOfficialAssessments();
-      setOfficialAssessments(Array.isArray(list) ? list : []);
+      await fetchOfficialAssessments(true);
     } catch (err) {
       console.warn('Could not load official assessments:', err);
     } finally {
@@ -238,32 +244,8 @@ export default function AssessmentsPage() {
   };
 
   useEffect(() => {
-    let active = true;
-    Promise.all([
-      listAssessmentBlueprints(),
-      listBlueprintCompetencies(),
-      listOfficialAssessments(),
-    ])
-      .then(([blueprintResponse, competencyResponse, officialList]) => {
-        if (!active) return;
-        if (Array.isArray(blueprintResponse?.items)) {
-          setBlueprints(blueprintResponse.items);
-        }
-        if (Array.isArray(competencyResponse?.items)) {
-          setCompetencies(competencyResponse.items);
-        }
-        if (Array.isArray(officialList)) {
-          setOfficialAssessments(officialList);
-        }
-      })
-      .catch((error) => {
-        if (active) setPageError(apiErrors(error)[0].message);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => { active = false; };
-  }, []);
+    fetchAssessmentStudioData();
+  }, [fetchAssessmentStudioData]);
 
   const updateForm = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -367,7 +349,7 @@ export default function AssessmentsPage() {
       setForm(blueprintToForm(refreshed));
       await loadLookupData(refreshed.blueprint.competencyId);
       const listResponse = await listAssessmentBlueprints();
-      setBlueprints(Array.isArray(listResponse?.items) ? listResponse.items : []);
+      setBlueprintsList(Array.isArray(listResponse?.items) ? listResponse.items : []);
       setSuccessMessage('Blueprint draft saved successfully.');
       toast.success('Blueprint draft saved successfully!');
     } catch (error) {
@@ -548,6 +530,7 @@ export default function AssessmentsPage() {
     try {
       const result = await assembleAssessment(selectedBlueprintId);
       setAssemblyResult(result);
+      fetchOfficialAssessments(true);
       toast.success('Assessment successfully assembled from approved blueprint questions!');
     } catch (error) {
       const errs = apiErrors(error);
@@ -591,7 +574,10 @@ export default function AssessmentsPage() {
 
   const totalQuestionsSum = officialAssessments.reduce((acc, curr) => acc + (curr.questionsCount || 0), 0);
 
-  if (loading) return <Spinner variant="bar" label="Loading assessment studio..." className="py-20" />;
+  const hasZeroData = blueprints.length === 0 && officialAssessments.length === 0 && competencies.length === 0;
+  if (hasZeroData && isStudioLoading) {
+    return <Spinner variant="bar" label="Loading assessment studio..." description="Initializing workspace & validating FRAC competency models..." className="py-20" />;
+  }
 
   const claimIds = mappingIds(form.claims, 'claimId');
   const objectiveIds = mappingIds(form.learningObjectives, 'learningObjectiveId');
@@ -602,26 +588,30 @@ export default function AssessmentsPage() {
       <PageHeader
         title="Assessment Studio & Knowledge Bank"
         subtitle="Inspect published AI-grounded assessments, examine question provenance, or design competency blueprints."
+        action={
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => {
+                fetchAssessmentStudioData(true);
+                toast.success('Syncing Assessment Studio with live database...');
+              }}
+              disabled={isStudioLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200/90 bg-white/95 hover:bg-slate-50 text-slate-700 hover:text-slate-900 font-semibold text-xs transition-all shadow-xs hover:border-slate-300 hover:shadow-sm active:scale-95 cursor-pointer disabled:opacity-50 shrink-0"
+              title="Refresh assessment studio blueprints and published exams"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isStudioLoading ? 'animate-spin' : ''}`} />
+              <span>{isStudioLoading ? 'Syncing...' : 'Sync Studio'}</span>
+            </button>
+
+            <HowItWorksButton tabKey="assessments" />
+          </div>
+        }
       />
 
       {/* ── Mode Navigation Tabs ── */}
       <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-3 flex-wrap">
         <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-2xl">
-          <button
-            type="button"
-            onClick={() => setActiveTab('PUBLISHED_ASSESSMENTS')}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'PUBLISHED_ASSESSMENTS'
-                ? 'bg-white text-[#1E3A8A] shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>Published Assessments & Document Exams</span>
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-blue-50 text-[#1E3A8A] font-extrabold border border-blue-200">
-              {officialAssessments.length}
-            </span>
-          </button>
           <button
             type="button"
             onClick={() => setActiveTab('BLUEPRINT_STUDIO')}
@@ -635,6 +625,21 @@ export default function AssessmentsPage() {
             <span>Blueprint Studio & Assembly</span>
             <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-200 text-slate-700 font-extrabold">
               {blueprints.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('PUBLISHED_ASSESSMENTS')}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'PUBLISHED_ASSESSMENTS'
+                ? 'bg-white text-[#1E3A8A] shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>Published Assessments & Document Exams</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-blue-50 text-[#1E3A8A] font-extrabold border border-blue-200">
+              {officialAssessments.length}
             </span>
           </button>
         </div>

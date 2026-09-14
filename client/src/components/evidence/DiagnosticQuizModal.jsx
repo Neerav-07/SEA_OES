@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Play,
@@ -8,7 +8,7 @@ import {
   CheckCircle2,
   BookOpen,
   Target,
-  Sparkles,
+  Layers,
 } from 'lucide-react';
 import AssessmentPlayerModal from '../../pages/dashboard/assessments/AssessmentPlayerModal.jsx';
 
@@ -24,16 +24,26 @@ export default function DiagnosticQuizModal({ isOpen, onClose, onSubmitted }) {
   const [timeLimitMins, setTimeLimitMins] = useState(15);
   const [mode, setMode] = useState('ADAPTIVE_CASE_STUDIES');
 
-  if (!isOpen) return null;
+  // Ensure step is reset to CONFIG when modal is closed/reopened (MUST be before any early return)
+  useEffect(() => {
+    if (!isOpen) {
+      setStep('CONFIG');
+    }
+  }, [isOpen]);
 
   const handleStartExam = () => {
     setStep('EXAM');
   };
 
   const handleClose = () => {
-    setStep('CONFIG');
     onClose();
+    // Delay resetting step to CONFIG to prevent flash of setup form during modal close animation
+    setTimeout(() => {
+      setStep('CONFIG');
+    }, 250);
   };
+
+  if (!isOpen) return null;
 
   if (step === 'EXAM') {
     return (
@@ -62,7 +72,7 @@ export default function DiagnosticQuizModal({ isOpen, onClose, onSubmitted }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white text-slate-900 shadow-2xl">
+      <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl">
         {/* Top Accent Line */}
         <div className="h-1.5 bg-[#1E3A8A]" />
 
@@ -186,7 +196,7 @@ export default function DiagnosticQuizModal({ isOpen, onClose, onSubmitted }) {
           {/* 3. Evaluation Mode */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2 flex items-center gap-1.5">
-              <Sparkles size={14} className="text-[#1E3A8A]" />
+              <Layers size={14} className="text-[#1E3A8A]" />
               4. Evaluation Mode
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">

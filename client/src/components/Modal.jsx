@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 const Modal = ({
@@ -11,16 +11,38 @@ const Modal = ({
 	closeOnBackdropClick = true,
 	className = '',
 }) => {
+	const dialogRef = useRef(null);
+	const titleId = useId();
 	useEffect(() => {
 		if (isOpen) {
+			const previousFocus = document.activeElement;
 			document.body.style.overflow = 'hidden';
+			const dialog = dialogRef.current;
+			const focusable = dialog?.querySelector('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])');
+			(focusable || dialog)?.focus();
+			const handleKeyDown = (event) => {
+				if (event.key === 'Escape') onClose?.();
+				if (event.key !== 'Tab' || !dialog) return;
+				const items = [...dialog.querySelectorAll('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')];
+				if (!items.length) return;
+				const first = items[0];
+				const last = items[items.length - 1];
+				if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+				if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+			};
+			document.addEventListener('keydown', handleKeyDown);
+			return () => {
+				document.removeEventListener('keydown', handleKeyDown);
+				document.body.style.overflow = 'unset';
+				previousFocus?.focus?.();
+			};
 		} else {
 			document.body.style.overflow = 'unset';
 		}
 		return () => {
 			document.body.style.overflow = 'unset';
 		};
-	}, [isOpen]);
+	}, [isOpen, onClose]);
 
 	if (!isOpen) return null;
 
@@ -36,7 +58,7 @@ const Modal = ({
 	};
 
 	const modalContent = (
-		<div className='fixed inset-0 z-[9999] overflow-y-auto overflow-x-hidden'>
+		<div className='fixed inset-0 overflow-y-auto overflow-x-hidden' style={{ zIndex: 'var(--z-backdrop)' }}>
 			{/* Backdrop with Blur */}
 			<div
 				className='fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300'
@@ -44,12 +66,18 @@ const Modal = ({
 			/>
 
 			{/* Modal Content - Anchored to Center-Point */}
-			<div 
+			<div
+				ref={dialogRef}
+				role='dialog'
+				aria-modal='true'
+				aria-labelledby={titleId}
+				tabIndex={-1}
+				style={{ zIndex: 'var(--z-dialog)' }}
 				className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl flex flex-col w-[95%] sm:w-full max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-300 will-change-transform ${sizeClasses[size] || sizeClasses.md} ${className}`}
 			>
 				{/* Header */}
 				<div className='flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-4 flex-shrink-0 bg-white z-10'>
-					<h2 className='text-lg font-bold text-slate-900 tracking-tight'>{title}</h2>
+					<h2 id={titleId} className='text-lg font-bold text-slate-900 tracking-tight'>{title}</h2>
 					<button
 						onClick={onClose}
 						className='p-2 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all'

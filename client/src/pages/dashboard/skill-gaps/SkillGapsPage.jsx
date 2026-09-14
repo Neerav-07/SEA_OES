@@ -10,7 +10,6 @@ import {
   ShieldAlert,
   Target,
   Lock,
-  Sparkles,
   Award,
   CheckCircle2,
 } from 'lucide-react';
@@ -18,65 +17,12 @@ import toast from 'react-hot-toast';
 
 import Alert from '../../../components/Alert.jsx';
 import Button from '../../../components/Button.jsx';
+import Select from '../../../components/Select.jsx';
 import PageHeader from '../../../components/PageHeader.jsx';
 import Spinner from '../../../components/Spinner.jsx';
-import { getSkillGap, listSkillGaps } from '../../../services/skillGap.service.js';
+import EmptyState from '../../../components/EmptyState.jsx';
+import { getSkillGap, listSkillGaps, getEligibleRoles, selectTargetRole, recalculateSkillGaps } from '../../../services/skillGap.service.js';
 import { GAP_CATEGORIES, getGapCategoryClass } from './skillGap.constants.js';
-
-const ROLE_BENCHMARKS = {
-  SSO: {
-    key: 'SSO',
-    roleTitle: 'Senior Statistical Officer (SSO)',
-    cadre: 'ISS Subordinate Cadre',
-    dept: 'DIID MoSPI',
-    requiredLevels: {
-      PYTHON_ANALYTICS: 4.0,
-      METADATA_STANDARDS: 4.0,
-      SQL_DATABASE: 4.0,
-      NATIONAL_ACCOUNTS: 3.5,
-      SURVEY_DESIGN: 4.0,
-    },
-  },
-  SO: {
-    key: 'SO',
-    roleTitle: 'Statistical Officer (SO)',
-    cadre: 'Junior Statistical Service',
-    dept: 'FOD Field Office',
-    requiredLevels: {
-      PYTHON_ANALYTICS: 3.0,
-      METADATA_STANDARDS: 3.0,
-      SQL_DATABASE: 3.0,
-      NATIONAL_ACCOUNTS: 3.0,
-      SURVEY_DESIGN: 3.5,
-    },
-  },
-  AD: {
-    key: 'AD',
-    roleTitle: 'Assistant Director (Data Analytics)',
-    cadre: 'ISS Junior Time Scale (JTS)',
-    dept: 'Data Informatics & Innovation Division',
-    requiredLevels: {
-      PYTHON_ANALYTICS: 4.5,
-      METADATA_STANDARDS: 4.5,
-      SQL_DATABASE: 4.5,
-      NATIONAL_ACCOUNTS: 4.0,
-      SURVEY_DESIGN: 4.5,
-    },
-  },
-  DIRECTOR: {
-    key: 'DIRECTOR',
-    roleTitle: 'Director (National Accounts Division)',
-    cadre: 'ISS Senior Administrative Grade (SAG)',
-    dept: 'National Accounts Division (NAD)',
-    requiredLevels: {
-      PYTHON_ANALYTICS: 5.0,
-      METADATA_STANDARDS: 5.0,
-      SQL_DATABASE: 5.0,
-      NATIONAL_ACCOUNTS: 5.0,
-      SURVEY_DESIGN: 5.0,
-    },
-  },
-};
 
 function formatLevel(value) {
   return Number(value || 0).toFixed(1);
@@ -94,23 +40,42 @@ function SummaryCard({ icon: Icon, label, value, tone }) {
   );
 }
 
+import useDashboardStore from '../../../store/dashboardData.store.js';
+
 export default function SkillGapsPage() {
-  const [gaps, setGaps] = useState([]);
+  const storeGaps = useDashboardStore((s) => s.skillGaps);
+  const isSkillGapsLoading = useDashboardStore((s) => s.isSkillGapsLoading);
+  const fetchSkillGaps = useDashboardStore((s) => s.fetchSkillGaps);
+
+  const [gaps, setGaps] = useState(() => storeGaps.length > 0 ? storeGaps : []);
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [selectedRoleKey, setSelectedRoleKey] = useState('SSO');
-  const [loading, setLoading] = useState(true);
+  const [roles, setRoles] = useState([]);
+  const [selectedRoleKey, setSelectedRoleKey] = useState('');
+  const [loading, setLoading] = useState(() => storeGaps.length === 0);
   const [isReevaluating, setIsReevaluating] = useState(false);
   const [error, setError] = useState('');
   const [expandedGapId, setExpandedGapId] = useState(null);
   const [gapDetails, setGapDetails] = useState({});
   const [detailsLoading, setDetailsLoading] = useState(false);
 
-  async function loadGaps() {
-    setLoading(true);
+  // Synchronize local gaps with store updates
+  useEffect(() => {
+    if (storeGaps && storeGaps.length > 0) {
+      setGaps(storeGaps);
+      setLoading(false);
+    }
+  }, [storeGaps]);
+
+  async function loadGaps(force = false) {
+    if (gaps.length === 0 && storeGaps.length === 0) {
+      setLoading(true);
+    }
     setError('');
     try {
-      const data = await listSkillGaps();
-      setGaps(recalculateGapsForRole(data, selectedRoleKey));
+      const data = await fetchSkillGaps(force);
+      if (Array.isArray(data) && data.length > 0) {
+        setGaps(data);
+      }
     } catch (loadError) {
       setError(loadError.response?.data?.message || 'Skill gaps could not be loaded.');
     } finally {
@@ -119,11 +84,22 @@ export default function SkillGapsPage() {
   }
 
   useEffect(() => {
-    loadGaps();
+    (async () => {
+      try {
+        const data = await getEligibleRoles();
+        setRoles(data.roles || []);
+        setSelectedRoleKey(data.targetRoleId || '');
+      } catch (err) {
+        setError(err.response?.data?.message || 'Eligible roles could not be loaded.');
+      }
+      await loadGaps();
+    })();
   }, []);
 
-  function recalculateGapsForRole(rawGaps, roleKey) {
-    const bm = ROLE_BENCHMARKS[roleKey] || ROLE_BENCHMARKS.SSO;
+  function recalculateGapsForRole(rawGaps) {
+    // Requirements and gap values are authoritative only when supplied by API.
+    return rawGaps;
+    /*
     return rawGaps.map((g) => {
       const codeKey = (g.competencyCode || g.code || g.competencyName || '')
         .toUpperCase()
@@ -154,21 +130,26 @@ export default function SkillGapsPage() {
         ],
       };
     });
+    */
   }
 
-  const handleRoleChange = (newRoleKey) => {
+  const handleRoleChange = async (newRoleKey) => {
     setSelectedRoleKey(newRoleKey);
     setIsReevaluating(true);
-    const roleName = ROLE_BENCHMARKS[newRoleKey]?.roleTitle || newRoleKey;
+    const roleName = roles.find((role) => role.id === newRoleKey)?.title || 'selected role';
     toast.success(`⚡ Re-evaluating FRAC skill gaps for benchmark: ${roleName}`, {
       id: 'role-change-toast',
       duration: 3000,
     });
 
-    setTimeout(() => {
-      setGaps((prev) => recalculateGapsForRole(prev, newRoleKey));
+    try {
+      await selectTargetRole(newRoleKey);
+      setGaps(await recalculateSkillGaps(newRoleKey));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Target role could not be changed.');
+    } finally {
       setIsReevaluating(false);
-    }, 400);
+    }
   };
 
   async function toggleGapDetails(gapId) {
@@ -197,16 +178,14 @@ export default function SkillGapsPage() {
   const highCount = gaps.filter((gap) => gap.category === 'high' || gap.category === 'moderate').length;
   const targetMetCount = gaps.filter((gap) => gap.category === 'target_met' || gap.gapScore === 0).length;
 
-  const currentBenchmark = ROLE_BENCHMARKS[selectedRoleKey] || ROLE_BENCHMARKS.SSO;
+  const currentBenchmark = roles.find((role) => role.id === selectedRoleKey);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Skill Gap Intelligence Engine"
-        subtitle="Auditable evidence-driven skill gap identification with confidence metrics and role benchmark projection."
+        title="Skill Gap Analysis"
+        subtitle="Compare your assessed competency levels against cadre benchmarks to identify training needs."
       />
-
-
 
       {error && (
         <Alert
@@ -220,46 +199,66 @@ export default function SkillGapsPage() {
 
       {loading ? (
         <div className="rounded-2xl border border-slate-200 bg-white py-16">
-          <Spinner variant="bar" label="Evaluating FRAC workforce skill gaps..." className="py-16" />
+          <Spinner variant="bar" label="Loading competency gaps..." className="py-16" />
         </div>
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <SummaryCard icon={Target} label="Total Tracked" value={gaps.length} tone="text-[#1E3A8A]" />
-            <SummaryCard icon={ShieldAlert} label="Critical Deficit Gaps" value={criticalCount} tone="text-red-600" />
-            <SummaryCard icon={ShieldAlert} label="High-Priority Gaps" value={highCount} tone="text-amber-600" />
-            <SummaryCard icon={ClipboardCheck} label="Target Met / On Track" value={targetMetCount} tone="text-emerald-600" />
+            <SummaryCard icon={Target} label="Total Competencies" value={gaps.length} tone="text-[#1E3A8A]" />
+            <SummaryCard icon={ShieldAlert} label="Critical Gaps" value={criticalCount} tone="text-red-600" />
+            <SummaryCard icon={ShieldAlert} label="Moderate Gaps" value={highCount} tone="text-amber-600" />
+            <SummaryCard icon={ClipboardCheck} label="Benchmark Met" value={targetMetCount} tone="text-emerald-600" />
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
             <div className="flex flex-col gap-4 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Prioritised Competency Gap Breakdown</h3>
+                <h3 className="text-base font-bold text-slate-900">Competency Gaps by Role Benchmark</h3>
                 <p className="mt-1 text-xs text-slate-500 font-medium">
-                  Dynamically calculated gap scores (`Required Level - Evaluated Level`) for {currentBenchmark.roleTitle}.
+                  Evaluated gaps against benchmark for {currentBenchmark?.title || 'selected role'}.
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <label className="sr-only" htmlFor="gap-category">Filter by gap category</label>
-                <select
-                  id="gap-category"
-                  value={categoryFilter}
-                  onChange={(event) => setCategoryFilter(event.target.value)}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 focus:border-[#1E3A8A] focus:outline-none"
-                >
-                  <option value="all">All Categories ({gaps.length})</option>
-                  <option value="critical">Critical Gaps ({criticalCount})</option>
-                  <option value="high">High & Moderate ({highCount})</option>
-                  <option value="target_met">Target Met ({targetMetCount})</option>
-                </select>
-                <Button variant="secondary" size="sm" onClick={loadGaps}>
+              <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+                <div className="min-w-[160px] sm:min-w-[200px]">
+                  <Select
+                    id="target-role"
+                    size="sm"
+                    value={selectedRoleKey}
+                    disabled={isReevaluating || roles.length === 0}
+                    onChange={(event) => handleRoleChange(event.target.value)}
+                    options={
+                      roles.length === 0
+                        ? [{ value: '', label: 'No eligible roles' }]
+                        : roles.map((role) => ({ value: role.id, label: role.title }))
+                    }
+                  />
+                </div>
+                <div className="min-w-[150px] sm:min-w-[180px]">
+                  <Select
+                    id="gap-category"
+                    size="sm"
+                    value={categoryFilter}
+                    onChange={(event) => setCategoryFilter(event.target.value)}
+                    options={[
+                      { value: 'all', label: `All Categories (${gaps.length})` },
+                      { value: 'critical', label: `Critical Gaps (${criticalCount})` },
+                      { value: 'high', label: `High & Moderate (${highCount})` },
+                      { value: 'target_met', label: `Target Met (${targetMetCount})` },
+                    ]}
+                  />
+                </div>
+                <Button variant="secondary" size="sm" onClick={loadGaps} loading={loading} className="h-8.5 px-3 cursor-pointer">
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
             {visibleGaps.length === 0 ? (
-              <EmptyState title="No competency gaps found" description="All tracked competencies meet or exceed the selected role benchmark." />
+              <EmptyState
+                icon={Target}
+                title="No competency gaps found"
+                message="All tracked competencies meet or exceed the selected role benchmark."
+              />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">

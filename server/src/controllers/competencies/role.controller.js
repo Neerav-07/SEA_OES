@@ -1,8 +1,14 @@
 import { db } from "../../db/index.js";
 import { eq } from "drizzle-orm";
-import { roles, roleCompetencies, competencies } from "../../db/schema/index.js";
+import {
+  roles,
+  roleCompetencies,
+  competencies,
+} from "../../db/schema/index.js";
 import { sendSuccess, sendError } from "../../utils/response.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import { officials } from '../../db/schema/index.js';
+import { getEligibleRoles, isEligibleTargetRole } from '../../utils/roleEligibility.js';
 
 /**
  * Get all official roles with required competency profiles
@@ -36,6 +42,25 @@ export const getRoles = asyncHandler(async (req, res) => {
   });
 
   return sendSuccess(res, mappedRoles, "Roles retrieved successfully");
+});
+
+export const getEligibleRolesController = asyncHandler(async (req, res) => {
+  const [official] = await db.select().from(officials).where(eq(officials.userId, req.auth.userId));
+  if (!official) return sendSuccess(res, { roles: [], limitation: 'Official profile is required before target roles can be resolved.' });
+  const allRoles = await db.select().from(roles);
+  const eligible = getEligibleRoles({ official, roles: allRoles });
+  return sendSuccess(res, { roles: eligible, targetRoleId: official.targetRoleId || official.roleId, limitation: eligible.length ? null : 'No roles can be derived from the recorded organisational context.' });
+});
+
+export const selectTargetRole = asyncHandler(async (req, res) => {
+  const { targetRoleId } = req.body || {};
+  if (!targetRoleId) return sendError(res, 'targetRoleId is required.', 400);
+  const [official] = await db.select().from(officials).where(eq(officials.userId, req.auth.userId));
+  if (!official) return sendError(res, 'Official profile not found.', 404);
+  const allRoles = await db.select().from(roles);
+  if (!isEligibleTargetRole({ official, roles: allRoles, targetRoleId })) return sendError(res, 'Target role is not eligible for this official context.', 403);
+  const [updated] = await db.update(officials).set({ targetRoleId, updatedAt: new Date() }).where(eq(officials.id, official.id)).returning();
+  return sendSuccess(res, { official: updated, targetRoleId }, 'Target role selected.');
 });
 
 /**

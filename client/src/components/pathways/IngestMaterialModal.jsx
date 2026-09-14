@@ -4,7 +4,7 @@ import {
   UploadCloud,
   FileText,
   CheckCircle2,
-  Sparkles,
+  Database,
   FileCode,
   FileType,
   FileCheck,
@@ -12,6 +12,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import Button from '../Button';
+import Select from '../Select';
 import toast from 'react-hot-toast';
 
 export default function IngestMaterialModal({ isOpen, onClose, onIngested }) {
@@ -104,7 +105,7 @@ export default function IngestMaterialModal({ isOpen, onClose, onIngested }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-      <div className="w-full max-w-xl bg-white rounded-3xl p-6 lg:p-8 shadow-2xl relative border border-slate-200 animate-in fade-in duration-150">
+      <div className="w-full max-w-xl bg-white rounded-2xl p-6 lg:p-8 shadow-2xl relative border border-slate-200 animate-in fade-in duration-150">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
             <div className="p-2.5 rounded-2xl bg-blue-50 text-[#1E3A8A] border border-blue-100">
@@ -179,19 +180,18 @@ export default function IngestMaterialModal({ isOpen, onClose, onIngested }) {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Provider Source</label>
-                <select
-                  value={formData.provider}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, provider: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-900 focus:border-[#1E3A8A] focus:outline-none"
-                >
-                  <option value="iGOT Karmayogi">iGOT Karmayogi</option>
-                  <option value="NSSTA Academy">NSSTA Academy</option>
-                  <option value="NITI Aayog NDAP">NITI Aayog NDAP</option>
-                  <option value="MoSPI Internal Manual">MoSPI Internal Manual</option>
-                </select>
-              </div>
+              <Select
+                label="Provider Source"
+                size="sm"
+                value={formData.provider}
+                onChange={(e) => setFormData((prev) => ({ ...prev, provider: e.target.value }))}
+                options={[
+                  { value: 'iGOT Karmayogi', label: 'iGOT Karmayogi' },
+                  { value: 'NSSTA Academy', label: 'NSSTA Academy' },
+                  { value: 'NITI Aayog NDAP', label: 'NITI Aayog NDAP' },
+                  { value: 'MoSPI Internal Manual', label: 'MoSPI Internal Manual' },
+                ]}
+              />
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Material Code</label>
@@ -244,7 +244,7 @@ export default function IngestMaterialModal({ isOpen, onClose, onIngested }) {
                 disabled={isSubmitting}
                 className="flex items-center gap-2 rounded-2xl bg-[#1E3A8A] hover:bg-[#1e40af] px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-all"
               >
-                <Sparkles size={14} className="text-blue-200" />
+                <Database size={14} className="text-blue-200" />
                 {isSubmitting ? 'Parsing NLP Content...' : 'Ingest & Map Competencies'}
               </button>
             </div>

@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 
 import { getDb } from '../db/index.js';
-import { assessments, questions } from '../db/schema/index.js';
+import { aiGuardrailResults, aiRuns, assessments, questions } from '../db/schema/index.js';
 import { competencies } from '../db/schema/index.js';
 import { competencyClaims, learningObjectives } from '../db/schema/index.js';
 import { questionIntents, questionSourceProvenance, questionValidationResults, questionVersions } from '../db/schema/index.js';
@@ -11,6 +11,8 @@ import { searchSourceEvidence } from './retrieval.service.js';
 import { getAssessmentBlueprintById } from './assessmentBlueprint.service.js';
 import { validateGenerationRequest } from '../validators/retrieval.validator.js';
 import { generateAssessment } from './ml.service.js';
+import { evaluateQuestionCandidate, persistAiEvaluation } from './aiEvaluation.service.js';
+import { evaluateSourceEvidence } from '../utils/aiGuardrails.js';
 
 function error(code, field, message, statusCode = 400) {
   const result = new Error(message);
@@ -19,7 +21,7 @@ function error(code, field, message, statusCode = 400) {
   return result;
 }
 
-function providerUnavailable() { return error('AI_PROVIDER_UNAVAILABLE', 'provider', 'No question-generation provider is configured.', 503); }
+const POLICY_VERSION = '2026-09-05.1';
 
 function buildPrompt({ competency, claim, learningObjective, evidence, questionType, cognitiveLevel }) {
   return [
@@ -45,6 +47,12 @@ function deterministicProvider({ claim, learningObjective, evidence, questionTyp
     explanation: `Grounded in source chunk ${first.chunkReference}.`,
     cognitiveLevel,
     evidenceReferences: evidence.map((item) => item.sourceChunkId),
+    guardrail: { allowed: true, policy_version: POLICY_VERSION, violations: [], scores: { grounding: 1 } },
+    generation: {
+      request_id: crypto.randomUUID(), use_case: 'assessment_generation', provider: 'deterministic',
+      model: 'deterministic-v1', prompt_version: '2026-09-05.1', latency_ms: 0,
+      fallback_from: null, generation_parameters: {},
+    },
   };
 }
 
@@ -79,17 +87,23 @@ async function generateWithProvider(input) {
 
       const correctOption = options.find((o) => o.correct) || options[0];
 
+      const normalizedType = String(q.question_type || input.questionType || 'MCQ').includes('SCENARIO') ? 'SCENARIO' : 'MCQ';
       return {
         questionText: q.stem || `According to official MoSPI guidance:`,
-        questionType: q.question_type || input.questionType || 'MCQ',
+        questionType: normalizedType,
         options,
         correctAnswer: correctOption?.id || 'A',
         explanation: q.explanation || `Grounded in source material for ${input.competency?.name || 'competency'}.`,
         cognitiveLevel: q.bloom_level || input.cognitiveLevel || 'APPLY',
         evidenceReferences: input.evidence.map((item) => item.sourceChunkId),
+        guardrail: q.guardrail || { allowed: false, policy_version: POLICY_VERSION, violations: [{ code: 'MISSING_GUARDRAIL_RESULT', severity: 'CRITICAL', message: 'ML service omitted guardrail results.', blocking: true }], scores: {} },
+        generation: mlResult.generation || null,
       };
     }
   } catch (err) {
+    if (err.statusCode >= 400 && err.statusCode < 500) {
+      throw error('AI_GUARDRAIL_REJECTED', 'question', 'The generation request or model output failed grounding or safety guardrails.', 422);
+    }
     console.warn('ML Question Generator unreachable, using analytical fallback:', err.message);
   }
 
@@ -100,6 +114,7 @@ function validateCandidate(candidate, evidence) {
   if (!candidate?.questionText || !Array.isArray(candidate.options) || candidate.options.length < 2 || !candidate.correctAnswer) throw error('MALFORMED_GENERATION_OUTPUT', 'question', 'Question provider returned an invalid structured result.');
   const evidenceIds = new Set(evidence.map((item) => item.sourceChunkId));
   if (!Array.isArray(candidate.evidenceReferences) || candidate.evidenceReferences.length === 0 || candidate.evidenceReferences.some((id) => !evidenceIds.has(id))) throw error('INVALID_PROVENANCE_REFERENCES', 'evidenceReferences', 'Generated question references unavailable evidence.');
+  if (!candidate.guardrail?.allowed) throw error('AI_GUARDRAIL_REJECTED', 'question', 'Generated question failed grounding or safety guardrails.', 422);
 }
 
 export async function generateGroundedQuestion(request = {}) {
@@ -156,6 +171,11 @@ export async function generateGroundedQuestion(request = {}) {
     if (existingChunks.length > 0) {
       evidence = existingChunks.map((c) => ({ ...c, relevanceScore: 0.9 }));
     } else {
+      // Generation is intentionally blocked when no approved source chunk is
+      // available.  The legacy development fallback below is retained only to
+      // avoid a destructive rewrite of historical code, but is unreachable.
+      throw error('INSUFFICIENT_APPROVED_SOURCE', 'source', 'No approved source chunks are available for this blueprint.', 422);
+      /*
       let [doc] = await db.select().from(sourceDocuments).where(eq(sourceDocuments.externalId, 'DOC-MOSPI-STANDARD-MANUAL')).catch(() => []);
       if (!doc) {
         [doc] = await db.insert(sourceDocuments).values({
@@ -200,7 +220,20 @@ export async function generateGroundedQuestion(request = {}) {
         textEnd: chunk.textEnd,
         relevanceScore: 0.95,
       }];
+      */
     }
+  }
+  if (!evidence || evidence.length === 0) throw error('INSUFFICIENT_EVIDENCE', 'evidence', 'No approved source evidence matched this generation request.', 422);
+  const unsafeEvidence = evidence
+    .map((item) => ({ item, result: evaluateSourceEvidence(item.content) }))
+    .find(({ result }) => !result.allowed);
+  if (unsafeEvidence) {
+    throw error(
+      'UNSAFE_SOURCE_EVIDENCE',
+      'evidence',
+      `Source chunk ${unsafeEvidence.item.chunkReference || unsafeEvidence.item.sourceChunkId} contains instruction-like content and was blocked before generation.`,
+      422,
+    );
   }
 
   const questionType = request.questionType || blueprint.supportedQuestionTypes?.[0] || 'MCQ';
@@ -246,19 +279,41 @@ async function persistQuestion({ request, blueprint, competency, claim, learning
     const [assessment] = await db.select({ id: assessments.id }).from(assessments).where(eq(assessments.id, assessmentId));
     if (!assessment) throw error('ASSESSMENT_NOT_FOUND', 'assessmentId', 'Assessment was not found.', 404);
   } else {
-    const [assessment] = await db.insert(assessments).values({ title: `${blueprint.title} — Generated`, competencyId: blueprint.competencyId, blueprintId: blueprint.id, totalQuestions: blueprint.questionCount }).returning();
+    const [assessment] = await db.insert(assessments).values({ title: `${blueprint.title} - Generated`, competencyId: blueprint.competencyId, blueprintId: blueprint.id, totalQuestions: blueprint.questionCount }).returning();
     assessmentId = assessment.id;
   }
   const [question] = await db.insert(questions).values({ assessmentId, stem: candidate.questionText, options: candidate.options, questionType: candidate.questionType, correctAnswer: candidate.correctAnswer, explanation: candidate.explanation, competencyId: competency.id, claimId: claim?.id || null, learningObjectiveId: learningObjective?.id || null, bloomLevel: candidate.cognitiveLevel, targetLevel: learningObjective?.targetLevel || null, validationStatus: 'PENDING', reviewStatus: 'DRAFT' }).returning();
   const [version] = await db.insert(questionVersions).values({ questionId: question.id, version: 1, questionType: candidate.questionType, stem: candidate.questionText, options: candidate.options, correctAnswer: candidate.correctAnswer, rationale: candidate.explanation, competencyId: competency.id, claimId: claim?.id || null, learningObjectiveId: learningObjective?.id || null, blueprintId: blueprint.id, bloomLevel: candidate.cognitiveLevel, targetLevel: learningObjective?.targetLevel || null, validationStatus: 'PENDING', reviewStatus: 'DRAFT' }).returning();
+  await db.insert(questionSourceProvenance).values(evidence.map((item) => ({
+    questionVersionId: version.id, sourceChunkId: item.sourceChunkId, pageNumber: item.pageNumber || null,
+    sectionReference: item.section || null, textStart: item.textStart || null, textEnd: item.textEnd || null, sourceText: item.content,
+  })));
   const intentHash = crypto.createHash('sha256').update(`${blueprint.competencyId}|${claim?.id || ''}|${learningObjective?.id || ''}|${candidate.questionText}`.toLowerCase()).digest('hex');
   await db.insert(questionIntents).values({ questionVersionId: version.id, competencyId: competency.id, claimId: claim?.id || null, learningObjectiveId: learningObjective?.id || null, cognitiveProcess: candidate.cognitiveLevel, requiredAction: 'answer', coreConcept: claim?.statement || learningObjective?.title || 'source evidence', fingerprint: { questionType: candidate.questionType, evidenceChunkIds: evidence.map((item) => item.sourceChunkId) }, intentHash });
-  await db.insert(questionValidationResults).values({ questionVersionId: version.id, deterministicStatus: 'PENDING', groundingStatus: 'GROUNDED', duplicateStatus: 'PENDING', reasons: [`Generated with ${process.env.QUESTION_PROVIDER || 'unavailable'} provider.`], validatorVersion: 'module-c-1' });
+  const generation = candidate.generation || { request_id: crypto.randomUUID(), use_case: 'assessment_generation', provider: process.env.QUESTION_PROVIDER || 'unknown', model: null, prompt_version: null, latency_ms: null, fallback_from: null, generation_parameters: {} };
+  const [aiRun] = await db.insert(aiRuns).values({
+    requestId: generation.request_id,
+    useCase: generation.use_case || 'assessment_generation',
+    provider: generation.provider,
+    model: generation.model,
+    promptVersion: generation.prompt_version,
+    policyVersion: candidate.guardrail?.policy_version || POLICY_VERSION,
+    status: candidate.guardrail?.allowed ? 'ALLOWED' : 'BLOCKED',
+    fallbackFrom: generation.fallback_from,
+    latencyMs: generation.latency_ms,
+    generationParameters: generation.generation_parameters || {},
+    guardrailSummary: candidate.guardrail || {},
+    questionVersionId: version.id,
+  }).returning();
+  await db.insert(aiGuardrailResults).values({ aiRunId: aiRun.id, questionVersionId: version.id, stage: 'OUTPUT', allowed: Boolean(candidate.guardrail?.allowed), violations: candidate.guardrail?.violations || [], scores: candidate.guardrail?.scores || {}, policyVersion: candidate.guardrail?.policy_version || POLICY_VERSION });
+  await db.insert(questionValidationResults).values({ questionVersionId: version.id, deterministicStatus: 'PENDING', groundingStatus: candidate.guardrail?.allowed ? 'GROUNDED' : 'FAILED', duplicateStatus: 'PENDING', reasons: [`Generated with ${generation.provider || 'unknown'} provider.`], validatorVersion: 'module-c-2' });
+  const evaluation = evaluateQuestionCandidate(candidate, evidence);
+  const aiEvaluation = await persistAiEvaluation(db, version.id, evidence, evaluation);
   try {
-    await db.execute(`
+    await db.execute(sql`
       INSERT INTO question_review_queue (question_version_id, status, auto_validation_score)
-      VALUES ('${version.id}', 'PENDING', 0.92)
+      VALUES (${version.id}, 'PENDING', ${Number(candidate.guardrail?.scores?.grounding || 0)})
     `);
   } catch {}
-  return { status: 'GENERATED', assessmentId, question, questionVersion: version, provenance: evidence.map((item) => ({ sourceChunkId: item.sourceChunkId, sourceDocumentId: item.sourceDocumentId, sourceVersionId: item.sourceVersionId, chunkReference: item.chunkReference, relevanceScore: item.relevanceScore })), promptContract: prompt };
+  return { status: 'GENERATED', assessmentId, question, questionVersion: version, aiEvaluation, provenance: evidence.map((item) => ({ sourceChunkId: item.sourceChunkId, sourceDocumentId: item.sourceDocumentId, sourceVersionId: item.sourceVersionId, chunkReference: item.chunkReference, relevanceScore: item.relevanceScore })), promptContract: prompt };
 }

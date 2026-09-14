@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import { neon, neonConfig } from "@neondatabase/serverless";
 import { drizzle as drizzleNeon } from "drizzle-orm/neon-http";
 import { drizzle as drizzleNode } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -8,7 +8,7 @@ import { ensureDatabaseTablesCreated } from "../db/autoInit.js";
 
 const { Pool } = pg;
 
-let db;
+let db = null;
 
 export function getDb() {
   if (!db) {
@@ -17,31 +17,9 @@ export function getDb() {
   return db;
 }
 
-/**
- * Resilient fetch wrapper with exponential backoff for Neon serverless HTTP
- * Automatically handles transient TLS socket terminations (UND_ERR_SOCKET) and fetch drops.
- */
-async function resilientNeonFetch(endpoint, options, maxRetries = 3) {
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      return await fetch(endpoint, options);
-    } catch (err) {
-      const isTransient =
-        err?.cause?.code === "UND_ERR_SOCKET" ||
-        err?.message?.includes("fetch failed") ||
-        err?.message?.includes("socket") ||
-        err?.code === "ECONNRESET" ||
-        err?.code === "ETIMEDOUT";
+import { resilientNeonFetch } from "../utils/resilientFetch.js";
 
-      if (isTransient && attempt < maxRetries - 1) {
-        const backoffMs = 150 * Math.pow(2, attempt);
-        await new Promise((resolve) => setTimeout(resolve, backoffMs));
-        continue;
-      }
-      throw err;
-    }
-  }
-}
+export { resilientNeonFetch };
 
 export async function connectDatabase() {
   const url = process.env.DATABASE_URL;
@@ -53,7 +31,8 @@ export async function connectDatabase() {
   const isNeon = url.includes("neon.tech");
 
   if (isNeon) {
-    const sql = neon(url, { fetchFunction: resilientNeonFetch });
+    neonConfig.fetchFunction = resilientNeonFetch;
+    const sql = neon(url);
     db = drizzleNeon(sql, { schema });
     console.log("[DB] Connected via Neon HTTP (with resilient auto-retry)");
   } else {

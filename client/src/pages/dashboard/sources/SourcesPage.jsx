@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   Database,
   FileText,
@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   CheckCircle2,
   Layers,
-  Sparkles,
+  FileCheck,
+  Target,
   Info,
   ChevronRight,
   FileUp,
@@ -26,6 +27,13 @@ import {
   AlertCircle,
   FileSearch,
   X,
+  Bookmark,
+  BookOpen,
+  Copy,
+  Edit3,
+  Check,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -44,6 +52,7 @@ import {
   ingestSource,
   listSources,
   deleteSource,
+  cleanupDuplicateSources,
   listChunks,
   generateAssessmentFromSource,
   publishAssessment,
@@ -55,6 +64,20 @@ const SOURCE_TYPES = [
   { value: 'IGOT_MODULE', label: 'iGOT Karmayogi / Web Module' },
   { value: 'DATASET_SCHEMA', label: 'Dataset Schema / SQL Dictionary' },
   { value: 'TEXT', label: 'Plain Text Document' },
+];
+
+const CADRE_OPTIONS = [
+  { value: 'All MoSPI Cadres', label: 'All MoSPI Cadres (Universal Foundation)' },
+  { value: 'Senior Statistical Officer (SSO)', label: 'Senior Statistical Officer (SSO)' },
+  { value: 'Junior Statistical Officer (JSO)', label: 'Junior Statistical Officer (JSO)' },
+  { value: 'Data Informatics & Innovation Division (DIID)', label: 'Data Informatics & DIID Specialist' },
+  { value: 'Field Operations Cadre (NSS / Survey Operations)', label: 'Field Operations & Survey Investigators' },
+];
+
+const EVALUATION_DEPTHS = [
+  { value: 'BALANCED', label: 'Balanced Competency Check (Application & Analysis)' },
+  { value: 'CASE_STUDY', label: 'Practical Case Scenarios (Field & Real-world Challenges)' },
+  { value: 'REGULATORY_COMPLIANCE', label: 'Statutory & Quality Compliance (NQAF & MoSPI Standards)' },
 ];
 
 /**
@@ -143,8 +166,20 @@ export default function SourcesPage() {
     documentType: 'PDF',
   });
 
+  // Proactive duplicate detection modal state
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+
   // Direct append content for selected source
   const [appendContent, setAppendContent] = useState('');
+
+  // Deep Assessment Generation Configuration
+  const [assessmentConfig, setAssessmentConfig] = useState({
+    count: 5,
+    targetCadre: 'All MoSPI Cadres',
+    evaluationDepth: 'BALANCED',
+  });
+  const [selectedClauseIds, setSelectedClauseIds] = useState([]);
+  const [editingQuestionIdx, setEditingQuestionIdx] = useState(null);
 
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -156,36 +191,12 @@ export default function SourcesPage() {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [error, setError] = useState('');
 
-  const handleGenerateAssessmentForSource = async () => {
-    if (!selectedSource?.id) return;
-    setGeneratingAssessment(true);
-    setError('');
-    setIsPublished(false);
-    try {
-      const res = await generateAssessmentFromSource(selectedSource.id, { count: 5 });
-      setGeneratedAssessmentInfo(res);
-      setShowVerifyModal(true);
-      toast.success(`Generated official assessment with ${res.questionsCount} questions from ${selectedSource.name}!`);
-    } catch (err) {
-      toast.error(err?.response?.data?.message || err.message || 'Generation failed');
-    } finally {
-      setGeneratingAssessment(false);
-    }
-  };
-
-  const handlePublishAssessment = async () => {
-    if (!generatedAssessmentInfo?.assessmentId) return;
-    setIsPublishing(true);
-    try {
-      await publishAssessment(generatedAssessmentInfo.assessmentId);
-      setIsPublished(true);
-      toast.success(`Assessment '${generatedAssessmentInfo.title}' officially published! Available for cadre competency evaluation.`);
-    } catch (err) {
-      toast.error(err?.response?.data?.message || err.message || 'Publishing failed');
-    } finally {
-      setIsPublishing(false);
-    }
-  };
+  // Real-time duplicate check for the current form name
+  const existingSourceMatch = useMemo(() => {
+    if (!form.name || !form.name.trim()) return null;
+    const clean = form.name.toLowerCase().trim();
+    return sources.find((s) => s.name.toLowerCase().trim() === clean);
+  }, [form.name, sources]);
 
   // Load registered sources
   const refresh = async (selectId = null) => {
@@ -213,11 +224,13 @@ export default function SourcesPage() {
   useEffect(() => {
     if (!selectedSource?.id) {
       setSourceChunksList([]);
+      setSelectedClauseIds([]);
       return;
     }
 
     let active = true;
     setLoadingChunks(true);
+    setSelectedClauseIds([]);
 
     getSource(selectedSource.id)
       .then(async (data) => {
@@ -279,7 +292,15 @@ export default function SourcesPage() {
     try {
       const text = await extractFileContent(file);
       setExtractedText(text);
-    } catch (err) {
+
+      // Check if duplicate item exists in repository and alert user
+      const matched = sources.find(
+        (s) => s.name.toLowerCase().trim() === cleanTitle.toLowerCase().trim()
+      );
+      if (matched) {
+        setShowDuplicateModal(true);
+      }
+    } catch {
       toast.error('Could not read file text automatically. You can paste content manually.');
     } finally {
       setIsReadingFile(false);
@@ -299,11 +320,85 @@ export default function SourcesPage() {
     e.preventDefault();
   };
 
-  // Unified 1-Click Register & Ingest
+  // Reset upload form
+  const resetUploadState = () => {
+    setSelectedFile(null);
+    setExtractedText('');
+    setAppendContent('');
+    setShowTextPreview(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setForm({
+      name: '',
+      externalId: `MOSPI-DOC-2026-0${Math.floor(Math.random() * 90 + 10)}`,
+      documentType: 'PDF',
+    });
+  };
+
+  // Unified Ingestion Execution
+  const executeIngest = async ({ updateExisting = false, overrideName = null } = {}) => {
+    const docName = (overrideName || form.name).trim();
+    const contentToIngest = uploadMode === 'FILE_UPLOAD' ? extractedText.trim() : appendContent.trim();
+
+    setWorking(true);
+    setError('');
+
+    try {
+      if (updateExisting && existingSourceMatch) {
+        const ingestRes = await ingestSource(existingSourceMatch.id, {
+          content: contentToIngest,
+          maxChunkLength: 1000,
+          overwrite: true,
+        });
+
+        toast.success(
+          ingestRes.alreadyIngested
+            ? `Official manual '${existingSourceMatch.name}' is already verified and active!`
+            : `Official document '${existingSourceMatch.name}' updated & re-indexed with latest syllabus clauses!`,
+          { duration: 4000 }
+        );
+
+        resetUploadState();
+        setShowDuplicateModal(false);
+        await refresh(existingSourceMatch.id);
+        return;
+      }
+
+      // Step 1: Create source document record
+      const result = await createSource({
+        ...form,
+        name: docName,
+        updateExisting: false,
+      });
+      const createdSource = result.source || result;
+
+      // Step 2: Ingest content & generate syllabus clauses
+      await ingestSource(createdSource.id, {
+        content: contentToIngest,
+        maxChunkLength: 1000,
+      });
+
+      toast.success(
+        `Official document '${createdSource.name}' registered & verified in knowledge repository!`,
+        { duration: 4000 }
+      );
+
+      resetUploadState();
+      setShowDuplicateModal(false);
+      await refresh(createdSource.id);
+    } catch (err) {
+      const msg = err?.response?.data?.message || err.message;
+      setError(msg);
+      toast.error(`Ingestion failed: ${msg}`);
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  // Form submit handler with Proactive Duplicate Modal Check
   const handleRegisterAndIngest = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) {
-      toast.error('Please enter a document title.');
+      toast.error('Please enter an official document title.');
       return;
     }
 
@@ -313,51 +408,32 @@ export default function SourcesPage() {
       toast.error(
         uploadMode === 'FILE_UPLOAD'
           ? 'Please select a document file containing text, or paste content directly.'
-          : 'Please enter or paste the text content to ingest.'
+          : 'Please enter or paste the text content to index.'
       );
       return;
     }
 
-    setWorking(true);
-    setError('');
-
-    try {
-      // Step 1: Create source document record
-      const result = await createSource(form);
-      const createdSource = result.source;
-
-      // Step 2: Ingest content & generate vector chunks
-      await ingestSource(createdSource.id, {
-        content: contentToIngest,
-        maxChunkLength: 1000,
-      });
-
-      toast.success(
-        `Document '${createdSource.name}' registered and vector chunks successfully generated!`,
-        { duration: 4000 }
-      );
-
-      // Reset upload state
-      setSelectedFile(null);
-      setExtractedText('');
-      setAppendContent('');
-      setShowTextPreview(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      setForm({
-        name: '',
-        externalId: `MOSPI-DOC-2026-0${Math.floor(Math.random() * 90 + 10)}`,
-        documentType: 'PDF',
-      });
-
-      // Refresh sources and auto-select new source
-      await refresh(createdSource.id);
-    } catch (err) {
-      const msg = err?.response?.data?.message || err.message;
-      setError(msg);
-      toast.error(`Ingestion failed: ${msg}`);
-    } finally {
-      setWorking(false);
+    // Intercept if document with identical title exists in repository
+    if (existingSourceMatch) {
+      setShowDuplicateModal(true);
+      return;
     }
+
+    await executeIngest({ updateExisting: false });
+  };
+
+  // Modal Action 1: Update Existing Document
+  const handleUpdateExisting = async () => {
+    await executeIngest({ updateExisting: true });
+  };
+
+  // Modal Action 2: Save as New Revision
+  const handleSaveAsRevision = async () => {
+    const baseName = form.name.replace(/\s*\(Rev.*?\)$/i, '').trim();
+    const count = sources.filter((s) => s.name.toLowerCase().startsWith(baseName.toLowerCase())).length;
+    const revisionName = `${baseName} (Rev ${count + 1})`;
+    setForm((prev) => ({ ...prev, name: revisionName }));
+    await executeIngest({ updateExisting: false, overrideName: revisionName });
   };
 
   // Append Additional Content to currently selected source
@@ -374,7 +450,7 @@ export default function SourcesPage() {
         maxChunkLength: 1000,
       });
 
-      toast.success('Additional content ingested and appended as new vector chunks!');
+      toast.success('Additional section verified and appended to this document syllabus!');
       setAppendContent('');
       await refresh(selectedSource.id);
     } catch (err) {
@@ -386,15 +462,57 @@ export default function SourcesPage() {
     }
   };
 
+  // Deep Administrative Question Generation
+  const handleGenerateAssessmentForSource = async () => {
+    if (!selectedSource?.id) return;
+    setGeneratingAssessment(true);
+    setError('');
+    setIsPublished(false);
+    try {
+      const res = await generateAssessmentFromSource(selectedSource.id, {
+        count: assessmentConfig.count,
+        targetCadre: assessmentConfig.targetCadre,
+        evaluationDepth: assessmentConfig.evaluationDepth,
+        selectedChunkIds: selectedClauseIds.length > 0 ? selectedClauseIds : undefined,
+      });
+      setGeneratedAssessmentInfo(res);
+      setShowVerifyModal(true);
+      toast.success(
+        `Generated grounded assessment with ${res.questionsCount} questions tailored for ${assessmentConfig.targetCadre}!`
+      );
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err.message || 'Generation failed');
+    } finally {
+      setGeneratingAssessment(false);
+    }
+  };
+
+  // Publish Generated Assessment
+  const handlePublishAssessment = async () => {
+    if (!generatedAssessmentInfo?.assessmentId) return;
+    setIsPublishing(true);
+    try {
+      await publishAssessment(generatedAssessmentInfo.assessmentId);
+      setIsPublished(true);
+      toast.success(
+        `Assessment '${generatedAssessmentInfo.title}' officially published! Available for cadre evaluation.`
+      );
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err.message || 'Publishing failed');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   // Delete Source
   const handleDeleteSource = async (sourceId, sourceName) => {
-    if (!window.confirm(`Are you sure you want to delete '${sourceName}' and all its vector chunks?`)) {
+    if (!window.confirm(`Are you sure you want to remove '${sourceName}' and all its syllabus clauses from the repository?`)) {
       return;
     }
 
     try {
       await deleteSource(sourceId);
-      toast.success(`Source '${sourceName}' removed from Knowledge Base.`);
+      toast.success(`Source '${sourceName}' removed from repository.`);
       if (selectedSource?.id === sourceId) {
         setSelectedSource(null);
       }
@@ -402,6 +520,42 @@ export default function SourcesPage() {
     } catch (err) {
       toast.error(`Delete failed: ${err?.response?.data?.message || err.message}`);
     }
+  };
+
+
+  // Copy clause citation to clipboard
+  const handleCopyCitation = (clause) => {
+    const text = `[MoSPI Evidence Citation - ${selectedSource?.name || 'Manual'}]\nClause: ${clause.sectionReference || clause.chunkReference}\n"${clause.text}"`;
+    navigator.clipboard.writeText(text);
+    toast.success('Statutory evidence citation copied to clipboard!');
+  };
+
+  // Toggle Clause selection for targeted assessment
+  const toggleClauseSelection = (chunkId) => {
+    setSelectedClauseIds((prev) =>
+      prev.includes(chunkId) ? prev.filter((id) => id !== chunkId) : [...prev, chunkId]
+    );
+  };
+
+  // Edit question text inline in verification modal
+  const handleUpdateQuestionStem = (idx, newStem) => {
+    setGeneratedAssessmentInfo((prev) => {
+      const qs = [...prev.questions];
+      qs[idx] = { ...qs[idx], stem: newStem };
+      return { ...prev, questions: qs };
+    });
+  };
+
+  const handleUpdateOption = (qIdx, oIdx, newText) => {
+    setGeneratedAssessmentInfo((prev) => {
+      const qs = [...prev.questions];
+      const q = { ...qs[qIdx] };
+      const opts = [...q.options];
+      opts[oIndex] = { ...opts[oIdx], text: newText };
+      q.options = opts;
+      qs[qIdx] = q;
+      return { ...prev, questions: qs };
+    });
   };
 
   // Filter sources for search
@@ -416,11 +570,15 @@ export default function SourcesPage() {
   const filteredChunks = sourceChunksList.filter((c) => {
     if (!chunkSearch.trim()) return true;
     const q = chunkSearch.toLowerCase();
-    return (c.text || '').toLowerCase().includes(q) || (c.chunkReference || '').toLowerCase().includes(q);
+    return (
+      (c.text || '').toLowerCase().includes(q) ||
+      (c.sectionReference || '').toLowerCase().includes(q) ||
+      (c.chunkReference || '').toLowerCase().includes(q)
+    );
   });
 
   if (loading) {
-    return <Spinner variant="radial" progress={72} label="Loading MoSPI Knowledge Base..." className="py-20" />;
+    return <Spinner variant="bar" label="Loading Official Knowledge Base..." description="Synchronizing official manuals and training curricula..." className="py-20" />;
   }
 
   return (
@@ -428,59 +586,8 @@ export default function SourcesPage() {
       {/* ── Page Header ── */}
       <PageHeader
         title="Official Source Library & Knowledge Repository"
-        subtitle="Ingest official MoSPI manuals, survey schedules, and video transcripts to ground AI question generation with zero hallucination."
+        subtitle="Ingest official MoSPI survey manuals, statistical guidelines, and training curricula to ground AI question generation with zero hallucination."
       />
-
-      {/* ── Visual 3-Step RAG Grounding Workflow Stepper ── */}
-      <div className="rounded-3xl border border-blue-200 bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-slate-50 p-6 shadow-xs">
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-2 text-sm font-extrabold text-[#1E3A8A]">
-            <ShieldCheck size={18} className="text-[#1E3A8A]" />
-            Official MoSPI Grounding Workflow (Zero-Hallucination Pipeline)
-          </div>
-          <span className="text-[11px] font-bold text-slate-500 bg-white px-3 py-1 rounded-full border border-blue-200 shadow-xs">
-            ISO / NQAF Data Compliant
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white/80 p-4 rounded-2xl border border-blue-100/80 space-y-1.5 shadow-xs">
-            <div className="flex items-center gap-2 text-xs font-black text-[#1E3A8A]">
-              <span className="w-5 h-5 rounded-full bg-[#1E3A8A] text-white flex items-center justify-center text-[10px]">
-                1
-              </span>
-              Upload Official Document
-            </div>
-            <p className="text-[11.5px] text-slate-600 font-medium leading-relaxed">
-              Upload survey manuals (PDF), code dictionaries (CSV/JSON), or lecture transcripts (TXT/MD).
-            </p>
-          </div>
-
-          <div className="bg-white/80 p-4 rounded-2xl border border-blue-100/80 space-y-1.5 shadow-xs">
-            <div className="flex items-center gap-2 text-xs font-black text-[#1E3A8A]">
-              <span className="w-5 h-5 rounded-full bg-[#1E3A8A] text-white flex items-center justify-center text-[10px]">
-                2
-              </span>
-              Vector Ingestion & Checksum
-            </div>
-            <p className="text-[11.5px] text-slate-600 font-medium leading-relaxed">
-              Text is hashed with SHA-256 and split into 1,000-character vector embeddings with traceable chunk IDs.
-            </p>
-          </div>
-
-          <div className="bg-white/80 p-4 rounded-2xl border border-blue-100/80 space-y-1.5 shadow-xs">
-            <div className="flex items-center gap-2 text-xs font-black text-[#1E3A8A]">
-              <span className="w-5 h-5 rounded-full bg-[#1E3A8A] text-white flex items-center justify-center text-[10px]">
-                3
-              </span>
-              Grounded AI Generation
-            </div>
-            <p className="text-[11.5px] text-slate-600 font-medium leading-relaxed">
-              Assessment generation and diagnostic tests quote exact paragraph evidence, preventing hallucinated questions.
-            </p>
-          </div>
-        </div>
-      </div>
 
       {error && <Alert type="error" title="Action Failed" message={error} />}
 
@@ -491,10 +598,11 @@ export default function SourcesPage() {
           <div className="p-4 border-b border-slate-200 bg-slate-50/70 shrink-0">
             <div className="flex items-center justify-between gap-2 mb-2">
               <div>
-                <h3 className="text-sm font-extrabold text-slate-900">Ingested Sources</h3>
+                <h3 className="text-sm font-extrabold text-slate-900">Official Repository</h3>
                 <p className="text-[11px] text-slate-500 font-medium">{sources.length} registered official documents</p>
               </div>
-              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 text-[#1E3A8A] border border-blue-200">
+
+              <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded bg-blue-50 text-[#1E3A8A] border border-blue-200">
                 Knowledge Base
               </span>
             </div>
@@ -506,7 +614,7 @@ export default function SourcesPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search registered manuals..."
+                placeholder="Search by title, circular no., or subject..."
                 className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#1E3A8A]"
               />
             </div>
@@ -518,7 +626,7 @@ export default function SourcesPage() {
               <EmptyState
                 icon={Database}
                 title="No matching sources"
-                message="Upload a manual or data dictionary to start."
+                message="Upload an official manual or data dictionary to start."
               />
             ) : (
               filteredSources.map((src) => {
@@ -550,19 +658,19 @@ export default function SourcesPage() {
 
                     <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 font-medium pt-1 border-t border-slate-100">
                       <span className="font-bold text-slate-700 flex items-center gap-1">
-                        <Layers className="w-3 h-3 text-[#1E3A8A]" />
-                        {chunkCount} {chunkCount === 1 ? 'Chunk' : 'Chunks'}
+                        <BookOpen className="w-3 h-3 text-[#1E3A8A]" />
+                        {chunkCount} {chunkCount === 1 ? 'Clause' : 'Clauses'}
                       </span>
 
                       <div className="flex items-center gap-2">
                         <span
-                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded ${
                             chunkCount > 0
                               ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                               : 'bg-amber-50 text-amber-800 border border-amber-200'
                           }`}
                         >
-                          {chunkCount > 0 ? '✓ INGESTED' : 'PENDING'}
+                          {chunkCount > 0 ? '✓ ACTIVE' : 'PENDING'}
                         </span>
 
                         <button
@@ -572,7 +680,7 @@ export default function SourcesPage() {
                             handleDeleteSource(src.id, src.name);
                           }}
                           className="text-slate-400 hover:text-rose-600 transition-colors p-1 rounded hover:bg-white cursor-pointer"
-                          title="Delete source from knowledge base"
+                          title="Delete source from knowledge repository"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -584,7 +692,7 @@ export default function SourcesPage() {
             )}
           </div>
 
-          {/* Left Column Bottom Audit Footer - Eliminates wasted bottom space */}
+          {/* Left Column Bottom Audit Footer */}
           <div className="p-3.5 border-t border-slate-200 bg-slate-50/90 shrink-0 text-slate-600 text-xs">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
@@ -592,26 +700,26 @@ export default function SourcesPage() {
               </span>
               <span className="text-[10.5px] font-mono font-bold text-emerald-700 flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                RAG Synchronized
+                Fully Synchronized
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-[11px] font-medium pt-1.5 border-t border-slate-200/80">
               <div>
-                Total Chunks: <strong className="text-slate-900">{totalIndexedChunks.toLocaleString()}</strong>
+                Total Clauses: <strong className="text-slate-900">{totalIndexedChunks.toLocaleString()}</strong>
               </div>
               <div className="text-right">
-                Engine: <strong className="text-slate-900">All-MiniLM</strong>
+                Statutory Level: <strong className="text-slate-900">MoSPI Verified</strong>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── Right Column: Upload & Ingest Dropzone + Detailed Chunks Inspector ── */}
+        {/* ── Right Column: Upload Dropzone + Detailed Clauses Inspector & Assessment Generator ── */}
         <div className="space-y-6">
           {/* 1. Upload & Ingestion Card */}
           <Card
-            title="Upload & Ingest New Official Document"
-            subtitle="Add official manuals, guidelines, video transcripts, or schemas for RAG AI grounding"
+            title="Upload & Index Official Knowledge Document"
+            subtitle="Register official MoSPI guidelines, survey protocols, or training modules for AI assessment grounding"
           >
             <form onSubmit={handleRegisterAndIngest} className="space-y-5">
               {/* Upload Mode Selector (File vs Text) */}
@@ -638,7 +746,7 @@ export default function SourcesPage() {
                   }`}
                 >
                   <Code className="w-3.5 h-3.5 inline mr-1.5" />
-                  Paste Text / Transcript
+                  Paste Text / Circular
                 </button>
               </div>
 
@@ -649,7 +757,7 @@ export default function SourcesPage() {
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
                     onClick={() => fileInputRef.current?.click()}
-                    className="group border-2 border-dashed border-blue-200 hover:border-[#1E3A8A] bg-blue-50/30 hover:bg-blue-50/70 rounded-3xl p-8 text-center transition-all cursor-pointer space-y-3"
+                    className="group border-2 border-dashed border-blue-200 hover:border-[#1E3A8A] bg-blue-50/30 hover:bg-blue-50/70 rounded-2xl p-8 text-center transition-all cursor-pointer space-y-3"
                   >
                     <input
                       ref={fileInputRef}
@@ -675,7 +783,7 @@ export default function SourcesPage() {
                         )}
                       </p>
                       <p className="text-[11.5px] text-slate-500 font-medium mt-1">
-                        Supported formats: PDF manuals, CSV/JSON dictionaries, Markdown notes, TXT transcripts
+                        Supported formats: PDF manuals, CSV/JSON data dictionaries, Markdown notes, TXT circulars
                       </p>
                     </div>
 
@@ -697,7 +805,7 @@ export default function SourcesPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          <span>File Extracted & Ready for Vector Ingestion</span>
+                          <span>File Extracted & Ready for Syllabus Indexing</span>
                         </div>
                         <button
                           type="button"
@@ -720,7 +828,7 @@ export default function SourcesPage() {
                           Characters: <strong>{extractedText.length.toLocaleString()}</strong>
                         </div>
                         <div>
-                          Est. Chunks:{' '}
+                          Estimated Clauses:{' '}
                           <strong className="text-[#1E3A8A]">
                             ~{Math.max(1, Math.ceil(extractedText.length / 1000))}
                           </strong>
@@ -756,13 +864,13 @@ export default function SourcesPage() {
               {uploadMode === 'MANUAL_TEXT' && (
                 <div>
                   <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-2">
-                    Paste Lecture Transcript or Document Text Content *
+                    Paste Official Circular or Manual Text Content *
                   </label>
                   <textarea
                     rows={6}
                     value={appendContent}
                     onChange={(e) => setAppendContent(e.target.value)}
-                    placeholder="Paste official manual sections, video transcript text, or survey guidelines here for vector chunking..."
+                    placeholder="Paste official manual sections, circular text, or survey guidelines here for indexing..."
                     className="w-full rounded-2xl border border-slate-200 p-4 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#1E3A8A] leading-relaxed shadow-inner"
                   />
                   <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium mt-1">
@@ -770,7 +878,7 @@ export default function SourcesPage() {
                       Character Count: <strong>{appendContent.length.toLocaleString()}</strong>
                     </span>
                     <span>
-                      Est. Vector Chunks:{' '}
+                      Est. Clauses:{' '}
                       <strong className="text-[#1E3A8A]">
                         ~{Math.max(0, Math.ceil(appendContent.length / 1000))}
                       </strong>
@@ -779,8 +887,36 @@ export default function SourcesPage() {
                 </div>
               )}
 
+              {/* Proactive Duplicate Alert Notice */}
+              {existingSourceMatch && (
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 text-xs shadow-xs">
+                  <div className="flex items-center gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <div>
+                      <span className="font-extrabold text-amber-900">
+                        Existing Item Match:
+                      </span>{' '}
+                      <span className="font-semibold text-slate-800">
+                        "{existingSourceMatch.name}"
+                      </span>{' '}
+                      <span className="text-slate-500 font-normal">
+                        ({existingSourceMatch.chunksCount || 0} indexed clauses)
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowDuplicateModal(true)}
+                    className="text-xs font-bold text-[#1E3A8A] hover:underline cursor-pointer flex items-center gap-1 shrink-0 ml-2"
+                  >
+                    <span>View Modal</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
               {/* Document Metadata Form */}
-              <div className="grid gap-4 md:grid-cols-3 pt-2">
+              <div className="grid gap-4 md:grid-cols-3 pt-1">
                 <div className="md:col-span-2">
                   <Input
                     label="Official Document Title *"
@@ -802,7 +938,7 @@ export default function SourcesPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Input
-                    label="MoSPI Control Code / External ID"
+                    label="MoSPI Circular No. / External Control Code"
                     value={form.externalId}
                     onChange={(e) => setForm({ ...form, externalId: e.target.value })}
                     placeholder="e.g. MOSPI-DOC-2026-005"
@@ -819,14 +955,16 @@ export default function SourcesPage() {
                     className="w-full justify-center !text-white !bg-[#1E3A8A] hover:!bg-blue-900 py-3 rounded-xl shadow-md font-black"
                   >
                     <Database className="h-4 w-4 mr-2" />
-                    Register & Ingest into Knowledge Base
+                    {existingSourceMatch && duplicateResolution === 'UPDATE_EXISTING'
+                      ? 'Update & Re-Index Source'
+                      : 'Register & Index into Repository'}
                   </Button>
                 </div>
               </div>
             </form>
           </Card>
 
-          {/* 2. Selected Source Detail & Vector Chunks Explorer */}
+          {/* 2. Selected Source Detail & Deep Assessment Engine */}
           {selectedSource && (
             <Card
               title={selectedSource.name}
@@ -834,41 +972,92 @@ export default function SourcesPage() {
             >
               {/* Document Header Stats */}
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-5 space-y-3 shadow-xs">
-                <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center justify-between text-xs flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-700">Vector Knowledge Status:</span>
+                    <span className="font-bold text-slate-700">Repository Status:</span>
                     <span className="font-mono font-black text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                      {sourceChunksList.length || selectedSource.chunksCount || 0} Traceable Vector Chunks
+                      {sourceChunksList.length || selectedSource.chunksCount || 0} Verified Syllabus Clauses
                     </span>
                   </div>
 
-                  <span className="text-[10px] font-bold text-slate-500">
-                    Format: 1,000 Char Embeddings (SHA-256 Hashed)
+                  <span className="text-[11px] font-bold text-slate-500">
+                    Statutory MoSPI Curriculum • Evidence Grounded
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 font-medium leading-relaxed">
                   {selectedSource.summary ||
-                    'Official MoSPI evidence source registered for AI grounding. When diagnostic assessments or blueprints are generated, questions cite these exact vector chunks.'}
+                    'Official MoSPI evidence source registered for AI grounding. When diagnostic assessments or competency blueprints are generated, questions cite these exact syllabus clauses.'}
                 </p>
 
-                {/* Direct Question Generation Action for this specific file */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200">
-                  <div className="text-[11.5px] text-slate-600 font-medium">
-                    Target question generation exclusively to <strong className="text-slate-800">{selectedSource.name}</strong>:
+                {/* Deep Assessment Generation Control Suite */}
+                <div className="pt-3 border-t border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-extrabold text-[#1E3A8A]">
+                      <FileCheck className="w-4 h-4 text-[#1E3A8A]" />
+                      <span>Statutory Assessment Generator (Admin Configuration)</span>
+                    </div>
+                    {selectedClauseIds.length > 0 && (
+                      <span className="text-[11px] font-bold text-[#1E3A8A] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                        {selectedClauseIds.length} clause(s) selected
+                      </span>
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleGenerateAssessmentForSource}
-                    disabled={generatingAssessment || (sourceChunksList.length === 0 && !selectedSource.chunksCount)}
-                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 hover:from-blue-900 hover:to-slate-900 active:scale-95 text-white font-extrabold text-xs transition-all shadow-md flex items-center gap-2 disabled:opacity-50 border border-blue-900/60 cursor-pointer"
-                  >
-                    <Sparkles className="w-4 h-4 text-blue-400" />
-                    <span>
-                      {generatingAssessment
-                        ? 'Generating Grounded Questions...'
-                        : 'Generate Assessment from this Document'}
-                    </span>
-                  </button>
+
+                  {/* Configuration Controls Bar */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                    <Select
+                      label="Target Cadre / Role"
+                      size="sm"
+                      value={assessmentConfig.targetCadre}
+                      onChange={(e) => setAssessmentConfig({ ...assessmentConfig, targetCadre: e.target.value })}
+                      options={CADRE_OPTIONS}
+                    />
+
+                    <Select
+                      label="Number of Questions"
+                      size="sm"
+                      value={assessmentConfig.count}
+                      onChange={(e) => setAssessmentConfig({ ...assessmentConfig, count: Number(e.target.value) })}
+                      options={[
+                        { value: 3, label: '3 Questions (Quick Knowledge Pulse)' },
+                        { value: 5, label: '5 Questions (Standard Diagnostic)' },
+                        { value: 10, label: '10 Questions (Comprehensive Certification)' },
+                      ]}
+                    />
+
+                    <Select
+                      label="Cognitive Depth"
+                      size="sm"
+                      value={assessmentConfig.evaluationDepth}
+                      onChange={(e) => setAssessmentConfig({ ...assessmentConfig, evaluationDepth: e.target.value })}
+                      options={EVALUATION_DEPTHS}
+                    />
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      Scope:{' '}
+                      <strong className="text-slate-800">
+                        {selectedClauseIds.length > 0
+                          ? `Targeting ${selectedClauseIds.length} Selected Clauses`
+                          : `Entire Document (${sourceChunksList.length} Clauses)`}
+                      </strong>
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={handleGenerateAssessmentForSource}
+                      disabled={generatingAssessment || (sourceChunksList.length === 0 && !selectedSource.chunksCount)}
+                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 hover:from-blue-900 hover:to-slate-900 active:scale-95 text-white font-extrabold text-xs transition-all shadow-md flex items-center gap-2 disabled:opacity-50 border border-blue-900/60 cursor-pointer"
+                    >
+                      <FileCheck className="w-4 h-4 text-blue-400" />
+                      <span>
+                        {generatingAssessment
+                          ? 'Generating Grounded Questions...'
+                          : 'Generate Evidence-Grounded Assessment'}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -891,7 +1080,7 @@ export default function SourcesPage() {
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                          {generatedAssessmentInfo.questionsCount} questions generated & derived 100% from official vector chunks.
+                          {generatedAssessmentInfo.questionsCount} questions generated & derived 100% from official verified clauses.
                         </p>
                       </div>
                     </div>
@@ -909,11 +1098,11 @@ export default function SourcesPage() {
                     </button>
                   </div>
 
-                  {/* Bottom Bar: Action Buttons in One Clean Aligned Row */}
+                  {/* Bottom Bar: Action Buttons */}
                   <div className="px-5 py-3 bg-slate-950/40 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-xs text-slate-400">
                       <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                      <span>Ready for Verification & Cadre Assignment</span>
+                      <span>Target Cadre: <strong className="text-white">{assessmentConfig.targetCadre}</strong></span>
                     </div>
 
                     <div className="flex items-center gap-2.5">
@@ -923,7 +1112,7 @@ export default function SourcesPage() {
                         className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-blue-300 hover:text-blue-100 border border-blue-800/60 font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer transition-all"
                       >
                         <Eye className="w-3.5 h-3.5 text-blue-400" />
-                        <span>Verify Questions ({generatedAssessmentInfo.questionsCount})</span>
+                        <span>Inspect & Verify Questions ({generatedAssessmentInfo.questionsCount})</span>
                       </button>
 
                       <button
@@ -933,7 +1122,7 @@ export default function SourcesPage() {
                         className={`px-4 py-1.5 rounded-xl font-bold text-xs transition-all shadow-md flex items-center gap-1.5 cursor-pointer border ${
                           isPublished
                             ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300'
-                            : 'bg-blue-600 hover:bg-blue-500 active:scale-95 text-white border-blue-400/50 shadow-blue-950/50'
+                            : 'bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 hover:from-blue-900 hover:to-slate-900 active:scale-95 text-white border-blue-400/30 shadow-md'
                         } disabled:opacity-70`}
                       >
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
@@ -951,7 +1140,7 @@ export default function SourcesPage() {
                         onClick={() => navigate('/dashboard/assessments')}
                         className="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer border border-slate-700 transition-all"
                       >
-                        <span>Assessments</span>
+                        <span>Assessments Studio</span>
                         <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
                       </button>
                     </div>
@@ -959,57 +1148,130 @@ export default function SourcesPage() {
                 </div>
               )}
 
-              {/* Vector Chunks Explorer */}
+              {/* Official Reference Clauses & Syllabus Sections */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-800">
-                    <FileSearch className="w-4 h-4 text-[#1E3A8A]" />
-                    Inspect Traceable Vector Chunks ({filteredChunks.length})
+                    <BookOpen className="w-4 h-4 text-[#1E3A8A]" />
+                    Official Reference Clauses & Syllabus Sections ({filteredChunks.length})
                   </div>
 
-                  {sourceChunksList.length > 0 && (
-                    <div className="relative w-64">
-                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={chunkSearch}
-                        onChange={(e) => setChunkSearch(e.target.value)}
-                        placeholder="Search chunk text..."
-                        className="w-full pl-8 pr-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-800 focus:outline-none focus:border-[#1E3A8A]"
-                      />
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {selectedClauseIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedClauseIds([])}
+                        className="text-[11px] font-bold text-slate-500 hover:text-slate-800 transition-colors"
+                      >
+                        Clear Selection ({selectedClauseIds.length})
+                      </button>
+                    )}
+
+                    {sourceChunksList.length > 0 && (
+                      <div className="relative w-64">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={chunkSearch}
+                          onChange={(e) => setChunkSearch(e.target.value)}
+                          placeholder="Search clauses, policy rules, or text..."
+                          className="w-full pl-8 pr-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-800 focus:outline-none focus:border-[#1E3A8A]"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {loadingChunks ? (
                   <div className="py-8 text-center text-xs text-slate-500 font-medium">
-                    Loading vector chunks for this source...
+                    Loading verified syllabus sections for this document...
                   </div>
                 ) : filteredChunks.length > 0 ? (
-                  <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
-                    {filteredChunks.map((chunk, cIdx) => (
-                      <div
-                        key={chunk.id || cIdx}
-                        className="p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-blue-300 transition-colors shadow-2xs space-y-1.5"
-                      >
-                        <div className="flex items-center justify-between text-[10.5px]">
-                          <span className="font-mono font-bold text-[#1E3A8A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                            {chunk.chunkReference || `CHUNK-${String(cIdx + 1).padStart(4, '0')}`}
-                          </span>
-                          <span className="font-mono text-slate-400 text-[10px]">
-                            {chunk.text?.length || 0} chars • Range: [{chunk.textStart ?? 0} -{' '}
-                            {chunk.textEnd ?? chunk.text?.length ?? 0}]
-                          </span>
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+                    {filteredChunks.map((chunk, cIdx) => {
+                      const isSelected = selectedClauseIds.includes(chunk.id);
+                      const clauseTitle =
+                        chunk.sectionReference || chunk.metadata?.clauseTitle || `Clause ${cIdx + 1}.0`;
+                      const wordCount = chunk.metadata?.wordCount || chunk.text?.trim().split(/\s+/).length || 0;
+
+                      return (
+                        <div
+                          key={chunk.id || cIdx}
+                          className={`p-4 rounded-2xl border transition-all shadow-2xs space-y-2 text-left ${
+                            isSelected
+                              ? 'border-[#1E3A8A] bg-blue-50/40'
+                              : 'border-slate-200 bg-white hover:border-blue-200'
+                          }`}
+                        >
+                          {/* Clause Header */}
+                          <div className="flex items-center justify-between text-xs flex-wrap gap-2">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => toggleClauseSelection(chunk.id)}
+                                className="text-slate-400 hover:text-[#1E3A8A] transition-colors cursor-pointer"
+                                title={isSelected ? 'Deselect clause' : 'Select clause for assessment'}
+                              >
+                                {isSelected ? (
+                                  <CheckSquare className="w-4 h-4 text-[#1E3A8A]" />
+                                ) : (
+                                  <Square className="w-4 h-4" />
+                                )}
+                              </button>
+
+                              <span className="font-extrabold text-[#1E3A8A] bg-blue-50 px-2 py-0.5 rounded border border-blue-100 text-[11px]">
+                                CLAUSE {cIdx + 1}.0
+                              </span>
+
+                              <h5 className="font-bold text-slate-900 text-xs truncate max-w-md">
+                                {clauseTitle}
+                              </h5>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500">
+                              <span>~{wordCount} words</span>
+                              <span>•</span>
+                              <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
+                                {chunk.chunkReference?.slice(0, 16)}...
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Clause Body Text */}
+                          <p className="text-xs text-slate-700 font-normal leading-relaxed whitespace-pre-wrap pl-6">
+                            {chunk.text}
+                          </p>
+
+                          {/* Clause Action Footer */}
+                          <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-100 pl-6">
+                            <button
+                              type="button"
+                              onClick={() => toggleClauseSelection(chunk.id)}
+                              className={`font-bold transition-colors flex items-center gap-1 cursor-pointer ${
+                                isSelected ? 'text-[#1E3A8A]' : 'text-slate-500 hover:text-[#1E3A8A]'
+                              }`}
+                            >
+                              <Target className="w-3 h-3" />
+                              <span>{isSelected ? '✓ Selected for Assessment' : 'Target this Clause'}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleCopyCitation(chunk)}
+                              className="text-slate-400 hover:text-slate-700 font-medium flex items-center gap-1 cursor-pointer"
+                              title="Copy citation"
+                            >
+                              <Copy className="w-3 h-3" />
+                              <span>Copy Citation</span>
+                            </button>
+                          </div>
                         </div>
-                        <p className="text-xs text-slate-800 font-medium leading-relaxed">
-                          {chunk.text}
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="p-6 rounded-2xl border border-dashed border-slate-200 text-center text-xs text-slate-500 font-medium">
-                    No vector chunks ingested for this source yet. You can append content below to generate chunks.
+                    No verified clauses found for this source yet. You can append content below to index new clauses.
                   </div>
                 )}
               </div>
@@ -1017,20 +1279,20 @@ export default function SourcesPage() {
               {/* Append Additional Content Form */}
               <form onSubmit={handleAppendToExisting} className="space-y-3 pt-6 border-t border-slate-200 mt-6">
                 <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
-                  Append Additional Text / Chapter to this Manual
+                  Append Additional Section / Circular to this Manual
                   <textarea
                     rows={3}
                     value={appendContent}
                     onChange={(e) => setAppendContent(e.target.value)}
-                    placeholder="Paste additional sections, appendices, or amendments to append as new vector chunks..."
+                    placeholder="Paste additional chapters, circular amendments, or appendices to index as verified clauses..."
                     className="mt-2 w-full rounded-2xl border border-slate-200 p-3 text-xs font-medium text-slate-900 focus:border-[#1E3A8A] focus:outline-none leading-relaxed"
                   />
                 </label>
 
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
-                    <Sparkles size={14} className="text-[#1E3A8A]" />
-                    Automatically hashed & added to this document's version history
+                    <ShieldCheck size={14} className="text-[#1E3A8A]" />
+                    Automatically cross-referenced and appended to this document's official syllabus
                   </span>
                   <Button
                     type="submit"
@@ -1039,7 +1301,7 @@ export default function SourcesPage() {
                     className="!text-white !bg-[#1E3A8A] hover:!bg-blue-900"
                   >
                     <Upload className="h-4 w-4 mr-1.5" />
-                    Append Vector Chunks
+                    Append Verified Clause
                   </Button>
                 </div>
               </form>
@@ -1048,19 +1310,19 @@ export default function SourcesPage() {
         </div>
       </div>
 
-      {/* ── Generated Questions Verification Modal ── */}
+      {/* ── Generated Questions Verification & Oversight Modal ── */}
       {showVerifyModal && generatedAssessmentInfo && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl max-w-4xl lg:max-w-5xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-4xl lg:max-w-5xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
             {/* Modal Header (Dark Blue Black Enterprise Theme) */}
             <div className="px-6 py-4 border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white flex items-center justify-between shrink-0 shadow-md">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="px-2.5 py-0.5 rounded text-[10px] font-black bg-blue-500/20 text-blue-300 border border-blue-400/30 uppercase tracking-wider">
-                    AI Grounded Verification
+                    Statutory Evidence Verification
                   </span>
                   <span className="text-xs text-slate-400 font-mono">
-                    ID: {generatedAssessmentInfo.assessmentId?.slice(0, 8)}
+                    Target: {generatedAssessmentInfo.targetCadre || assessmentConfig.targetCadre}
                   </span>
                 </div>
                 <h3 className="text-base font-black text-white mt-1">
@@ -1083,66 +1345,102 @@ export default function SourcesPage() {
                   Source Document: <strong className="text-slate-900">{generatedAssessmentInfo.sourceName}</strong>
                 </span>
                 <span className="font-bold text-[#1E3A8A]">
-                  {generatedAssessmentInfo.questions?.length || generatedAssessmentInfo.questionsCount} Questions Verified
+                  {generatedAssessmentInfo.questions?.length || generatedAssessmentInfo.questionsCount} Questions Verified & Grounded
                 </span>
               </div>
 
-              {(generatedAssessmentInfo.questions || []).map((q, idx) => (
-                <div key={q.id || idx} className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3 shadow-xs">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-black text-slate-900">
-                      Problem Statement {idx + 1}
-                    </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase">
-                      Bloom: {q.bloomLevel || q.bloom_level || 'APPLY'}
-                    </span>
-                  </div>
+              {(generatedAssessmentInfo.questions || []).map((q, idx) => {
+                const isEditing = editingQuestionIdx === idx;
 
-                  <p className="text-xs font-medium text-slate-800 whitespace-pre-wrap leading-relaxed">
-                    {q.stem}
-                  </p>
-
-                  {/* Options */}
-                  <div className="space-y-1.5 pt-1">
-                    {(q.options || []).map((opt, oIdx) => {
-                      const optText = typeof opt === 'object' ? opt.text : String(opt);
-                      const isCorrect = typeof opt === 'object' ? Boolean(opt.is_correct || opt.isCorrect) : oIdx === 0;
-                      return (
-                        <div
-                          key={oIdx}
-                          className={`p-2.5 rounded-xl border text-xs flex items-center justify-between ${
-                            isCorrect
-                              ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-bold'
-                              : 'bg-slate-50 border-slate-200 text-slate-700'
-                          }`}
+                return (
+                  <div key={q.id || idx} className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3 shadow-xs">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-black text-slate-900">
+                        Problem Statement {idx + 1}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase">
+                          Bloom: {q.bloomLevel || q.bloom_level || 'APPLY'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setEditingQuestionIdx(isEditing ? null : idx)}
+                          className="text-[11px] font-bold text-slate-500 hover:text-[#1E3A8A] flex items-center gap-1 cursor-pointer"
                         >
-                          <div className="flex items-center gap-2">
-                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
-                              isCorrect ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600'
-                            }`}>
-                              {String.fromCharCode(65 + oIdx)}
-                            </span>
-                            <span>{optText}</span>
-                          </div>
-                          {isCorrect && (
-                            <span className="text-[10px] font-black uppercase text-emerald-700 flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Correct Answer
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Explanation */}
-                  {q.explanation && (
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 leading-relaxed">
-                      <strong className="text-slate-800">Grounding Rationale: </strong>
-                      {q.explanation}
+                          <Edit3 className="w-3 h-3" />
+                          <span>{isEditing ? 'Done Editing' : 'Edit'}</span>
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {/* Stem - editable or static */}
+                    {isEditing ? (
+                      <textarea
+                        rows={3}
+                        value={q.stem}
+                        onChange={(e) => handleUpdateQuestionStem(idx, e.target.value)}
+                        className="w-full text-xs font-medium text-slate-900 p-2.5 rounded-xl border border-blue-300 focus:outline-none focus:border-[#1E3A8A] leading-relaxed shadow-inner"
+                      />
+                    ) : (
+                      <p className="text-xs font-medium text-slate-800 whitespace-pre-wrap leading-relaxed">
+                        {q.stem}
+                      </p>
+                    )}
+
+                    {/* Options */}
+                    <div className="space-y-1.5 pt-1">
+                      {(q.options || []).map((opt, oIdx) => {
+                        const optText = typeof opt === 'object' ? opt.text : String(opt);
+                        const isCorrect = typeof opt === 'object' ? Boolean(opt.is_correct || opt.isCorrect) : oIdx === 0;
+
+                        return (
+                          <div
+                            key={oIdx}
+                            className={`p-2.5 rounded-xl border text-xs flex items-center justify-between ${
+                              isCorrect
+                                ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-bold'
+                                : 'bg-slate-50 border-slate-200 text-slate-700'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 flex-1">
+                              <span
+                                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
+                                  isCorrect ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600'
+                                }`}
+                              >
+                                {String.fromCharCode(65 + oIdx)}
+                              </span>
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={optText}
+                                  onChange={(e) => handleUpdateOption(idx, oIdx, e.target.value)}
+                                  className="w-full bg-white border border-slate-300 rounded px-2 py-0.5 text-xs text-slate-900"
+                                />
+                              ) : (
+                                <span>{optText}</span>
+                              )}
+                            </div>
+                            {isCorrect && (
+                              <span className="text-[10px] font-black uppercase text-emerald-700 flex items-center gap-1 shrink-0 ml-2">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Correct Answer
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Explanation / Grounding Citation */}
+                    {q.explanation && (
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 leading-relaxed">
+                        <strong className="text-slate-800">Statutory Grounding Citation: </strong>
+                        {q.explanation}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {/* Modal Footer (Dark Blue Black Enterprise Theme) */}
@@ -1157,7 +1455,7 @@ export default function SourcesPage() {
                   className="px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-blue-300 hover:text-blue-100 border border-blue-900/60 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                 >
                   <SlidersHorizontal className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Assessments</span>
+                  <span>Assessments Studio</span>
                   <ArrowRight className="w-3.5 h-3.5 text-blue-400" />
                 </button>
                 <button
@@ -1189,7 +1487,7 @@ export default function SourcesPage() {
                   className={`px-4 py-2 rounded-xl font-black text-xs transition-all shadow-md flex items-center gap-2 cursor-pointer border whitespace-nowrap ${
                     isPublished
                       ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300'
-                      : 'bg-blue-600 hover:bg-blue-500 active:scale-95 text-white border-blue-400/50 shadow-blue-950/50'
+                      : 'bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 hover:from-blue-900 hover:to-slate-900 active:scale-95 text-white border-blue-400/30 shadow-md'
                   } disabled:opacity-70`}
                 >
                   <CheckCircle2 className="w-4 h-4 text-emerald-300" />
@@ -1206,6 +1504,119 @@ export default function SourcesPage() {
           </div>
         </div>
       )}
+      {/* ── Duplicate Item Warning & Resolution Modal ── */}
+      {showDuplicateModal && existingSourceMatch && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-xl w-full flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white flex items-center justify-between shrink-0 shadow-md">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400">
+                  <AlertCircle className="w-4.5 h-4.5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-400/30 uppercase tracking-wider">
+                      Duplicate Item Detected
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-extrabold text-white mt-0.5">
+                    Document Already Exists in Repository
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDuplicateModal(false)}
+                className="p-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer border border-slate-700/60"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                An official document matching <strong className="text-slate-900">"{existingSourceMatch.name}"</strong> is already registered and indexed in the knowledge repository. Uploading duplicate copies leads to conflicting evidence citations.
+              </p>
+
+              {/* Document Comparison Card */}
+              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                <div className="space-y-1.5 border-r border-slate-200 pr-3">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                    Existing In Repository
+                  </span>
+                  <p className="font-bold text-slate-900 line-clamp-2">{existingSourceMatch.name}</p>
+                  <div className="text-[11px] text-slate-500 font-mono space-y-0.5">
+                    <div>Ref: {existingSourceMatch.externalId || 'MOSPI-DOC'}</div>
+                    <div className="text-emerald-700 font-bold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      {existingSourceMatch.chunksCount || 0} verified clauses
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 pl-1">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1E3A8A] block">
+                    Incoming Upload
+                  </span>
+                  <p className="font-bold text-slate-900 line-clamp-2">{form.name}</p>
+                  <div className="text-[11px] text-slate-500 font-mono space-y-0.5">
+                    <div>Type: {form.documentType}</div>
+                    <div className="text-[#1E3A8A] font-bold">
+                      ~{Math.max(1, Math.ceil(((uploadMode === 'FILE_UPLOAD' ? extractedText : appendContent).length || 1000) / 1000))} estimated clauses
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Resolution Advice */}
+              <div className="text-[11.5px] text-slate-600 space-y-1 bg-amber-50/70 border border-amber-200/80 rounded-xl p-3">
+                <strong className="text-amber-900 font-bold block">Choose how to resolve:</strong>
+                <p>
+                  <strong>Update & Re-Index:</strong> Overwrites existing clauses with the updated content while keeping references intact.
+                </p>
+                <p>
+                  <strong>Save as Revision:</strong> Registers a separate version named <em>"{form.name.replace(/\s*\(Rev.*?\)$/i, '')} (Rev {(sources.filter((s) => s.name.toLowerCase().startsWith(form.name.replace(/\s*\(Rev.*?\)$/i, '').toLowerCase())).length) + 1})"</em>.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer Actions */}
+            <div className="px-6 py-3.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowDuplicateModal(false)}
+                className="px-3.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer"
+              >
+                Cancel Upload
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={working}
+                  onClick={handleSaveAsRevision}
+                  className="px-3.5 py-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl transition-all cursor-pointer shadow-2xs disabled:opacity-60"
+                >
+                  Save as Revision Edition
+                </button>
+
+                <button
+                  type="button"
+                  disabled={working}
+                  onClick={handleUpdateExisting}
+                  className="px-4 py-2 text-xs font-extrabold text-white bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 hover:from-blue-900 hover:to-slate-900 rounded-xl transition-all cursor-pointer shadow-md disabled:opacity-60 flex items-center gap-1.5"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${working ? 'animate-spin' : ''}`} />
+                  <span>{working ? 'Updating...' : 'Update & Re-Index Existing'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

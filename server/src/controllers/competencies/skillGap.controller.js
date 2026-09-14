@@ -4,6 +4,9 @@ import {
   recalculateSkillGaps,
 } from "../../services/skillGap.service.js";
 import { seedModule3DemoData } from "../../services/module3Seed.service.js";
+import { getDb } from '../../db/index.js';
+import { officials } from '../../db/schema/index.js';
+import { eq } from 'drizzle-orm';
 
 export async function seedModule3Controller(req, res, next) {
   if (process.env.NODE_ENV === "production") {
@@ -19,13 +22,17 @@ export async function seedModule3Controller(req, res, next) {
 
 export async function recalculateSkillGapsController(req, res, next) {
   try {
-    const { officialId, roleId } = req.body || {};
+    let { officialId, roleId } = req.body || {};
+    if (!officialId) {
+      const [official] = await getDb().select({ id: officials.id }).from(officials).where(eq(officials.userId, req.auth.userId));
+      officialId = official?.id;
+    }
     const gaps = await recalculateSkillGaps({
       userId: req.auth.userId,
       officialId,
       roleId,
     });
-    return res.status(200).json({ gaps });
+    return res.status(200).json({ gaps, status: gaps.length ? 'OK' : 'INSUFFICIENT_DATA' });
   } catch (error) {
     return next(error);
   }

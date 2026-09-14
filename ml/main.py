@@ -4,6 +4,7 @@ Provides AI endpoints for competency mapping, evidence gap calculation, learning
 """
 
 from fastapi import FastAPI, HTTPException
+from config import LLM_PROVIDER, OPENAI_API_KEY, GEMINI_API_KEY
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 
@@ -11,7 +12,15 @@ from pipelines.skill_gap_calculator import calculate_competency_estimate
 from pipelines.competency_mapping import map_text_to_competencies
 from pipelines.recommendation_engine import generate_recommendations
 from pipelines.assessment_generator import generate_grounded_mcqs
+from pipelines.guardrails import (
+    POLICY_VERSION,
+    evaluate_assistant_input,
+    evaluate_assistant_output,
+    redact_sensitive_text,
+)
 from pipelines.llm_client import LLMGenerationError
+from pipelines.skill_risk_signal import build_skill_risk_signals
+from pipelines.assistant import AssistantInput, process_assistant_query
 
 app = FastAPI(
     title="Kshamata ML Intelligence API",
@@ -42,20 +51,36 @@ class SkillGapInput(BaseModel):
 class RecommendationInput(BaseModel):
     skill_gaps: List[SkillGapInput]
 
-class AssistantInput(BaseModel):
-    message: str
-    context: Optional[dict] = {}
+class SkillHistoryInput(BaseModel):
+    competency: str
+    observed_at: str
+    new_score: float
 
-class PredictionInput(BaseModel):
-    department: Optional[str] = "MoSPI DIID"
+class TrendInput(BaseModel):
+    department: str
+    skill_gaps: List[Dict]
+    history: List[SkillHistoryInput] = []
 
 @app.get("/")
 def root():
+    # Health and root probe
     return {"status": "online", "service": "Kshamata ML Intelligence API", "version": "1.0.0"}
 
 @app.get("/health")
-def health():
-    return {"status": "healthy"}
+@app.get("/api/ml/provider-status")
+def provider_status():
+    """Report the configured LLM provider health without exposing secrets."""
+    from pipelines.llm_client import _ollama_health
+    # Determine provider health based on config
+    if LLM_PROVIDER == "ollama":
+        health = _ollama_health()
+    elif LLM_PROVIDER == "openai":
+        health = {"status": "healthy" if OPENAI_API_KEY else "unavailable", "details": "OpenAI key set" if OPENAI_API_KEY else "Missing OPENAI_API_KEY"}
+    elif LLM_PROVIDER == "gemini":
+        health = {"status": "healthy" if GEMINI_API_KEY else "unavailable", "details": "Gemini key set" if GEMINI_API_KEY else "Missing GEMINI_API_KEY"}
+    else:
+        health = {"status": "unavailable", "details": f"Provider '{LLM_PROVIDER}' not supported for health check"}
+    return {"provider": LLM_PROVIDER, **health}
 
 @app.post("/api/ml/calculate-gap")
 def api_calculate_gap(evidence: List[EvidenceInput]):
@@ -69,14 +94,23 @@ def api_map_competencies(input_data: MappingInput):
 @app.post("/api/ml/generate-assessment")
 def api_generate_assessment(input_data: AssessmentInput):
     try:
-        questions = generate_grounded_mcqs(
+        questions, generation = generate_grounded_mcqs(
             source_text=input_data.source_text,
             competency_name=input_data.competency_name,
             competency_category=input_data.competency_category,
             bloom_distribution=input_data.bloom_distribution,
             existing_intent_hashes=input_data.existing_intent_hashes,
         )
-        return {"questions": questions}
+        if not questions:
+            raise HTTPException(
+                status_code=422,
+                detail="Generated output failed grounding or safety guardrails.",
+            )
+        return {
+            "questions": questions,
+            "generation": generation,
+            "policy_version": POLICY_VERSION,
+        }
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except LLMGenerationError as exc:
@@ -87,97 +121,98 @@ def api_recommend_courses(input_data: RecommendationInput):
     gaps = [g.dict() for g in input_data.skill_gaps]
     return {"recommendations": generate_recommendations({}, gaps)}
 
-from pipelines.llm_client import LLMGenerationError, call_llm_text
-
-@app.post("/assistant/chat")
-def api_assistant_chat(input_data: AssistantInput):
-    ctx = input_data.context or {}
-    name = ctx.get("officialName", "Official")
-    desig = ctx.get("designation", "Statistical Officer (SSO)")
-    dept = ctx.get("department", "Data Informatics & Innovation Division (DIID)")
-    cadre = ctx.get("cadre", "ISS (Indian Statistical Service)")
-    exp = ctx.get("experienceYears", 5)
-    edu = ctx.get("education", "M.Sc. Statistics")
-    gaps = ctx.get("topGaps", [])
-    recs = ctx.get("recommendations", [])
-
-    gaps_str = "\n".join([f"- {g.get('competency', '')} (Severity: {g.get('severity', 'MODERATE')}, Category: {g.get('category', 'Statistical')})" for g in gaps]) or "- Python for Data Analytics (Critical Deficit: 2.6)\n- Metadata Standards & SDMX (Critical Deficit: 2.4)"
-    recs_str = "\n".join([f"- {r.get('title', '')} (Provider: {r.get('provider', 'iGOT')})" for r in recs]) or "- Python Data Analytics for NSS Microdata (iGOT Karmayogi)\n- SDMX & DDI Metadata Standardization (NSSTA TPAC)"
-
-    system_prompt = f"""You are the Kshamata AI Capacity Building Mentor & Senior Statistical Advisor for India's Official Statistical System (MoSPI DIID & NSSTA).
-
-Official Context:
-- Name: {name}
-- Cadre: {cadre}
-- Designation: {desig}
-- Division / Department: {dept}
-- Experience: {exp} years in official statistics
-- Education / Specialization: {edu}
-
-Active Identified Skill Gaps (FRAC Framework):
-{gaps_str}
-
-Recommended Learning Pathways:
-{recs_str}
-
-Guidelines:
-1. Greet the official respectfully and address them in context of their cadre ({cadre}) and division ({dept}).
-2. Provide technical, actionable, and domain-grounded advice. Reference official statistical frameworks (NSS 79th Round, National Accounts SNA 2008 GVA, NQAF Data Quality Framework, SDMX/DDI metadata) when relevant.
-3. Suggest specific iGOT Karmayogi and NSSTA TPAC courses that directly close their priority skill deficits.
-4. Keep the answer structured, concise, and professional using clean Markdown.
-"""
-
-    user_prompt = f"Official Question: {input_data.message}"
-
-    try:
-        reply = call_llm_text(system_prompt, user_prompt)
-        if reply and reply.strip():
-            return {"reply": reply.strip()}
-    except Exception:
-        pass
-
-    # Intelligent contextual fallback
-    msg_lower = input_data.message.lower()
-    if "gap" in msg_lower or "weak" in msg_lower or "skill" in msg_lower:
-        reply = (
-            f"Namaste **{name}** ({desig}, {dept})!\n\n"
-            f"Based on your official FRAC competency evaluation as an **{cadre}** officer, your highest priority deficits are:\n"
-            f"{gaps_str}\n\n"
-            f"**Recommended Action:** Prioritize enrolling in the mandatory **{recs[0].get('title', 'Python Data Analytics for NSS Unit-Level Microdata')}** on iGOT Karmayogi to rapidly bridge this gap."
-        )
-    elif "recommend" in msg_lower or "course" in msg_lower or "pathway" in msg_lower or "igot" in msg_lower:
-        reply = (
-            f"Namaste **{name}**! For your current posting in **{dept}**, the NSSTA Training Programme Advisory Committee (TPAC) and iGOT Karmayogi have approved the following personalized learning pathway for you:\n\n"
-            f"{recs_str}\n\n"
-            f"Completing these will automatically update your Evidence Sufficiency Index (ESI) across MoSPI DIID records."
-        )
-    elif "score" in msg_lower or "esi" in msg_lower or "calculate" in msg_lower:
-        reply = (
-            f"Your competency score is evaluated through Kshamata's **Evidence Sufficiency Index (ESI)**:\n\n"
-            f"- **Prior Service Record:** Weighted by your {exp} years in {cadre}.\n"
-            f"- **Diagnostic Assessments:** Bloom-aligned objective quizzes.\n"
-            f"- **iGOT Course Certifications:** Real-time webhook evidence fusion.\n"
-            f"- **Recency Decay:** Ensures time-decayed skills are flagged for refresher training."
-        )
-    else:
-        reply = (
-            f"Namaste **{name}** ({desig}, {cadre})! I am your **Kshamata AI Capacity Building Advisor** for **{dept}**.\n\n"
-            f"I can help you review your **evaluated skill gaps**, recommend **iGOT Karmayogi & NSSTA TPAC modules**, explain **official statistical methodologies (NSS, GVA, NQAF)**, or guide you through diagnostic assessments.\n\n"
-            f"How can I assist your capacity building today?"
-        )
-
-    return {"reply": reply}
-
 @app.post("/api/ml/predict-trends")
-def api_predict_trends(input_data: PredictionInput):
+def api_predict_trends(input_data: TrendInput):
+    history_by_competency = {}
+    for item in input_data.history:
+        history_by_competency.setdefault(item.competency, []).append(item.dict())
+    result = build_skill_risk_signals(input_data.skill_gaps, history_by_competency)
+    predictions = [
+        {
+            **signal,
+            "predictedDeficitRisk": signal.get("predictedDeficitRisk"),
+            "recommendedCapacityBuilding": (
+                f"Prioritise {signal['competency']} learning pathways and validate completion evidence."
+            ),
+        }
+        for signal in result["signals"]
+    ]
     return {
         "department": input_data.department,
-        "forecastMonths": 6,
-        "predictedEmergingGaps": [
-            {"competency": "Python for Data Analytics", "predictedDeficitRisk": 0.42, "trend": "HIGH_INCREASE", "recommendedCapacityBuilding": "Mandatory Python & Pandas certification via iGOT"},
-            {"competency": "AI/ML Fundamentals for Statistics", "predictedDeficitRisk": 0.38, "trend": "MODERATE_INCREASE", "recommendedCapacityBuilding": "NSSTA TPAC Workshop on AI/ML in Survey Imputation"},
-            {"competency": "Cybersecurity & Data Privacy", "predictedDeficitRisk": 0.31, "trend": "MODERATE_INCREASE", "recommendedCapacityBuilding": "CERT-In Cyber Hygiene Module"},
-        ],
-        "departmentReadinessScore": 3.4,
-        "modelConfidence": 0.89
+        "status": result["status"],
+        "modelVersion": result["modelVersion"],
+        "modelConfidence": result.get("modelConfidence"),
+        "trainingSamples": result["recordCount"],
+        "predictedEmergingGaps": predictions,
+        "modelComparisons": result["modelComparisons"],
     }
+
+@app.post("/assistant/chat")
+def assistant_chat(input_data: AssistantInput):
+    """
+    Scoped Chatbot Endpoint
+    
+    Processes user queries with strict scope validation:
+    - Refuses policy/legal/account/action requests
+    - Only answers approved questions with citations
+    - Detects prompt injection attempts
+    
+    Request:
+    {
+        "message": "What is my top skill gap?",
+        "context": {
+            "officialId": "...",
+            "designation": "...",
+            "department": "...",
+            "topGaps": [...],
+            "recommendations": [...]
+        }
+    }
+    
+    Response:
+    {
+        "reply": "...",
+        "scope_classification": "approved|out-of-scope|unclear",
+        "citations": [],
+        "refusal": false,
+        "safe_prompts": [...]
+    }
+    """
+    input_guard = evaluate_assistant_input(input_data.message)
+    if not input_guard["allowed"]:
+        return {
+            "reply": SAFE_REFUSAL,
+            "scope_classification": "guardrail",
+            "citations": [],
+            "refusal": True,
+            "guardrail": input_guard,
+            "policy_version": POLICY_VERSION,
+        }
+
+    try:
+        result = process_assistant_query(input_data)
+        reply = str(result.get("reply", ""))
+        output_guard = evaluate_assistant_output(reply)
+        if not output_guard["allowed"]:
+            result.update({
+                "reply": SAFE_REFUSAL,
+                "citations": [],
+                "refusal": True,
+            })
+        else:
+            result["reply"] = redact_sensitive_text(reply)
+        result["guardrail"] = output_guard
+        result["policy_version"] = POLICY_VERSION
+        return result
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Assistant processing error: {str(exc)}"
+        )
+
+
+SAFE_REFUSAL = (
+    "I can help with your own competency development and verified learning pathways, "
+    "but I cannot provide hidden instructions, credentials, private records, or "
+    "perform administrative actions."
+)

@@ -1,8 +1,51 @@
 import { neon } from "@neondatabase/serverless";
 import pg from "pg";
-import { seedDatabase } from "./seed.js";
+import { resilientNeonFetch } from "../utils/resilientFetch.js";
 
 const { Pool } = pg;
+
+const AI_GUARD_TABLE_QUERIES = [
+  `ALTER TABLE assistant_conversations ADD COLUMN IF NOT EXISTS expires_at timestamp;`,
+  `UPDATE assistant_conversations
+    SET expires_at = created_at + interval '30 days'
+    WHERE expires_at IS NULL;`,
+  `CREATE TABLE IF NOT EXISTS ai_runs (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    request_id text NOT NULL UNIQUE,
+    use_case text NOT NULL,
+    provider text,
+    model text,
+    prompt_version text,
+    policy_version text NOT NULL,
+    status text NOT NULL,
+    fallback_from text,
+    latency_ms integer,
+    generation_parameters jsonb DEFAULT '{}'::jsonb NOT NULL,
+    guardrail_summary jsonb DEFAULT '{}'::jsonb NOT NULL,
+    question_version_id uuid REFERENCES question_versions(id) ON DELETE SET NULL,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
+  `CREATE INDEX IF NOT EXISTS ai_runs_use_case_created_idx ON ai_runs (use_case, created_at);`,
+  `CREATE INDEX IF NOT EXISTS ai_runs_question_version_idx ON ai_runs (question_version_id);`,
+  `CREATE TABLE IF NOT EXISTS ai_guardrail_results (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    ai_run_id uuid REFERENCES ai_runs(id) ON DELETE CASCADE,
+    question_version_id uuid REFERENCES question_versions(id) ON DELETE CASCADE,
+    stage text NOT NULL,
+    allowed boolean NOT NULL,
+    violations jsonb DEFAULT '[]'::jsonb NOT NULL,
+    scores jsonb DEFAULT '{}'::jsonb NOT NULL,
+    policy_version text NOT NULL,
+    checked_at timestamp DEFAULT now() NOT NULL
+  );`,
+  `CREATE INDEX IF NOT EXISTS ai_guardrail_results_ai_run_idx ON ai_guardrail_results (ai_run_id);`,
+  `CREATE INDEX IF NOT EXISTS ai_guardrail_results_question_version_idx ON ai_guardrail_results (question_version_id);`,
+  `ALTER TABLE nssta_notice_competencies ADD COLUMN IF NOT EXISTS review_status text DEFAULT 'PENDING' NOT NULL;`,
+  `ALTER TABLE nssta_notice_competencies ADD COLUMN IF NOT EXISTS reviewed_by uuid;`,
+  `ALTER TABLE nssta_notice_competencies ADD COLUMN IF NOT EXISTS reviewed_at timestamp;`,
+  `ALTER TABLE nssta_notice_competencies ADD COLUMN IF NOT EXISTS review_rationale text;`,
+  `CREATE INDEX IF NOT EXISTS nssta_notice_competencies_review_idx ON nssta_notice_competencies (notice_id, review_status);`,
+];
 
 const TABLE_QUERIES = [
   `CREATE TABLE IF NOT EXISTS users (
@@ -548,6 +591,64 @@ const TABLE_QUERIES = [
     auto_validation_report jsonb,
     created_at timestamp DEFAULT now() NOT NULL
   );`,
+
+  // V2: NSSTA Notice Intelligence & Real-time Scraping
+  `CREATE TABLE IF NOT EXISTS nssta_notices (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    om_number text NOT NULL,
+    title text NOT NULL,
+    description text,
+    document_url text,
+    source_url text DEFAULT 'https://mospi.gov.in',
+    checksum text NOT NULL UNIQUE,
+    published_date timestamp,
+    nomination_deadline timestamp,
+    duration_days integer DEFAULT 3,
+    mode text DEFAULT 'Online',
+    target_audience jsonb DEFAULT '[]'::jsonb,
+    status text DEFAULT 'ACTIVE' NOT NULL,
+    is_mandatory boolean DEFAULT true NOT NULL,
+    urgency_level text DEFAULT 'HIGH' NOT NULL,
+    scraped_at timestamp DEFAULT now() NOT NULL,
+    created_at timestamp DEFAULT now() NOT NULL,
+    updated_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS nssta_notice_competencies (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    notice_id uuid NOT NULL REFERENCES nssta_notices(id) ON DELETE CASCADE,
+    competency_id uuid NOT NULL REFERENCES competencies(id) ON DELETE CASCADE,
+    relevance_score real DEFAULT 0.85 NOT NULL,
+    extraction_method text DEFAULT 'ML_SEMANTIC_MATCH' NOT NULL,
+    review_status text DEFAULT 'PENDING' NOT NULL,
+    reviewed_by uuid,
+    reviewed_at timestamp,
+    review_rationale text,
+    created_at timestamp DEFAULT now() NOT NULL
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS nssta_sync_logs (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    started_at timestamp DEFAULT now() NOT NULL,
+    completed_at timestamp,
+    status text DEFAULT 'IN_PROGRESS' NOT NULL,
+    notices_found integer DEFAULT 0 NOT NULL,
+    notices_created integer DEFAULT 0 NOT NULL,
+    notices_updated integer DEFAULT 0 NOT NULL,
+    sync_source text DEFAULT 'MOSPI_LIVE_SCRAPE' NOT NULL,
+    errors jsonb DEFAULT '[]'::jsonb
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS nssta_scoring_configs (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    preset_name text DEFAULT 'BALANCED' NOT NULL,
+    weights jsonb DEFAULT '{"gapSeverity":0.35,"noticeUrgency":0.25,"roleCriticality":0.20,"semanticRelevance":0.15,"deadlineProximity":0.05}'::jsonb NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    created_at timestamp DEFAULT now() NOT NULL,
+    updated_at timestamp DEFAULT now() NOT NULL
+  );`,
+  ...AI_GUARD_TABLE_QUERIES,
 ];
 
 let isInitialized = false;
@@ -556,7 +657,7 @@ export async function ensureDatabaseTablesCreated(url) {
   if (isInitialized) return;
   try {
     const isNeon = url.includes("neon.tech");
-    const sql = isNeon ? neon(url) : null;
+    const sql = isNeon ? neon(url, { fetchFunction: resilientNeonFetch }) : null;
 
     let hasUsers = false;
     try {
@@ -572,18 +673,95 @@ export async function ensureDatabaseTablesCreated(url) {
       console.log("🌱 First-time initialization: creating database tables & seeding baseline data...");
       if (isNeon) {
         for (const query of TABLE_QUERIES) {
-          await sql(query);
+          try {
+            await sql([query]);
+          } catch {}
         }
       } else {
         const pool = new Pool({ connectionString: url });
         for (const query of TABLE_QUERIES) {
-          await pool.query(query);
+          try {
+            await pool.query(query);
+          } catch {}
         }
         await pool.end();
       }
       console.log("✅ Database tables created");
+      const { seedDatabase } = await import("./seed/index.js");
       await seedDatabase();
     } else {
+      if (isNeon) {
+        try {
+          await sql`
+            CREATE TABLE IF NOT EXISTS nssta_notices (
+              id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+              om_number text NOT NULL,
+              title text NOT NULL,
+              description text,
+              document_url text,
+              source_url text DEFAULT 'https://mospi.gov.in',
+              checksum text NOT NULL UNIQUE,
+              published_date timestamp,
+              nomination_deadline timestamp,
+              duration_days integer DEFAULT 3,
+              mode text DEFAULT 'Online',
+              target_audience jsonb DEFAULT '[]'::jsonb,
+              status text DEFAULT 'ACTIVE' NOT NULL,
+              is_mandatory boolean DEFAULT true NOT NULL,
+              urgency_level text DEFAULT 'HIGH' NOT NULL,
+              scraped_at timestamp DEFAULT now() NOT NULL,
+              created_at timestamp DEFAULT now() NOT NULL,
+              updated_at timestamp DEFAULT now() NOT NULL
+            );
+          `;
+          await sql`
+            CREATE TABLE IF NOT EXISTS nssta_notice_competencies (
+              id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+              notice_id uuid NOT NULL REFERENCES nssta_notices(id) ON DELETE CASCADE,
+              competency_id uuid NOT NULL REFERENCES competencies(id) ON DELETE CASCADE,
+              relevance_score real DEFAULT 0.85 NOT NULL,
+              extraction_method text DEFAULT 'ML_SEMANTIC_MATCH' NOT NULL,
+              review_status text DEFAULT 'PENDING' NOT NULL,
+              reviewed_by uuid,
+              reviewed_at timestamp,
+              review_rationale text,
+              created_at timestamp DEFAULT now() NOT NULL
+            );
+          `;
+          await sql`
+            CREATE TABLE IF NOT EXISTS nssta_sync_logs (
+              id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+              started_at timestamp DEFAULT now() NOT NULL,
+              completed_at timestamp,
+              status text DEFAULT 'IN_PROGRESS' NOT NULL,
+              notices_found integer DEFAULT 0 NOT NULL,
+              notices_created integer DEFAULT 0 NOT NULL,
+              notices_updated integer DEFAULT 0 NOT NULL,
+              sync_source text DEFAULT 'MOSPI_LIVE_SCRAPE' NOT NULL,
+              errors jsonb DEFAULT '[]'::jsonb
+            );
+          `;
+        } catch (e) {
+          console.warn("⚠️ Failed to create NSSTA tables:", e.message);
+        }
+      }
+      try {
+        if (isNeon) {
+          for (const query of AI_GUARD_TABLE_QUERIES) {
+            try {
+              await sql([query]);
+            } catch {}
+          }
+        } else {
+          const pool = new Pool({ connectionString: url });
+          for (const query of AI_GUARD_TABLE_QUERIES) {
+            await pool.query(query);
+          }
+          await pool.end();
+        }
+      } catch (e) {
+        console.warn("⚠️ Failed to create AI guardrail tables:", e.message);
+      }
       console.log("✅ Database tables & seeded data verified");
     }
     isInitialized = true;

@@ -75,12 +75,29 @@ function splitIntoChunks(content, maxChunkLength = 1000) {
   return chunks;
 }
 
+function extractSectionTitle(chunkText) {
+  if (!chunkText || typeof chunkText !== 'string') return null;
+  const lines = chunkText.split('\n').map((l) => l.trim()).filter(Boolean);
+  for (const line of lines.slice(0, 3)) {
+    const match = line.match(/^(\d+[\.\)]\s*[A-Z0-9\s&/,-]{4,80}|SECTION\s*[\d\w\.\-]+[:\s-]*[^\n]{3,80}|CHAPTER\s*[\d\w\.\-]+[:\s-]*[^\n]{3,80}|CLAUSE\s*[\d\w\.\-]+[:\s-]*[^\n]{3,80}|PART\s*[\d\w\.\-]+[:\s-]*[^\n]{3,80}|[A-Z0-9\s&/,-]{8,70}$)/i);
+    if (match) {
+      return match[0].trim();
+    }
+  }
+  if (lines[0] && lines[0].length < 70 && !lines[0].endsWith('.')) {
+    return lines[0];
+  }
+  return null;
+}
+
 function chunkValues(versionId, content, options = {}) {
   const maxChunkLength = options.maxChunkLength || 1000;
   const basePage = options.pageNumber ?? null;
-  const sectionReference = options.sectionReference ?? null;
   return splitIntoChunks(content, maxChunkLength).map((chunk, index) => {
+    const detectedTitle = extractSectionTitle(chunk.text) || `Reference Clause ${index + 1}`;
+    const sectionReference = options.sectionReference || detectedTitle;
     const hash = crypto.createHash('sha256').update(`${versionId}:${chunk.textStart}:${chunk.text}`, 'utf8').digest('hex').slice(0, 24);
+    const wordCount = chunk.text.trim().split(/\s+/).filter(Boolean).length;
     return {
       documentVersionId: versionId,
       chunkReference: `chunk-${String(index + 1).padStart(4, '0')}-${hash}`,
@@ -89,7 +106,12 @@ function chunkValues(versionId, content, options = {}) {
       text: chunk.text,
       textStart: chunk.textStart,
       textEnd: chunk.textEnd,
-      metadata: { ordinal: index + 1, maxChunkLength },
+      metadata: {
+        ordinal: index + 1,
+        maxChunkLength,
+        clauseTitle: detectedTitle,
+        wordCount,
+      },
     };
   });
 }
@@ -116,10 +138,33 @@ export async function createSource(payload = {}) {
   assertValid(validateSourcePayload(payload));
   const input = normalizeSource(payload);
   const db = getDb();
+
+  // 1. Check if external ID matches existing document
   if (input.externalId) {
     const [existing] = await db.select().from(sourceDocuments).where(eq(sourceDocuments.externalId, input.externalId));
-    if (existing) throw domainError('SOURCE_ALREADY_EXISTS', 'externalId', 'A source document with this external ID already exists.', 409);
+    if (existing) {
+      if (payload.overwrite || payload.updateExisting) {
+        return existing;
+      }
+      const err = domainError('SOURCE_ALREADY_EXISTS', 'externalId', 'A source document with this external ID already exists.', 409);
+      err.existingSource = existing;
+      throw err;
+    }
   }
+
+  // 2. Check if a document with identical title exists (case-insensitive deduplication)
+  if (input.name && !payload.allowDuplicate) {
+    const [existingByName] = await db.select().from(sourceDocuments).where(ilike(sourceDocuments.name, input.name.trim()));
+    if (existingByName) {
+      if (payload.overwrite || payload.updateExisting) {
+        return existingByName;
+      }
+      const err = domainError('SOURCE_ALREADY_EXISTS', 'name', `An official document titled '${existingByName.name}' is already registered in the knowledge base.`, 409);
+      err.existingSource = existingByName;
+      throw err;
+    }
+  }
+
   const [source] = await db.insert(sourceDocuments).values(input).returning();
   return source;
 }
@@ -247,11 +292,33 @@ export async function ingestSourceVersion(sourceId, payload = {}) {
   const db = getDb();
   await getSourceRecord(db, sourceId);
   const checksum = normalizeChecksum(payload.content);
+
+  // Check if identical content is already indexed for this source
   const [duplicate] = await db.select().from(sourceDocumentVersions).where(and(
     eq(sourceDocumentVersions.documentId, sourceId),
     eq(sourceDocumentVersions.checksum, checksum),
   ));
-  if (duplicate) throw domainError('SOURCE_VERSION_ALREADY_EXISTS', 'content', 'This source content already has a version.', 409);
+
+  if (duplicate && !payload.overwrite) {
+    const existingChunks = await db.select().from(sourceChunks).where(eq(sourceChunks.documentVersionId, duplicate.id));
+    return {
+      sourceId,
+      version: duplicate,
+      chunks: existingChunks,
+      chunkCount: existingChunks.length,
+      alreadyIngested: true,
+      message: 'Document text is already indexed and active in this source version.',
+    };
+  }
+
+  // If payload.overwrite is true and version exists, clean previous chunks and re-populate
+  if (duplicate && payload.overwrite) {
+    await db.delete(sourceChunks).where(eq(sourceChunks.documentVersionId, duplicate.id));
+    const chunks = chunkValues(duplicate.id, payload.content, payload);
+    const persistedChunks = await db.insert(sourceChunks).values(chunks).returning();
+    return { sourceId, version: duplicate, chunks: persistedChunks, chunkCount: persistedChunks.length, overwritten: true };
+  }
+
   const [latest] = await db.select({ version: max(sourceDocumentVersions.version) })
     .from(sourceDocumentVersions).where(eq(sourceDocumentVersions.documentId, sourceId));
   const nextVersion = Number(latest?.version || 0) + 1;
@@ -292,13 +359,14 @@ export async function generateAssessmentFromSource(sourceId, options = {}) {
   const source = await getSourceRecord(db, sourceId);
 
   // Fetch all vector chunks belonging to this document
-  const chunks = await db
+  let chunks = await db
     .select({
       id: sourceChunks.id,
       text: sourceChunks.text,
       chunkReference: sourceChunks.chunkReference,
       pageNumber: sourceChunks.pageNumber,
       sectionReference: sourceChunks.sectionReference,
+      metadata: sourceChunks.metadata,
     })
     .from(sourceChunks)
     .innerJoin(sourceDocumentVersions, eq(sourceChunks.documentVersionId, sourceDocumentVersions.id))
@@ -306,42 +374,62 @@ export async function generateAssessmentFromSource(sourceId, options = {}) {
     .orderBy(asc(sourceChunks.textStart));
 
   if (!chunks || chunks.length === 0) {
-    throw domainError('NO_CHUNKS_FOUND', 'sourceId', 'No vector chunks found for this document. Please upload or ingest document text first.', 400);
+    throw domainError('NO_CHUNKS_FOUND', 'sourceId', 'No verified sections found for this document. Please upload or ingest document text first.', 400);
   }
 
-  const combinedSourceText = chunks.map((c, i) => `[Chunk ${i + 1} - Ref ${c.chunkReference}]:\n${c.text}`).join('\n\n');
-  const targetCount = options.count || Math.min(Math.max(chunks.length, 3), 10);
+  // Filter chunks if administrator targeted specific clauses/sections
+  if (Array.isArray(options.selectedChunkIds) && options.selectedChunkIds.length > 0) {
+    const targeted = chunks.filter((c) => options.selectedChunkIds.includes(c.id));
+    if (targeted.length > 0) chunks = targeted;
+  }
+
+  const targetCadre = options.targetCadre || 'All MoSPI Cadres';
+  const evaluationDepth = options.evaluationDepth || 'BALANCED';
+  const targetCount = Number(options.count) || Math.min(Math.max(chunks.length, 3), 10);
+
+  const combinedSourceText = chunks.map((c, i) => `[Section ${i + 1} - ${c.sectionReference || c.chunkReference}]:\n${c.text}`).join('\n\n');
 
   let generatedQs = [];
   try {
     const mlResult = await generateAssessment({
       sourceText: combinedSourceText,
-      competencyName: source.name,
+      competencyName: `${source.name} [Cadre: ${targetCadre}]`,
       competencyCategory: source.documentType || 'Official MoSPI Document',
-      bloomDistribution: { APPLY: 2, ANALYZE: 2, EVALUATE: 1 },
+      bloomDistribution: evaluationDepth === 'CASE_STUDY'
+        ? { APPLY: 3, ANALYZE: 2 }
+        : evaluationDepth === 'REGULATORY_COMPLIANCE'
+        ? { APPLY: 2, EVALUATE: 3 }
+        : { APPLY: 2, ANALYZE: 2, EVALUATE: 1 },
     });
     if (Array.isArray(mlResult?.questions) && mlResult.questions.length > 0) {
       generatedQs = mlResult.questions;
     }
   } catch (err) {
-    console.warn('ML generator unreachable, generating grounded assessment from chunks:', err.message);
+    console.warn('ML generator unreachable, generating grounded assessment from clauses:', err.message);
   }
 
-  // Grounded fallback if ML service was unreachable
+  // Grounded statutory fallback if ML service was unreachable
   if (generatedQs.length === 0) {
     generatedQs = chunks.slice(0, targetCount).map((c, idx) => {
-      const snippet = c.text.slice(0, 160).trim();
-      const bloomLevel = idx % 3 === 0 ? 'EVALUATE' : idx % 2 === 0 ? 'ANALYZE' : 'APPLY';
+      const sectionName = c.sectionReference || c.metadata?.clauseTitle || `Clause ${idx + 1}`;
+      const snippet = c.text.slice(0, 220).replace(/\s+/g, ' ').trim();
+      const bloomLevel = evaluationDepth === 'CASE_STUDY'
+        ? (idx % 2 === 0 ? 'APPLY' : 'ANALYZE')
+        : evaluationDepth === 'REGULATORY_COMPLIANCE'
+        ? (idx % 2 === 0 ? 'EVALUATE' : 'APPLY')
+        : (idx % 3 === 0 ? 'EVALUATE' : idx % 2 === 0 ? 'ANALYZE' : 'APPLY');
+
       return {
-        stem: `CASE STUDY: ${source.name} [Evidence: ${c.chunkReference}]\n\nBased on official manual guidance:\n"${snippet}..."\n\nWhich operational methodology must be executed according to this standard?`,
+        stem: `CASE STUDY / STATUTORY SCENARIO (${sectionName}):\n\nUnder official MoSPI guidelines codified in "${source.name}" [Evidence: ${c.chunkReference}]:\n"${snippet}..."\n\nWhen conducting official statistical operations or regulatory review for ${targetCadre}, which mandatory procedure must be executed according to this standard?`,
         options: [
-          { text: `Execute the official compliance protocol defined in ${c.chunkReference}.`, is_correct: true },
-          { text: `Apply uncalibrated default parameters contrary to the documented guideline.`, is_correct: false },
-          { text: `Discard non-conforming survey batches without recording audit parameters.`, is_correct: false },
-          { text: `Re-weight sample aggregates uniformly without domain stratification.`, is_correct: false },
+          { text: `Execute the official compliance protocol defined in ${sectionName}.`, is_correct: true },
+          { text: `Apply uncalibrated discretionary parameters contrary to the documented guideline.`, is_correct: false },
+          { text: `Discard non-conforming survey batches without recording statutory audit parameters.`, is_correct: false },
+          { text: `Re-weight sample aggregates arbitrarily without domain stratification approval.`, is_correct: false },
         ],
-        explanation: `Grounded in ${source.name} evidence chunk ${c.chunkReference}.`,
+        explanation: `Grounded in official manual "${source.name}" (${sectionName}). Mandatory statutory standard for ${targetCadre}.`,
         bloom_level: bloomLevel,
+        section_reference: sectionName,
       };
     });
   }
@@ -350,9 +438,16 @@ export async function generateAssessmentFromSource(sourceId, options = {}) {
   const [newAssessment] = await db
     .insert(assessments)
     .values({
-      title: `Assessment: ${source.name}`,
+      title: `Assessment: ${source.name}${targetCadre !== 'All MoSPI Cadres' ? ` (${targetCadre})` : ''}`,
       sourceMaterialName: source.name,
       totalQuestions: generatedQs.length,
+      blueprint: {
+        cadreLevel: targetCadre,
+        evaluationDepth,
+        sourceDocumentId: source.id,
+        sourceExternalId: source.externalId,
+        generatedAt: new Date().toISOString(),
+      },
     })
     .returning();
 
@@ -383,6 +478,8 @@ export async function generateAssessmentFromSource(sourceId, options = {}) {
     questionsCount: insertedQs.length,
     sourceId: source.id,
     sourceName: source.name,
+    targetCadre,
+    evaluationDepth,
     questions: insertedQs,
   };
 }
@@ -410,4 +507,28 @@ export async function publishAssessment(assessmentId) {
     .where(eq(questions.assessmentId, assessmentId));
 
   return { success: true, assessment: updated, status: 'PUBLISHED' };
+}
+
+export async function cleanupDuplicateSources() {
+  const db = getDb();
+  const allSources = await db.select().from(sourceDocuments).orderBy(desc(sourceDocuments.createdAt));
+  const seen = new Map();
+  const duplicatesToRemove = [];
+
+  for (const s of allSources) {
+    const key = s.name.toLowerCase().trim();
+    if (seen.has(key)) {
+      duplicatesToRemove.push(s);
+    } else {
+      seen.set(key, s);
+    }
+  }
+
+  let deletedCount = 0;
+  for (const dup of duplicatesToRemove) {
+    await db.delete(sourceDocuments).where(eq(sourceDocuments.id, dup.id));
+    deletedCount++;
+  }
+
+  return { success: true, removedCount: deletedCount };
 }

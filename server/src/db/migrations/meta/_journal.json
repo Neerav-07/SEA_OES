@@ -15,6 +15,20 @@
       "when": 1787647631673,
       "tag": "0001_assessment_assembly",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787650000000,
+      "tag": "0002_prediction_snapshots",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789287197633,
+      "tag": "0003_nervous_miss_america",
+      "breakpoints": true
     }
   ]
 }

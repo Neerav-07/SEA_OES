@@ -180,7 +180,9 @@ export async function registerUser(payload = {}) {
                   INSERT INTO igot_enrolments (official_id, igot_course_id, status, completion_percentage, completed_at, evidence_created)
                   VALUES ('${official.id}', '${dbCourseId}', 'COMPLETED', 100, NOW(), true)
                   ON CONFLICT (official_id, igot_course_id) DO UPDATE SET status = 'COMPLETED', completion_percentage = 100, completed_at = NOW(), evidence_created = true
-                `).catch(() => {});
+                `).catch((enrolErr) => {
+                  console.warn('[Auth/iGOT Sync] Failed to record enrolment:', enrolErr.message);
+                });
               }
 
               // Award competency evidence
@@ -201,7 +203,9 @@ export async function registerUser(payload = {}) {
                     weight: 1.0,
                     confidence: 0.95,
                     provenance: `iGOT Karmayogi Certificate: ${course.certificateId || course.name}`,
-                  }).catch(() => {});
+                  }).catch((evErr) => {
+                    console.warn('[Auth/iGOT Sync] Failed to insert evidence:', evErr.message);
+                  });
                 }
               }
             }
