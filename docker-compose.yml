@@ -1,18 +1,18 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: kshamata_postgres
+    container_name: oes_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: kshamata_db
+      POSTGRES_DB: oes_db
     ports:
-      - '5433:5432'
+      - '5434:5432'
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d kshamata_db']
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d oes_db']
       interval: 3s
       timeout: 3s
       retries: 5
@@ -21,35 +21,18 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
-    container_name: kshamata_server
+    container_name: oes_server
     restart: unless-stopped
     environment:
       PORT: 5000
       NODE_ENV: production
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/kshamata_db
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET environment variable must be configured}
-      CLIENT_URL: ${CLIENT_URL:-http://localhost:80}
-      ML_SERVICE_URL: http://ml:8000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/oes_db
+      JWT_SECRET: ${JWT_SECRET:-local-oes-preview-change-me}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:8080}
+      OES_DEMO_EXAMINER_PASSWORD: ${OES_DEMO_EXAMINER_PASSWORD:-Examiner@123!}
+      OES_DEMO_STUDENT_PASSWORD: ${OES_DEMO_STUDENT_PASSWORD:-Student@123!}
     ports:
       - '5000:5000'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      ml:
-        condition: service_started
-
-  ml:
-    build:
-      context: ./ml
-      dockerfile: Dockerfile
-    container_name: kshamata_ml
-    restart: unless-stopped
-    expose:
-      - '8000'
-    environment:
-      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,11 +43,10 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: /api
-    container_name: kshamata_client
+    container_name: oes_client
     restart: unless-stopped
     ports:
-      - '80:80'
-      - '3000:80'
+      - '8080:80'
     depends_on:
       - server
 

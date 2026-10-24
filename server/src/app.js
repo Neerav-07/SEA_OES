@@ -7,6 +7,8 @@ import { errorHandler } from './middlewares/error.middleware.js';
 import routes from './routes/index.js';
 
 const app = express();
+// Nginx is the single reverse proxy in the local Docker stack.
+app.set('trust proxy', 1);
 
 app.use(helmet({
   crossOriginResourcePolicy: false,

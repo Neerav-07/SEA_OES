@@ -11,3 +11,7 @@ ml/venv/
 *.pyc
 *.pyo
 *.pyd
+
+# Local PDF generation dependencies
+.pdf_deps/
+.pdf_create_deps/

@@ -1,190 +1,25 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ArrowRight, LockKeyhole } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-import Button from '../../components/Button';
-import Container from '../../components/Container';
-import Input from '../../components/Input';
-import KshamataLogo from '../../components/KshamataLogo';
-import useServerWarmup from '../../hooks/useServerWarmup';
 import api from '../../services/api.js';
 import useAuthStore from '../../store/auth.store.js';
-import { validateLoginForm } from '../../utils/validators.js';
-
-const initialForm = { email: '', password: '' };
-
-const FEATURE_BULLETS = [
-  'Role Competency Profiling',
-  'Evidence-Based Skill Gaps',
-  'iGOT & NSSTA Integration',
-  'Intelligent MCQ Generator',
-];
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState(initialForm);
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
   const setAuth = useAuthStore((s) => s.setAuth);
-  const setTransitioning = useAuthStore((s) => s.setTransitioning);
-  const { isWakingUp } = useServerWarmup();
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((f) => ({ ...f, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    const validation = validateLoginForm(formData);
-    if (!validation.isValid) {
-      setErrors(validation.errors);
-      const firstError = Object.values(validation.errors)[0];
-      toast.error(firstError);
-      return;
-    }
-
-    setErrors({});
-    setIsSubmitting(true);
-    
+  const navigate = useNavigate();
+  const submit = async (event) => {
+    event.preventDefault(); setBusy(true);
     try {
-      const res = await api.post('/auth/login', formData);
-      setAuth({ user: res.data.user, accessToken: res.data.accessToken });
-      toast.success('Logged in successfully.');
+      const response = await api.post('/auth/login', { email, password });
+      setAuth({ user: response.data.user, accessToken: response.data.accessToken });
       navigate('/dashboard');
     } catch (error) {
-      const msg =
-        error.response?.data?.message ||
-        error.response?.data?.errors?.[0] ||
-        (error.request
-          ? 'Unable to reach authentication server. Please check your network connection.'
-          : 'Authentication failed. Please try again.');
-      toast.error(msg);
-      setIsSubmitting(false);
-    }
+      toast.error(error.response?.data?.message || 'Sign in failed. Check your credentials and try again.');
+    } finally { setBusy(false); }
   };
-
-  return (
-    <Container className="flex flex-col min-h-screen items-center justify-center py-6 px-4">
-      {/* ── Top Back Button ── */}
-      <div className="w-full max-w-7xl mb-4">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 rounded-xl bg-white/80 border border-slate-200 px-4 py-2 text-xs font-bold text-slate-800 shadow-xs hover:bg-white hover:border-slate-300 transition-all"
-        >
-          <ArrowLeft size={16} className="text-[#1E3A8A]" /> Back to Home
-        </Link>
-      </div>
-
-      <div
-        className="grid w-full max-w-7xl overflow-hidden rounded-[2.5rem] border border-(--app-color-border)/40 backdrop-blur-md lg:grid-cols-[1fr_1fr]"
-        style={{ backgroundColor: 'var(--app-color-surface-glass)', boxShadow: 'var(--app-shadow-elevated)' }}
-      >
-          {/* ── Left branding panel (hidden on mobile, visible on lg screens) ── */}
-          <section
-            className="hidden lg:flex relative flex-col items-center justify-center overflow-hidden p-8 text-center text-white lg:p-14"
-            style={{ background: 'var(--app-gradient-auth-login)' }}
-          >
-            <div className="noise-overlay pointer-events-none opacity-20" />
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="flex flex-col items-center gap-4">
-                <KshamataLogo size="lg" boxed />
-                <div className="h-[3px] w-16 rounded-full bg-[#2563EB]" />
-              </div>
-              <div className="mt-6">
-                <p className="mx-auto max-w-md text-sm font-semibold leading-relaxed text-white">
-                  Personalized iGOT Karmayogi & NSSTA learning pathways for India's Official Statistical System (MoSPI DIID).
-                </p>
-              </div>
-              <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-3.5 px-2 text-left max-w-md">
-                {FEATURE_BULLETS.map((f) => (
-                  <div key={f} className="flex items-center gap-2.5">
-                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-white">
-                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <span className="whitespace-nowrap text-xs font-bold tracking-wider text-white">{f}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-between px-10 text-[10px] font-semibold text-white/70 tracking-wider">
-              <p>© {new Date().getFullYear()} Ministry of Statistics and Programme Implementation</p>
-              <p>Government of India</p>
-            </div>
-          </section>
-
-          {/* ── Right form panel (full width on mobile) ── */}
-          <section
-            className="auth-form-slide flex flex-col justify-center p-6 sm:p-10 lg:p-14 w-full"
-            style={{ backgroundColor: 'var(--app-color-surface-glass)' }}
-          >
-            <div className="mx-auto w-full max-w-md">
-              <div className="lg:hidden flex justify-center mb-6">
-                <KshamataLogo size="md" />
-              </div>
-              <div className="mb-6 text-center lg:text-left">
-                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-(--app-color-text)">Welcome back</h2>
-                <p className="mt-1 text-xs sm:text-sm text-(--app-color-text-muted)">Sign in to your competency dashboard</p>
-              </div>
-              <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-                <Input
-                  label="Official Email Address"
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  error={errors.email}
-                  placeholder="official@gov.in"
-                  className="h-11 rounded-xl"
-                />
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-semibold text-(--app-color-text)">Password</label>
-                    <a href="#" className="text-xs font-medium text-[#1E3A8A] hover:underline">Forgot password?</a>
-                  </div>
-                  <Input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    error={errors.password}
-                    placeholder="••••••••"
-                    className="h-11 rounded-xl"
-                  />
-                </div>
-                <div className="pt-1">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    className="h-11 w-full rounded-xl text-sm font-bold shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99] bg-[#1E3A8A] text-white hover:bg-[#172554]"
-                    loading={isSubmitting || isWakingUp}
-                    disabled={isSubmitting || isWakingUp}
-                  >
-                    {isWakingUp
-                      ? 'Starting production servers...'
-                      : isSubmitting
-                      ? 'Signing in...'
-                      : 'Sign In'}
-                  </Button>
-                </div>
-
-                <p className="mt-8 text-center text-xs text-(--app-color-text-muted)">
-                  Don't have an official account?{' '}
-                  <Link to="/register" className="font-black text-[#1E3A8A] hover:underline">
-                    Create one
-                  </Link>
-                </p>
-              </form>
-            </div>
-          </section>
-        </div>
-    </Container>
-  );
+  return <div className="oes-page oes-login-page"><header className="oes-topbar"><Link to="/" className="oes-brand"><span className="oes-mark">O</span><span>Online Examination System<small>Academic assessment portal</small></span></Link></header><main className="oes-login-card"><Link to="/" className="oes-back"><ArrowLeft size={16}/> Back to home</Link><div className="oes-login-icon"><LockKeyhole size={25}/></div><span className="oes-eyebrow">SECURE ACCESS</span><h1>Sign in to your workspace</h1><p>Use your assigned account credentials to access examinations and results.</p><form onSubmit={submit} className="oes-form"><label>Email address<input type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"/></label><label>Password<input type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter password"/></label><button className="oes-btn oes-login-submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'} <ArrowRight size={16}/></button></form><p className="oes-login-note">Accounts are provided by your administrator. Contact them if you need access.</p></main></div>;
 }

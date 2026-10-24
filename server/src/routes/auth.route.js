@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { loginController, logoutController, refreshController, registerController, getMeController } from '../controllers/auth/auth.controller.js';
-import { validateLoginPayload, validateRegisterPayload } from '../validators/auth.validator.js';
+import { loginController, logoutController, refreshController, getMeController } from '../controllers/auth/auth.controller.js';
+import { validateLoginPayload } from '../validators/auth.validator.js';
 import { verifyToken } from '../middlewares/verifyToken.js';
 
 const router = Router();
@@ -16,7 +16,6 @@ function validate(validatorFn) {
   };
 }
 
-router.post('/register', authLimiter, validate(validateRegisterPayload), registerController);
 router.post('/login',    authLimiter, validate(validateLoginPayload),    loginController);
 router.post('/refresh',  authLimiter, refreshController);
 router.post('/logout',   authLimiter, logoutController);

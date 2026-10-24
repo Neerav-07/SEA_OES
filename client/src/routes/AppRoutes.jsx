@@ -1,102 +1,44 @@
-/**
- * AppRoutes
- *
- * TODO: Add/remove routes to match your PS features.
- * Private routes (behind PrivateRoute) require a valid JWT session.
- */
-import { useEffect } from 'react';
-import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
-
-import DashboardLayout from '../components/layout/DashboardLayout.jsx';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import GlobalLoader from '../components/loaders/GlobalLoader.jsx';
-import LandingPage from '../pages/landing/LandingPage.jsx';
 import LoginPage from '../pages/auth/LoginPage.jsx';
-import RegisterPage from '../pages/auth/RegisterPage.jsx';
-import DashboardHomePage from '../pages/dashboard/overview/DashboardHomePage.jsx';
-import CompetenciesPage from '../pages/dashboard/competencies/CompetenciesPage.jsx';
-import SkillGapsPage from '../pages/dashboard/skill-gaps/SkillGapsPage.jsx';
-import LearningPathsPage from '../pages/dashboard/learning-paths/LearningPathsPage.jsx';
-import IGOTExplorePage from '../pages/dashboard/igot/IGOTExplorePage.jsx';
-import AssessmentHistoryPage from '../pages/dashboard/history/AssessmentHistoryPage.jsx';
-import AssessmentsPage from '../pages/dashboard/assessments/AssessmentsPage.jsx';
-import AnalyticsPage from '../pages/dashboard/analytics/AnalyticsPage.jsx';
-import SourcesPage from '../pages/dashboard/sources/SourcesPage.jsx';
-import ReviewQueuePage from '../pages/dashboard/admin/ReviewQueuePage.jsx';
-import PredictiveAnalyticsPage from '../pages/dashboard/admin/PredictiveAnalyticsPage.jsx';
-import ACBPReportPage from '../pages/dashboard/admin/ACBPReportPage.jsx';
-import NSSTANoticesPage from '../pages/dashboard/admin/NSSTANoticesPage.jsx';
-import SettingsPage from '../pages/dashboard/settings/SettingsPage.jsx';
-
+import OESLandingPage from '../pages/oes/OESLandingPage.jsx';
+import OESLayout from '../pages/oes/OESLayout.jsx';
+import { OESAttempt, OESExams, OESHelp, OESOverview, OESQuestionBank, OESResults } from '../pages/oes/OESWorkspace.jsx';
 import useAuthStore from '../store/auth.store.js';
 
 function PrivateRoute() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
-  return isLoggedIn ? <Outlet /> : <Navigate to="/login" replace />;
+  return isLoggedIn ? <Outlet/> : <Navigate to="/login" replace/>;
 }
 
-function AdminRoute() {
-  const user = useAuthStore((s) => s.user);
-  const isAdmin = user?.platformRole === 'ADMIN';
-  return isAdmin ? <Outlet /> : <Navigate to="/dashboard" replace />;
+function ExaminerRoute() {
+  const role = useAuthStore((s) => s.user?.platformRole);
+  return role === 'ADMIN' ? <Outlet/> : <Navigate to="/dashboard" replace/>;
+}
+
+function StudentRoute() {
+  const role = useAuthStore((s) => s.user?.platformRole);
+  return role !== 'ADMIN' ? <Outlet/> : <Navigate to="/dashboard" replace/>;
 }
 
 export default function AppRoutes() {
-  const location = useLocation();
   const hydrated = useAuthStore((s) => s.hydrated);
-  const isTransitioning = useAuthStore((s) => s.isTransitioning);
-  const isExiting = useAuthStore((s) => s.isExiting);
-  const transitionShowTagline = useAuthStore((s) => s.transitionShowTagline);
-  const setTransitioning = useAuthStore((s) => s.setTransitioning);
-  const setExiting = useAuthStore((s) => s.setExiting);
-
-  useEffect(() => {
-    if (isTransitioning && !isExiting) {
-      const t1 = setTimeout(() => {
-        setExiting(true);
-        setTimeout(() => setTransitioning(false), 600);
-      }, 300);
-      return () => clearTimeout(t1);
-    }
-  }, [location.pathname, isTransitioning, isExiting]);
-
-  if (!hydrated) return <GlobalLoader showTagline={false} />;
-
-  return (
-    <>
-      {(isTransitioning || isExiting) && (
-        <GlobalLoader showTagline={transitionShowTagline} isExiting={isExiting} />
-      )}
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route element={<PrivateRoute />}>
-          <Route element={<DashboardLayout />}>
-            {/* Learner / Official Accessible Routes */}
-            <Route path="/dashboard" element={<DashboardHomePage />} />
-            <Route path="/dashboard/competencies" element={<CompetenciesPage />} />
-            <Route path="/dashboard/skill-gaps" element={<SkillGapsPage />} />
-            <Route path="/dashboard/igot-explore" element={<IGOTExplorePage />} />
-            <Route path="/dashboard/learning-paths" element={<LearningPathsPage />} />
-            <Route path="/dashboard/assessment-history" element={<AssessmentHistoryPage />} />
-            <Route path="/dashboard/settings" element={<SettingsPage />} />
-
-            {/* Strict Admin-Only Routes */}
-            <Route element={<AdminRoute />}>
-              <Route path="/dashboard/assessments" element={<AssessmentsPage />} />
-              <Route path="/dashboard/analytics" element={<AnalyticsPage />} />
-              <Route path="/dashboard/sources" element={<SourcesPage />} />
-              <Route path="/dashboard/admin/review-queue" element={<ReviewQueuePage />} />
-              <Route path="/dashboard/review-queue" element={<Navigate to="/dashboard/admin/review-queue" replace />} />
-              <Route path="/dashboard/admin/predictions" element={<PredictiveAnalyticsPage />} />
-              <Route path="/dashboard/admin/acbp-report" element={<ACBPReportPage />} />
-              <Route path="/dashboard/admin/nssta-notices" element={<NSSTANoticesPage />} />
-              <Route path="/dashboard/nssta-notices" element={<Navigate to="/dashboard/admin/nssta-notices" replace />} />
-            </Route>
-          </Route>
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </>
-  );
+  if (!hydrated) return <GlobalLoader showTagline={false}/>;
+  return <Routes>
+    <Route path="/" element={<OESLandingPage/>}/>
+    <Route path="/login" element={<LoginPage/>}/>
+    <Route path="/register" element={<Navigate to="/login" replace/>}/>
+    <Route element={<PrivateRoute/>}><Route element={<OESLayout/>}>
+      <Route path="/dashboard" element={<OESOverview/>}/>
+      <Route path="/dashboard/results" element={<OESResults/>}/>
+      <Route path="/dashboard/results/:attemptId" element={<OESResults/>}/>
+      <Route path="/dashboard/help" element={<OESHelp/>}/>
+      <Route element={<ExaminerRoute/>}>
+        <Route path="/dashboard/questions" element={<OESQuestionBank/>}/>
+        <Route path="/dashboard/exams" element={<OESExams/>}/>
+      </Route>
+      <Route element={<StudentRoute/>}><Route path="/dashboard/attempt/:examId" element={<OESAttempt/>}/></Route>
+    </Route></Route>
+    <Route path="*" element={<Navigate to="/dashboard" replace/>}/>
+  </Routes>;
 }
